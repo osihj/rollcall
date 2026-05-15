@@ -167,8 +167,8 @@
 
   /* ── MEMBER LIST ── */
   .member-item {
-    display: flex; align-items: center; gap: 14px;
-    padding: 16px 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 12px; border-bottom: 1px solid var(--border);
   }
   .member-item:last-child { border-bottom: none; }
   .num-badge {
@@ -179,7 +179,7 @@
     font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 13px; flex-shrink: 0;
   }
   .member-info { flex: 1.4; min-width: 0; }
-  .member-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .member-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
   .member-meta { font-size: 13px; color: var(--text3); margin-top: 2px; font-family: 'Roboto', 'Noto Sans TC', sans-serif; }
   .course-badge {
     font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px;
@@ -192,6 +192,33 @@
     white-space: nowrap;
   }
   .gender-tag { font-size: 12px; color: var(--text3); font-weight: normal; }
+
+  /* 手機版組員列表：卡片式 */
+  .member-mobile-only  { display: none; }
+  .member-desktop-only { display: flex; }
+  @media (max-width: 520px) {
+    .member-mobile-only  { display: block; flex: 1; min-width: 0; }
+    .member-desktop-only { display: none !important; }
+    .member-list-header { display: none; }
+    .member-item {
+      flex-wrap: wrap; gap: 0;
+      padding: 14px 14px; align-items: flex-start;
+    }
+    .member-item .num-badge { margin-top: 2px; }
+    .member-item-body {
+      flex: 1; min-width: 0; padding-left: 0;
+    }
+    .member-item-row1 {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: nowrap;
+    }
+    .member-item-row2 {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .member-item-actions {
+      width: 100%; display: flex; gap: 8px; justify-content: flex-end;
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+    }
+  }
 
   /* ── SESSIONS ── */
   .session-item {
@@ -231,9 +258,9 @@
   }
   .calendar-weekday.weekend-head { color: var(--red); background: #fdfaf9; }
   .calendar-day-cell {
-    min-height: 85px; padding: 6px;
+    min-height: 72px; padding: 5px 4px;
     border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
-    display: flex; flex-direction: column; justify-content: flex-start;
+    display: flex; flex-direction: column; align-items: center;
     background: var(--surface); transition: background 0.2s;
   }
   .calendar-day-cell.has-events { cursor: pointer; }
@@ -241,20 +268,41 @@
   .calendar-day-cell.sat-cell, .calendar-day-cell.sun-cell { background: #fffcfb; }
   .calendar-day-cell.sat-cell .calendar-day-num, .calendar-day-cell.sun-cell .calendar-day-num { color: var(--red); font-weight: 700; }
   .calendar-day-cell.holiday-cell .calendar-day-num { color: var(--red) !important; font-weight: 700; }
-  .holiday-label { font-size: 10px; color: var(--red); font-weight: 500; margin-bottom: 2px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .holiday-label { font-size: 9px; color: var(--red); font-weight: 500; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; text-align: center; }
   .calendar-day-cell.other-month { background: #fafaf9 !important; }
   .calendar-day-cell.other-month .calendar-day-num { color: var(--text3) !important; font-weight: normal; }
   .calendar-day-cell.today .calendar-day-num {
     background: var(--accent); color: #fff !important;
-    border-radius: 50%; width: 22px; height: 22px;
+    border-radius: 50%; width: 24px; height: 24px;
     display: flex; align-items: center; justify-content: center; font-size: 12px;
   }
-  .calendar-day-num { font-size: 13px; font-weight: 500; font-family: 'Roboto', sans-serif; margin-bottom: 2px; }
+  .calendar-day-num {
+    font-size: 13px; font-weight: 500; font-family: 'Roboto', sans-serif;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; flex-shrink: 0;
+  }
+  .calendar-events-container { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
   .calendar-event-tag {
     background: #a8c9b0; color: #1a3a22;
     border-radius: 3px; padding: 1px 4px; font-size: 10px;
-    margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer; width: 100%; text-align: center;
+  }
+  /* 手機：活動改為綠色圓點，日期數字優先顯示 */
+  @media (max-width: 520px) {
+    .calendar-weekday { font-size: 11px; padding: 6px 2px; }
+    .calendar-day-cell { min-height: 52px; padding: 4px 2px; }
+    .calendar-day-num { font-size: 12px; width: 22px; height: 22px; }
+    .calendar-day-cell.today .calendar-day-num { width: 22px; height: 22px; font-size: 12px; }
+    .holiday-label { font-size: 8px; }
+    .calendar-events-container { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
+    .calendar-event-tag {
+      width: 7px; height: 7px; min-width: 7px; border-radius: 50%;
+      padding: 0; font-size: 0; background: var(--accent);
+      border: 1.5px solid rgba(255,255,255,0.8);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
   }
 
   /* ── QR & CHECKIN ── */
@@ -1150,25 +1198,43 @@ function renderMembers() {
   list.innerHTML = filtered.map((m, i) => `
     <div class="member-item">
       <div class="num-badge">${i + 1}</div>
-      <div class="member-info">
+      <!-- 桌機版（hidden on mobile） -->
+      <div class="member-info member-desktop-only">
         <div class="member-name">
           ${esc(m.name)}
           <span class="gender-tag">(${esc(m.gender || '女')})</span>
         </div>
         ${m.note ? `<div class="member-meta">${esc(m.note)}</div>` : ''}
       </div>
-      <div style="flex:1.1; display:flex; align-items:center; min-width:0;">
+      <div style="flex:1.1; display:flex; align-items:center; min-width:0;" class="member-desktop-only">
         <span style="font-size:12px; color:var(--text3); font-family:'Roboto','Noto Sans TC',sans-serif;">${m.memberId ? esc(m.memberId) : '—'}</span>
       </div>
-      <div style="flex:1.1; display:flex; align-items:center; min-width:0;">
+      <div style="flex:1.1; display:flex; align-items:center; min-width:0;" class="member-desktop-only">
         <span class="course-badge">${esc(m.courseType || '神鼓陣')}</span>
       </div>
-      <div style="flex:0.9; display:flex; align-items:center; min-width:0;">
+      <div style="flex:0.9; display:flex; align-items:center; min-width:0;" class="member-desktop-only">
         <span class="${roleClass[m.role] || 'role-badge role-badge-member'}">${esc(m.role || '組員')}</span>
       </div>
-      <div style="width:140px; flex-shrink:0; display:flex; gap:4px; justify-content:flex-end;">
+      <div style="width:140px; flex-shrink:0; display:flex; gap:4px; justify-content:flex-end;" class="member-desktop-only">
         <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button>
         <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">刪除</button>
+      </div>
+      <!-- 手機版卡片 -->
+      <div class="member-item-body member-mobile-only">
+        <div class="member-item-row1">
+          <span style="font-weight:700; font-size:15px;">${esc(m.name)}</span>
+          <span class="gender-tag">(${esc(m.gender || '女')})</span>
+          ${m.memberId ? `<span style="font-size:12px; color:var(--text3); font-family:'Roboto',sans-serif;">${esc(m.memberId)}</span>` : ''}
+        </div>
+        <div class="member-item-row2">
+          <span class="course-badge">${esc(m.courseType || '神鼓陣')}</span>
+          <span class="${roleClass[m.role] || 'role-badge role-badge-member'}">${esc(m.role || '組員')}</span>
+          ${m.note ? `<span style="font-size:12px; color:var(--text3);">${esc(m.note)}</span>` : ''}
+        </div>
+        <div class="member-item-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">刪除</button>
+        </div>
       </div>
     </div>`).join('');
 }
