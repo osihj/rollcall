@@ -222,11 +222,11 @@
 
   /* ── SESSIONS ── */
   .session-item {
-    display: flex; align-items: center; gap: 16px;
-    padding: 18px; background: var(--surface); border-radius: var(--radius);
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; background: var(--surface); border-radius: var(--radius);
     margin-bottom: 14px; border: 1px solid var(--border);
     box-shadow: var(--shadow-sm); transition: all 0.4s ease;
-    scroll-margin-top: 80px;
+    scroll-margin-top: 80px; overflow: hidden;
   }
   .session-item:hover { border-color: #d1cdc5; }
   .session-item.highlight-active {
@@ -237,13 +237,31 @@
   }
   .session-date-box {
     background: var(--surface2); color: var(--text); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 8px 10px; text-align: center; flex-shrink: 0; min-width: 56px;
+    border-radius: var(--radius); padding: 8px 10px; text-align: center; flex-shrink: 0; min-width: 52px;
   }
   .session-month { font-size: 11px; font-weight: 500; color: var(--text2); }
   .session-day { font-size: 20px; font-weight: 700; line-height: 1; font-family: 'Roboto', sans-serif; margin-top: 2px; }
-  .session-info { flex: 1; }
-  .session-name { font-weight: 700; margin-bottom: 4px; font-size: 15px; }
-  .session-sub { font-size: 13px; color: var(--text2); font-family: 'Roboto', 'Noto Sans TC', sans-serif; }
+  .session-info { flex: 1; min-width: 0; }
+  .session-name {
+    font-weight: 700; font-size: 15px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .session-sub {
+    font-size: 13px; color: var(--text2);
+    font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+    white-space: nowrap; margin-top: 3px;
+  }
+  .session-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  @media (max-width: 520px) {
+    .session-item { padding: 14px; gap: 10px; }
+    .session-date-box { min-width: 46px; padding: 6px 8px; }
+    .session-day { font-size: 18px; }
+    .session-name { font-size: 14px; }
+    .session-sub { font-size: 12px; }
+    .session-actions { gap: 4px; }
+    .session-actions .btn-sm { padding: 6px 10px; font-size: 12px; }
+  }
 
   /* ── CALENDAR ── */
   .calendar-month-grid {
@@ -1359,12 +1377,17 @@ function renderSessions() {
           <div class="session-day">${d.getDate()}</div>
         </div>
         <div class="session-info">
-          <div class="session-name">${esc(s.name)} <span class="course-badge" style="font-size:11px; vertical-align:middle;">${esc(s.courseType||'神鼓陣')}</span></div>
+          <div class="session-name">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(s.name)}</span>
+            <span class="course-badge" style="font-size:11px; flex-shrink:0;">${esc(s.courseType||'神鼓陣')}</span>
+          </div>
           <div class="session-sub">${s.timeStart} ~ ${s.timeEnd}</div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="editSession('${s.id}')">編輯</button>
-        <button class="btn btn-secondary btn-sm" onclick="duplicateSession('${s.id}')">複製</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">刪除</button>
+        <div class="session-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editSession('${s.id}')">編輯</button>
+          <button class="btn btn-secondary btn-sm" onclick="duplicateSession('${s.id}')">複製</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">刪除</button>
+        </div>
       </div>`;
   }).join('');
 }
