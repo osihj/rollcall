@@ -20,10 +20,16 @@
     --accent-light: #f0f4f1;
     --accent2: #b8621d;
     --accent2-light: #faf2eb;
+    --accent3: #0f9d58;
+    --accent3-light: #e8f5e9;
     --red: #96352b;
     --red-light: #f9ebea;
     --yellow: #b58900;
     --yellow-light: #fbf7eb;
+    --blue: #1a73e8;
+    --blue-light: #e8eef7;
+    --purple: #8e44ad;
+    --purple-light: #f3e5f5;
     --radius: 6px;
     --shadow: 0 4px 20px rgba(44,42,39,0.04), 0 1px 3px rgba(44,42,39,0.02);
     --shadow-sm: 0 2px 8px rgba(44,42,39,0.03);
@@ -962,15 +968,16 @@
     <div class="form-group">
       <label>活動顏色</label>
       <div style="display:flex;gap:10px;align-items:center;padding:4px 0;" id="s-color-picker">
+        <div class="color-opt selected" data-color="#2c5234" style="background:#2c5234;" onclick="pickSessionColor(this)" title="綠"></div>
         <div class="color-opt" data-color="#d93025" style="background:#d93025;" onclick="pickSessionColor(this)" title="紅"></div>
         <div class="color-opt" data-color="#ef6c00" style="background:#ef6c00;" onclick="pickSessionColor(this)" title="橘"></div>
         <div class="color-opt" data-color="#f4b400" style="background:#f4b400;" onclick="pickSessionColor(this)" title="黃"></div>
-        <div class="color-opt selected" data-color="#0f9d58" style="background:#0f9d58;" onclick="pickSessionColor(this)" title="綠"></div>
+        <div class="color-opt" data-color="#0f9d58" style="background:#0f9d58;" onclick="pickSessionColor(this)" title="綠"></div>
         <div class="color-opt" data-color="#1a73e8" style="background:#1a73e8;" onclick="pickSessionColor(this)" title="藍"></div>
         <div class="color-opt" data-color="#8e44ad" style="background:#8e44ad;" onclick="pickSessionColor(this)" title="紫"></div>
       </div>
     </div>
-    <input type="hidden" id="s-color" value="#0f9d58">
+    <input type="hidden" id="s-color" value="#2c5234">
     <button class="btn btn-primary btn-block" onclick="saveSession()">確認儲存</button>
   </div>
 </div>
@@ -1480,8 +1487,19 @@ function renderGoogleCalendarGrid(sessions) {
       ev.title = `${s.name} (${s.timeStart})`;
       ev.textContent = s.name;
       if (s.color) {
-        ev.style.background = s.color;
-        ev.style.color = '#fff';
+        // 根據顏色設定淡色背景和深色字體
+        const colorMap = {
+          '#2c5234': { bg: '#afc8b2', text: '#223924' },    // 深綠
+          '#d93025': { bg: '#ffebee', text: '#c41c3b' },    // 紅
+          '#ef6c00': { bg: '#fff3e0', text: '#e65100' },    // 橘
+          '#f4b400': { bg: '#fffde7', text: '#7a5a00' },    // 黃
+          '#0f9d58': { bg: '#e8f5e9', text: '#0f9d58' },    // 亮綠
+          '#1a73e8': { bg: '#e8eef7', text: '#1a73e8' },    // 藍
+          '#8e44ad': { bg: '#f3e5f5', text: '#8e44ad' }     // 紫
+        };
+        const colors = colorMap[s.color] || { bg: s.color, text: '#fff' };
+        ev.style.background = colors.bg;
+        ev.style.color = colors.text;
       }
       container.appendChild(ev);
     }
