@@ -733,10 +733,7 @@
   </div>
 
   <div class="card" style="padding: 16px; margin-bottom: 24px;">
-    <div class="card-title"><div class="title-text-wrapper">月份日曆檢視</div></div>
     <div class="calendar-month-grid" id="calendar-grid"
-      ontouchstart="calTouchStart(event)"
-      ontouchend="calTouchEnd(event)"
       style="touch-action:pan-y;"></div>
   </div>
 
@@ -1525,15 +1522,16 @@ function scrollToSessionCard(sessionId) {
   }
 }
 
-function calTouchStart(e) { window._calTouchX = e.touches[0].clientX; }
-function calTouchEnd(e) {
-  const dx = e.changedTouches[0].clientX - window._calTouchX;
-  if (Math.abs(dx) < 40) return;
-  if (window._calSwitching) return;
-  window._calSwitching = true;
-  changeSessionMonth(dx < 0 ? 1 : -1);
-  setTimeout(() => { window._calSwitching = false; }, 500);
-}
+// 已移除左右滑動檢視月曆的功能
+// function calTouchStart(e) { window._calTouchX = e.touches[0].clientX; }
+// function calTouchEnd(e) {
+//   const dx = e.changedTouches[0].clientX - window._calTouchX;
+//   if (Math.abs(dx) < 40) return;
+//   if (window._calSwitching) return;
+//   window._calSwitching = true;
+//   changeSessionMonth(dx < 0 ? 1 : -1);
+//   setTimeout(() => { window._calSwitching = false; }, 500);
+// }
 
 function changeSessionMonth(delta) {
   if (window._monthSwitching) return;
