@@ -630,11 +630,11 @@
 
 <nav>
   <div class="nav-inner">
-    <button class="nav-btn active" onclick="switchPage('sessions')" id="nav-sessions">活動管理</button>
-    <button class="nav-btn" onclick="switchPage('members')" id="nav-members">組員管理</button>
-    <button class="nav-btn" onclick="switchPage('attendance')" id="nav-attendance">線上點名</button>
-    <button class="nav-btn" onclick="switchPage('lottery')" id="nav-lottery">抽籤分組</button>
-    <button class="nav-btn" onclick="switchPage('stats')" id="nav-stats">統計報表</button>
+    <button class="nav-btn active" onclick="switchPage('sessions')" id="nav-sessions">活動</button>
+    <button class="nav-btn" onclick="switchPage('members')" id="nav-members">組員</button>
+    <button class="nav-btn" onclick="switchPage('attendance')" id="nav-attendance">點名</button>
+    <button class="nav-btn" onclick="switchPage('lottery')" id="nav-lottery">分組</button>
+    <button class="nav-btn" onclick="switchPage('stats')" id="nav-stats">報表</button>
   </div>
 </nav>
 
@@ -643,7 +643,7 @@
 <!-- ════════════════ 組員管理 ════════════════ -->
 <div id="page-members" class="page">
   <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-    <div style="font-size: 20px; font-weight: 700;">組員管理</div>
+    <div style="font-size: 20px; font-weight: 700;">組員</div>
     <div style="display:flex; gap:8px;">
       <button class="btn btn-secondary btn-sm" onclick="openCourseTypeModal()">新增名單類別</button>
       <button class="btn btn-primary btn-sm" onclick="openMemberModal()">＋ 新增組員</button>
@@ -715,7 +715,7 @@
 <!-- ════════════════ 活動管理 ════════════════ -->
 <div id="page-sessions" class="page">
   <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-    <div style="font-size: 20px; font-weight: 700;">活動管理</div>
+    <div style="font-size: 20px; font-weight: 700;">活動</div>
     <button class="btn btn-primary btn-sm" onclick="openSessionModal()">＋ 新增單堂活動</button>
   </div>
 
@@ -800,7 +800,7 @@
 
 <!-- ════════════════ 抽籤分組 ════════════════ -->
 <div id="page-lottery" class="page">
-  <div style="font-size: 20px; font-weight: 700; margin-bottom:20px;">抽籤分組</div>
+  <div style="font-size: 20px; font-weight: 700; margin-bottom:20px;">分組</div>
 
   <div class="card">
     <div class="card-title"><div class="title-text-wrapper">選擇參與分組的成員</div></div>
@@ -855,7 +855,7 @@
 
 <!-- ════════════════ 統計報表 ════════════════ -->
 <div id="page-stats" class="page">
-  <div style="font-size: 20px; font-weight: 700; margin-bottom:20px;">統計報表</div>
+  <div style="font-size: 20px; font-weight: 700; margin-bottom:20px;">報表</div>
   <div class="card">
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <select id="stats-year" onchange="renderStats()">
@@ -1709,7 +1709,7 @@ function loadAttendance() {
   // 只載入對應名單類別的成員
   const filteredMembers = DB.members.filter(m => (m.courseType || '神鼓陣') === sessionCourseType);
   if (!filteredMembers.length) {
-    list.innerHTML = `<div class="empty-state">「${esc(sessionCourseType)}」名單類別尚無組員，請先至組員管理新增</div>`;
+    list.innerHTML = `<div class="empty-state">「${esc(sessionCourseType)}」名單類別尚無組員，請先至組員新增</div>`;
     updateAttendanceProgress(sid, filteredMembers);
     return;
   }
