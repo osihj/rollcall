@@ -236,20 +236,20 @@
   }
   /* 左側日曆縮圖 */
   .session-date-box {
-    background: var(--accent-light); border: 1px solid rgba(44,82,52,0.15);
+    background: var(--surface); border: 1px solid var(--border);
     border-radius: 10px; text-align: center; flex-shrink: 0;
     width: 54px; overflow: hidden;
   }
   .session-month {
-    font-size: 10px; font-weight: 600; color: var(--accent);
-    background: rgba(44,82,52,0.08);
+    font-size: 10px; font-weight: 600; color: var(--text2);
+    background: var(--surface2);
     padding: 3px 0; display: block; letter-spacing: 0.04em;
   }
   .session-day {
     font-size: 22px; font-weight: 700; line-height: 1;
     font-family: 'Roboto', sans-serif;
-    color: var(--accent); padding: 6px 0 8px;
-    display: block;
+    padding: 6px 0 8px; display: block;
+    background: var(--surface);
   }
   /* 右側內容 */
   .session-info { flex: 1; min-width: 0; }
@@ -264,6 +264,12 @@
     white-space: nowrap; margin-bottom: 8px;
   }
   .session-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .color-opt {
+    width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+    border: 2.5px solid transparent; transition: transform .12s, border-color .12s; flex-shrink: 0;
+  }
+  .color-opt.selected { border-color: var(--color-text-primary); transform: scale(1.15); }
+  .color-opt:hover { transform: scale(1.1); }
   .session-actions .course-badge { cursor: default; font-size: 12px; padding: 3px 10px; }
   .session-actions .btn-sm { font-size: 12px; padding: 5px 12px; }
 
@@ -321,9 +327,8 @@
     .calendar-events-container { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
     .calendar-event-tag {
       width: 7px; height: 7px; min-width: 7px; border-radius: 50%;
-      padding: 0; font-size: 0; background: var(--accent);
+      padding: 0; font-size: 0;
       border: 1.5px solid rgba(255,255,255,0.8);
-      box-shadow: 0 0 0 1px var(--accent);
     }
   }
 
@@ -943,6 +948,18 @@
       <div class="form-group"><label>結束時間</label><select id="s-time-end"></select></div>
     </div>
     <div class="form-group"><label>名單類別 *</label><select id="s-course-type"></select></div>
+    <div class="form-group">
+      <label>活動顏色</label>
+      <div style="display:flex;gap:10px;align-items:center;padding:4px 0;" id="s-color-picker">
+        <div class="color-opt" data-color="#d93025" style="background:#d93025;" onclick="pickSessionColor(this)" title="紅"></div>
+        <div class="color-opt" data-color="#ef6c00" style="background:#ef6c00;" onclick="pickSessionColor(this)" title="橘"></div>
+        <div class="color-opt" data-color="#f4b400" style="background:#f4b400;" onclick="pickSessionColor(this)" title="黃"></div>
+        <div class="color-opt selected" data-color="#0f9d58" style="background:#0f9d58;" onclick="pickSessionColor(this)" title="綠"></div>
+        <div class="color-opt" data-color="#1a73e8" style="background:#1a73e8;" onclick="pickSessionColor(this)" title="藍"></div>
+        <div class="color-opt" data-color="#8e44ad" style="background:#8e44ad;" onclick="pickSessionColor(this)" title="紫"></div>
+      </div>
+    </div>
+    <input type="hidden" id="s-color" value="#0f9d58">
     <button class="btn btn-primary btn-block" onclick="saveSession()">確認儲存</button>
   </div>
 </div>
@@ -1378,13 +1395,13 @@ function renderSessions() {
       <div class="session-item" id="session-card-${s.id}">
         <div class="session-date-box">
           <span class="session-month">${d.getMonth()+1}月</span>
-          <span class="session-day">${d.getDate()}</span>
+          <span class="session-day" style="color:${s.color||'#2c5234'};">${d.getDate()}</span>
         </div>
         <div class="session-info">
           <div class="session-name">${esc(s.name)}</div>
           <div class="session-sub">${s.timeStart}～${s.timeEnd}</div>
           <div class="session-actions">
-            <span class="course-badge">${esc(s.courseType||'神鼓陣')}</span>
+            <span class="course-badge" style="background:var(--surface);color:${s.color||''};border-color:${s.color||''};">${esc(s.courseType||'神鼓陣')}</span>
             <button class="btn btn-secondary btn-sm" onclick="editSession('${s.id}')">編輯</button>
             <button class="btn btn-secondary btn-sm" onclick="duplicateSession('${s.id}')">複製</button>
             <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">刪除</button>
@@ -1451,6 +1468,10 @@ function renderGoogleCalendarGrid(sessions) {
       ev.className = 'calendar-event-tag';
       ev.title = `${s.name} (${s.timeStart})`;
       ev.textContent = s.name;
+      if (s.color) {
+        ev.style.background = s.color;
+        ev.style.color = '#fff';
+      }
       container.appendChild(ev);
     }
   });
@@ -1490,6 +1511,8 @@ function openSessionModal() {
   document.getElementById('s-time-start').value = '19:00';
   document.getElementById('s-time-end').value   = '21:00';
   if (DB.courseTypes.length > 0) document.getElementById('s-course-type').value = DB.courseTypes[0];
+  document.getElementById('s-color').value = '#0f9d58';
+  document.querySelectorAll('.color-opt').forEach((el, i) => el.classList.toggle('selected', i === 0));
   openModal('modal-session');
 }
 
@@ -1503,6 +1526,11 @@ function editSession(id) {
   document.getElementById('s-time-start').value = s.timeStart;
   document.getElementById('s-time-end').value   = s.timeEnd;
   document.getElementById('s-course-type').value = s.courseType || '神鼓陣';
+  const savedColor = s.color || '#0f9d58';
+  document.getElementById('s-color').value = savedColor;
+  document.querySelectorAll('.color-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.color === savedColor);
+  });
   openModal('modal-session');
 }
 
@@ -1511,6 +1539,7 @@ function saveSession() {
   const date = document.getElementById('s-date').value;
   if (!name || !date) { showToast('請填寫完整資訊'); return; }
   const courseType = document.getElementById('s-course-type').value || '神鼓陣';
+  const color = document.getElementById('s-color').value || '#0f9d58';
   const editId = document.getElementById('edit-session-id').value;
   if (editId) {
     const idx = DB.sessions.findIndex(s => s.id === editId);
@@ -1518,7 +1547,7 @@ function saveSession() {
       DB.sessions[idx] = { ...DB.sessions[idx], name, date,
         timeStart: document.getElementById('s-time-start').value,
         timeEnd:   document.getElementById('s-time-end').value,
-        courseType
+        courseType, color
       };
       saveDB(); closeModal('modal-session');
       currentSessionYear  = new Date(date).getFullYear();
@@ -1532,7 +1561,7 @@ function saveSession() {
       name, date,
       timeStart: document.getElementById('s-time-start').value,
       timeEnd:   document.getElementById('s-time-end').value,
-      courseType
+      courseType, color
     });
     saveDB(); closeModal('modal-session');
     currentSessionYear  = new Date(date).getFullYear();
@@ -2130,6 +2159,12 @@ function renderStats() {
       <td class="col-num">${r.l}</td>
       <td class="col-rate"><span class="pct ${r.rate>=80?'high':r.rate>=60?'mid':'low'}">${r.rate}%</span></td>
     </tr>`).join('');
+}
+
+function pickSessionColor(el) {
+  document.querySelectorAll('.color-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('s-color').value = el.dataset.color;
 }
 
 function toggleRowHighlight(row) {
