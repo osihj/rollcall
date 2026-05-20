@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>點名管理系統</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -90,7 +90,7 @@
   .nav-btn.active { color: var(--accent); font-weight: 600; }
 
   /* ── PAGES ── */
-  .page { display: none; padding: 32px 8px 65px; max-width: 760px; margin: 0 auto; flex: 1; }
+  .page { display: none; padding: 32px 4px 65px; max-width: 100%; margin: 0 auto; flex: 1; }
   .page.active { display: block; }
 
   /* ── CARDS ── */
@@ -2143,16 +2143,20 @@ function renderStats() {
 
   let tP = 0, tL = 0;
   let rows = members.map((m, idx) => {
-    let p = 0, l = 0;
+    let p = 0, l = 0, attendedSessions = 0;
     sessions.forEach(s => {
       const v = (DB.records[s.id] || {})[m.id];
-      // absent = 出席（預設）, present = 舊遲到也算出席, leave = 請假, undefined = 出席
-      if (v === 'absent' || v === 'present' || v === undefined) p++;
-      else if (v === 'leave') l++;
+      // 只計算已點過名的記錄
+      if (v !== undefined) {
+        attendedSessions++;
+        if (v === 'absent' || v === 'present') p++;
+        else if (v === 'leave') l++;
+      }
     });
     tP += p; tL += l;
-    const rate = sessions.length ? Math.round(p / sessions.length * 100) : 0;
-    return { m, p, l, rate, sequence: idx + 1 };
+    // 只用已點名的次數計算出席率
+    const rate = attendedSessions > 0 ? Math.round(p / attendedSessions * 100) : 0;
+    return { m, p, l, rate, sequence: idx + 1, attendedSessions };
   });
 
   // 排序
@@ -2167,7 +2171,8 @@ function renderStats() {
     return dir * (av - bv);
   });
 
-  const avgRate = members.length && sessions.length ? Math.round(tP / (sessions.length * members.length) * 100) : 0;
+  const totalAttendedCount = rows.reduce((sum, r) => sum + r.attendedSessions, 0);
+  const avgRate = totalAttendedCount > 0 ? Math.round(tP / totalAttendedCount * 100) : 0;
 
   // 組合月份標題
   const monthLabel = month !== 0
