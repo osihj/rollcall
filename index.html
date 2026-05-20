@@ -353,8 +353,8 @@
 
   /* 手機：活動改為綠色圓點，日期數字優先顯示 */
   @media (max-width: 520px) {
-    .calendar-weekday { font-size: 11px; padding: 6px 2px; }
-    .calendar-day-cell { min-height: 52px; padding: 4px 2px; }
+    .calendar-weekday { font-size: 11px; padding: 8px 0; }
+    .calendar-day-cell { min-height: 60px; padding: 6px 3px; }
     .calendar-day-num { font-size: 12px; width: 22px; height: 22px; }
     .calendar-day-cell.today .calendar-day-num { width: 22px; height: 22px; font-size: 12px; }
     .holiday-label { font-size: 8px; }
@@ -758,7 +758,7 @@
     </div>
   </div>
 
-  <div class="card" style="padding: 8px; margin-bottom: 24px; min-height: 380px; width: 100%;">
+  <div class="card" style="padding: 0; margin-bottom: 24px; min-height: 380px; width: 100%; overflow: hidden;">
     <div class="calendar-month-grid" id="calendar-grid"
       style="touch-action:pan-y;"></div>
   </div>
