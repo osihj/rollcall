@@ -308,10 +308,11 @@
   }
   .calendar-weekday.weekend-head { color: var(--red); background: #fdfaf9; }
   .calendar-day-cell {
-    min-height: 72px; padding: 5px 4px;
+    height: 70px; padding: 5px 4px;
     border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
-    display: flex; flex-direction: column; align-items: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
     background: var(--surface); transition: background 0.2s;
+    overflow: hidden;
   }
   .calendar-day-cell.has-events { cursor: pointer; }
   .calendar-day-cell.has-events:hover { background: var(--accent-light); }
@@ -332,13 +333,15 @@
     display: flex; align-items: center; justify-content: center;
     border-radius: 50%; flex-shrink: 0;
   }
-  .calendar-events-container { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
+  .calendar-events-container { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; flex: 1; max-height: 40px; overflow: hidden; }
   .calendar-event-tag {
     background: #a8c9b0; color: #1a3a22;
-    border-radius: 3px; padding: 1px 4px; font-size: 10px;
+    border-radius: 2px; padding: 1px 3px; font-size: 9px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    cursor: pointer; width: 100%; text-align: center;
+    cursor: pointer; width: 95%; text-align: center; flex-shrink: 0;
+    line-height: 1.2;
   }
+
   /* 手機：活動改為綠色圓點，日期數字優先顯示 */
   @media (max-width: 520px) {
     .calendar-weekday { font-size: 11px; padding: 6px 2px; }
@@ -746,7 +749,7 @@
     </div>
   </div>
 
-  <div class="card" style="padding: 8px; margin-bottom: 24px;">
+  <div class="card" style="padding: 8px; margin-bottom: 24px; overflow: hidden;">
     <div class="calendar-month-grid" id="calendar-grid"
       style="touch-action:pan-y;"></div>
   </div>
