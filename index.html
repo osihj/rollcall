@@ -46,6 +46,7 @@
     font-size: 15px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
   }
 
   /* ── NAV ── */
@@ -75,6 +76,7 @@
     transition: all 0.25s ease;
     flex: 1;
     min-width: 0;
+    touch-action: manipulation;
   }
   .nav-btn i { 
     display: inline-block;
@@ -151,6 +153,7 @@
     border: 1px solid var(--border); cursor: pointer;
     background: var(--surface); color: var(--text);
     transition: all 0.2s ease; white-space: nowrap;
+    touch-action: manipulation;
   }
   .btn:hover { background: var(--surface2); border-color: #d1cdc5; }
   .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
