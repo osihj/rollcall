@@ -253,12 +253,12 @@
       padding: 0 6px; line-height: 1; flex-shrink: 0;
       letter-spacing: 2px;
     }
-    /* 浮動選單 */
+    /* 浮動選單 — fixed 定位避免被父層 overflow 截斷 */
     .member-popover {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      position: fixed;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.14);
-      z-index: 200; display: none; overflow: hidden; min-width: 100px;
+      border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.18);
+      z-index: 9999; display: none; overflow: hidden; min-width: 110px;
     }
     .member-popover.show { display: block; }
     .member-popover-btn {
@@ -370,10 +370,10 @@
     letter-spacing: 2px; touch-action: manipulation;
   }
   .session-popover {
-    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    position: fixed;
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.14);
-    z-index: 200; display: none; overflow: hidden; min-width: 100px;
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.18);
+    z-index: 9999; display: none; overflow: hidden; min-width: 110px;
   }
   .session-popover.show { display: block; }
   .session-popover-btn {
@@ -2478,6 +2478,21 @@ function pickSessionColor(el) {
   document.getElementById('s-color').value = el.dataset.color;
 }
 
+// 通用：依按鈕位置計算 fixed popover 座標（按鈕正下方、靠右對齊、不超出螢幕）
+function positionPopover(btn, el) {
+  const rect = btn.getBoundingClientRect();
+  el.style.visibility = 'hidden';
+  el.style.display = 'block';
+  const pw = el.offsetWidth;
+  el.style.display = 'none';
+  el.style.visibility = '';
+  let left = rect.right - pw;
+  if (left < 8) left = 8;
+  if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+  el.style.top  = (rect.bottom + 6) + 'px';
+  el.style.left = left + 'px';
+  el.style.right = 'auto';
+}
 function toggleSessionPopover(e, id) {
   e.stopPropagation();
   const el = document.getElementById(id);
@@ -2485,7 +2500,7 @@ function toggleSessionPopover(e, id) {
   const isOpen = el.classList.contains('show');
   closeAllSessionPopovers();
   closeAllPopovers();
-  if (!isOpen) el.classList.add('show');
+  if (!isOpen) { positionPopover(e.currentTarget, el); el.classList.add('show'); }
 }
 function closeAllSessionPopovers() {
   document.querySelectorAll('.session-popover.show').forEach(p => p.classList.remove('show'));
@@ -2496,7 +2511,8 @@ function toggleMemberPopover(e, id) {
   if (!el) return;
   const isOpen = el.classList.contains('show');
   closeAllPopovers();
-  if (!isOpen) el.classList.add('show');
+  closeAllSessionPopovers();
+  if (!isOpen) { positionPopover(e.currentTarget, el); el.classList.add('show'); }
 }
 function closeAllPopovers() {
   document.querySelectorAll('.member-popover.show').forEach(p => p.classList.remove('show'));
