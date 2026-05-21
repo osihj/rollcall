@@ -211,7 +211,7 @@
     white-space: nowrap;
   }
   .role-badge {
-    font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px;
     background: var(--accent2-light); color: var(--accent2); border: 1px solid rgba(184,98,29,0.15);
     white-space: nowrap;
   }
@@ -1006,15 +1006,52 @@
       <button class="close-btn" onclick="closeModal('modal-member')">✕</button>
     </div>
     <input type="hidden" id="edit-member-id">
-    <div class="form-group"><label>姓名 *</label><input type="text" id="m-name"></div>
-    <div class="form-group">
-      <label>性別 *</label>
-      <div class="radio-group">
-        <label class="radio-label"><input type="radio" name="m-gender" value="女" checked> 女</label>
-        <label class="radio-label"><input type="radio" name="m-gender" value="男"> 男</label>
+    <!-- 姓名 + 性別同排 -->
+    <div class="form-row" style="align-items:flex-end;">
+      <div class="form-group" style="flex:1 1 0;">
+        <label>姓名 *</label>
+        <input type="text" id="m-name">
+      </div>
+      <div class="form-group" style="flex:1 1 0;">
+        <label>性別 *</label>
+        <div class="radio-group" style="padding:0; gap:12px; height:45px; align-items:center;">
+          <label class="radio-label"><input type="radio" name="m-gender" value="女" checked> 女</label>
+          <label class="radio-label"><input type="radio" name="m-gender" value="男"> 男</label>
+        </div>
       </div>
     </div>
-    <div class="form-group"><label>研修代號</label><input type="text" id="m-id" inputmode="numeric" enterkeyhint="done"></div>
+    <!-- 研修代號 + 館別同排 -->
+    <div class="form-row">
+      <div class="form-group" style="flex:1 1 0;">
+        <label>研修代號</label>
+        <input type="text" id="m-id" inputmode="numeric" enterkeyhint="done">
+      </div>
+      <div class="form-group" style="flex:1 1 0;">
+        <label>館別</label>
+        <select id="m-hall">
+          <option value="">— 未設定 —</option>
+          <option value="內湖">內湖</option>
+          <option value="南港">南港</option>
+          <option value="古亭">古亭</option>
+          <option value="大安">大安</option>
+          <option value="樹林">樹林</option>
+          <option value="桃園">桃園</option>
+          <option value="中壢">中壢</option>
+          <option value="環北">環北</option>
+          <option value="新竹">新竹</option>
+          <option value="竹北">竹北</option>
+          <option value="苗栗">苗栗</option>
+          <option value="台中">台中</option>
+          <option value="虎尾">虎尾</option>
+          <option value="嘉義">嘉義</option>
+          <option value="台南">台南</option>
+          <option value="高雄">高雄</option>
+          <option value="屏東">屏東</option>
+          <option value="宜蘭">宜蘭</option>
+        </select>
+      </div>
+    </div>
+    <!-- 名單類別 + 組員類別同排 -->
     <div class="form-row">
       <div class="form-group">
         <label>名單類別 *</label>
@@ -1364,7 +1401,10 @@ function renderMembers() {
         ${m.note ? `<div class="member-meta">${esc(m.note)}</div>` : ''}
       </div>
       <div style="flex:1.1; display:flex; align-items:center; min-width:0;" class="member-desktop-only">
-        <span style="font-size:12px; color:var(--text3); font-family:'Roboto','Noto Sans TC',sans-serif;">${m.memberId ? esc(m.memberId) : '—'}</span>
+        <div>
+          <span style="font-size:12px; color:var(--text3); font-family:'Roboto','Noto Sans TC',sans-serif;">${m.memberId ? esc(m.memberId) : '—'}</span>
+          ${m.hall ? `<span style="font-size:11px; color:var(--text3); margin-left:4px;">${esc(m.hall)}</span>` : ''}
+        </div>
       </div>
       <div style="flex:1.1; display:flex; align-items:center; min-width:0;" class="member-desktop-only">
         <span class="course-badge">${esc(m.courseType || '神鼓陣')}</span>
@@ -1382,6 +1422,7 @@ function renderMembers() {
           <span style="font-weight:700; font-size:15px;">${esc(m.name)}</span>
           <span class="gender-tag">(${esc(m.gender || '女')})</span>
           ${m.memberId ? `<span style="font-size:12px; color:var(--text3); font-family:'Roboto',sans-serif;">${esc(m.memberId)}</span>` : ''}
+          ${m.hall ? `<span style="font-size:12px; color:var(--text3);">${esc(m.hall)}</span>` : ''}
         </div>
         <div class="member-item-row2">
           <span class="course-badge">${esc(m.courseType || '神鼓陣')}</span>
@@ -1404,6 +1445,7 @@ function openMemberModal() {
   document.getElementById('m-name').value = '';
   document.querySelector('input[name="m-gender"][value="女"]').checked = true;
   document.getElementById('m-id').value   = '';
+  document.getElementById('m-hall').value  = '';
   document.getElementById('m-role').value = '組員';
   document.getElementById('m-note').value = '';
   if (DB.courseTypes.length > 0) document.getElementById('m-course-type').value = DB.courseTypes[0];
@@ -1418,6 +1460,7 @@ function editMember(id) {
   document.getElementById('m-name').value = m.name;
   document.querySelector(`input[name="m-gender"][value="${m.gender === '男' ? '男' : '女'}"]`).checked = true;
   document.getElementById('m-id').value          = m.memberId || '';
+  document.getElementById('m-hall').value         = m.hall || '';
   document.getElementById('m-course-type').value = m.courseType || '神鼓陣';
   document.getElementById('m-role').value        = m.role || '組員';
   document.getElementById('m-note').value        = m.note || '';
@@ -1432,6 +1475,7 @@ function saveMember() {
     name,
     gender:     document.querySelector('input[name="m-gender"]:checked').value,
     memberId:   document.getElementById('m-id').value.trim(),
+    hall:       document.getElementById('m-hall').value.trim(),
     courseType: document.getElementById('m-course-type').value || '神鼓陣',
     role:       document.getElementById('m-role').value || '組員',
     note:       document.getElementById('m-note').value.trim()
@@ -1461,14 +1505,38 @@ function importMembersSmart() {
   const role       = document.getElementById('import-role-type').value || '組員';
   if (!text) { showToast('請輸入匯入名單內容'); return; }
 
-  let clean = text.replace(/[0-9１２３４５６７８９０\.\、\，\,\;\批\-\_\—\/\（\）\(\)\s]+/g, ' ');
-  const names = clean.split(' ').filter(n => n.trim().length >= 2 && n.trim().length <= 5);
+  // 逐行解析：先嘗試辨識「數字 姓名」格式
+  const lines = text.split(/[\n,，、;；]+/).map(s => s.trim()).filter(Boolean);
+  const parsed = [];
+  lines.forEach(line => {
+    // 匹配：可選序號 + 可選研修代號(3-5位數) + 姓名
+    // 例：「1031 彭月秋」「3. 1031 彭月秋」「彭月秋」
+    const m = line.match(/^(?:\d+[.、\s])?\s*(\d{3,5})\s+([\u4e00-\u9fff·‧]{2,5})/)
+           || line.match(/^(?:\d+[.、\s])?\s*([\u4e00-\u9fff·‧]{2,5})\s*(\d{3,5})?/);
+    if (!m) return;
+    let memberId = '', name = '';
+    if (m[0].match(/^(?:\d+[.、\s])?\s*\d{3,5}\s+[\u4e00-\u9fff]/)) {
+      // 數字在前：研修代號 姓名
+      const parts = line.replace(/^\d+[.、\s]+/, '').trim().split(/\s+/);
+      memberId = parts[0];
+      name = parts[1] || '';
+    } else {
+      // 姓名在前或無代號
+      const noSeq = line.replace(/^\d+[.、\s]+/, '').trim();
+      const parts = noSeq.split(/\s+/);
+      // 第一個中文段為姓名，若有數字段則為研修代號
+      const chinesePart = parts.find(p => /^[\u4e00-\u9fff·‧]{2,5}$/.test(p)) || '';
+      const numPart     = parts.find(p => /^\d{3,5}$/.test(p)) || '';
+      name = chinesePart;
+      memberId = numPart;
+    }
+    if (name.length >= 2) parsed.push({ name, memberId });
+  });
 
   let count = 0;
-  names.forEach(name => {
-    const clean = name.trim();
-    if (DB.members.some(m => m.name === clean)) return; // 跳過重複
-    DB.members.push({ id: 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), name: clean, gender: '女', memberId: '', courseType, role, note: '' });
+  parsed.forEach(({ name, memberId }) => {
+    if (DB.members.some(m => m.name === name)) return; // 跳過重複
+    DB.members.push({ id: 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), name, gender: '女', memberId, hall: '', courseType, role, note: '' });
     count++;
   });
 
