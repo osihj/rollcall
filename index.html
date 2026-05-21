@@ -1429,29 +1429,29 @@ function renderSessions() {
     const collapsedBorderStyle = hasContent ? `border-left: 3px solid ${borderColor};` : '';
     return `
       <div class="session-item" id="session-card-${s.id}" style="margin-bottom:12px; padding:0;">
-        <div onclick="const detail = this.parentElement.querySelector('.session-detail'); detail.style.display = detail.style.display === 'none' ? 'block' : 'none'; const arrow = this.querySelector('.session-toggle-arrow'); arrow.style.transform = detail.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';" style="display:flex; align-items:flex-start; gap:14px; padding:16px; background:var(--surface); border-radius:12px 12px 0 0; border:1px solid var(--border); ${borderStyle} cursor:pointer; transition:all 0.3s ease;">
+        <div onclick="const detail = this.parentElement.querySelector('.session-detail'); detail.style.display = detail.style.display === 'none' ? 'block' : 'none'; const arrow = this.querySelector('.session-toggle-arrow'); arrow.style.transform = detail.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';" style="display:flex; flex-direction:row; align-items:flex-start; gap:12px; padding:14px; background:var(--surface); border-radius:12px 12px 0 0; border:1px solid var(--border); ${borderStyle} cursor:pointer; transition:all 0.3s ease; flex-wrap: wrap;">
           <div class="session-date-box" style="background:var(--surface); border:1px solid var(--border); border-radius:10px; text-align:center; flex-shrink:0; width:54px; overflow:hidden;">
             <span class="session-month" style="font-size:10px; font-weight:600; color:var(--text2); background:var(--surface2); padding:3px 0; display:block; letter-spacing:0.04em;">${d.getMonth()+1}月</span>
             <span class="session-day" style="font-size:22px; font-weight:700; line-height:1; font-family:'Roboto', sans-serif; padding:6px 0 8px; display:block; color:${borderColor};">${d.getDate()}</span>
           </div>
-          <div style="flex:1; min-width:0;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px;">
-              <div class="session-name" style="font-weight:700; font-size:15px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(s.name)}</div>
-              <span class="course-badge" style="background:var(--surface); color:${borderColor}; border:0.5px solid var(--border); font-size:12px; padding:5px 12px; border-radius:8px; font-weight:500; cursor:default; flex-shrink:0;">${esc(s.courseType||'神鼓陣')}</span>
+          <div style="flex:1; min-width:200px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px; flex-wrap:wrap;">
+              <div class="session-name" style="font-weight:700; font-size:15px; color:var(--text); white-space:normal; word-break:break-word;">${esc(s.name)}</div>
+              <span class="course-badge" style="background:var(--surface); color:${borderColor}; border:0.5px solid var(--border); font-size:11px; padding:4px 10px; border-radius:8px; font-weight:500; cursor:default; flex-shrink:0; white-space:nowrap;">${esc(s.courseType||'神鼓陣')}</span>
             </div>
-            <div class="session-sub" style="font-size:13px; color:var(--text2); font-family:'Roboto', 'Noto Sans TC', sans-serif; white-space:nowrap;">${s.timeStart}～${s.timeEnd}</div>
+            <div class="session-sub" style="font-size:12px; color:var(--text2); font-family:'Roboto', 'Noto Sans TC', sans-serif; white-space:nowrap;">${s.timeStart}～${s.timeEnd}</div>
           </div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start; flex-shrink:0;">
-            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editSession('${s.id}')">編輯</button>
-            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); duplicateSession('${s.id}')">複製</button>
-            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteSession('${s.id}')">刪除</button>
-            <div class="session-toggle-arrow" style="font-size:16px; transition:transform 0.3s ease; margin-left:4px; ${hasContent ? 'transform:rotate(180deg);' : ''}">${hasContent ? '▼' : '▼'}</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start; flex-shrink:0; width:100%; min-width:fit-content;">
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editSession('${s.id}')" style="font-size:11px; padding:4px 10px;">編輯</button>
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); duplicateSession('${s.id}')" style="font-size:11px; padding:4px 10px;">複製</button>
+            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteSession('${s.id}')" style="font-size:11px; padding:4px 10px;">刪除</button>
+            <div class="session-toggle-arrow" style="font-size:14px; transition:transform 0.3s ease; margin-left:auto; ${hasContent ? 'transform:rotate(180deg);' : ''}">${hasContent ? '▼' : '▼'}</div>
           </div>
         </div>
-        <div class="session-detail" style="display:${hasContent ? 'block' : 'none'}; padding:16px; background:var(--bg); border:1px solid var(--border); border-top:none; border-radius:0 0 12px 12px; ${collapsedBorderStyle}">
-          <div style="font-size:13px; line-height:1.6;">
+        <div class="session-detail" style="display:${hasContent ? 'block' : 'none'}; padding:12px 14px; background:var(--bg); border:1px solid var(--border); border-top:none; border-radius:0 0 12px 12px; ${collapsedBorderStyle}">
+          <div style="font-size:12px; line-height:1.6;">
             ${s.helper ? `<div style="color:var(--text2); margin-bottom:4px;">值班小幫手：${esc(s.helper)}</div>` : ''}
-            ${s.notes ? `<div style="color:var(--text2);">備註：${esc(s.notes)}</div>` : ''}
+            ${s.notes ? `<div style="color:var(--text2); word-break:break-word;">${esc(s.notes)}</div>` : ''}
             ${!s.helper && !s.notes ? '<div style="color:var(--text2);">無額外資訊</div>' : ''}
           </div>
         </div>
