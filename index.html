@@ -2524,44 +2524,86 @@ function renderStats() {
   // 排序活動日期
   const sortedSessions = [...sessions].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // 計算每場活動出席人數
+  // 每場活動的「應到成員」= 該活動 courseType 對應的成員名單
+  const sessionMembers = {};
+  sortedSessions.forEach(s => {
+    const ct = s.courseType || '神鼓陣';
+    sessionMembers[s.id] = DB.members.filter(m => (m.courseType || '神鼓陣') === ct);
+  });
+
+  // 每場活動出席人數（依該場活動自己的成員名單計算）
   const sessionAttendCounts = {};
+  const sessionHasRecord = {};
   sortedSessions.forEach(s => {
     const rec = DB.records[s.id] || {};
+    const hasRec = Object.keys(rec).length > 0;
+    sessionHasRecord[s.id] = hasRec;
     let cnt = 0;
-    members.forEach(m => {
-      if (m.id in rec) {
+    sessionMembers[s.id].forEach(m => {
+      // 有點名紀錄時：有記錄且為出席才算；無點名紀錄時不計入
+      if (hasRec) {
         const v = rec[m.id];
         if (v === 'absent' || v === 'present' || v === undefined) cnt++;
       }
     });
-    sessionAttendCounts[s.id] = cnt;
+    sessionAttendCounts[s.id] = hasRec ? cnt : null; // null = 未點名
   });
 
-  // 計算每個成員資料
-  let tP = 0, tL = 0;
+  // 報表顯示的成員：courseTypeFilter=ALL → 全部成員；否則只篩選該類別
+  const members = courseTypeFilter === 'ALL'
+    ? DB.members
+    : DB.members.filter(m => (m.courseType || '神鼓陣') === courseTypeFilter);
+
+  // 計算每位成員的出席/請假（只統計「屬於他類別的活動」）
   let rows = members.map((m, idx) => {
+    const memberCt = m.courseType || '神鼓陣';
     let p = 0, l = 0;
     const sessionStatuses = {};
     sortedSessions.forEach(s => {
+      const sessionCt = s.courseType || '神鼓陣';
+      if (sessionCt !== memberCt) {
+        // 此活動不屬於此成員的類別，不計入
+        sessionStatuses[s.id] = 'diff-type';
+        return;
+      }
       const rec = DB.records[s.id];
       if (rec && m.id in rec) {
         const v = rec[m.id];
         if (v === 'absent' || v === 'present' || v === undefined) { p++; sessionStatuses[s.id] = 'present'; }
         else if (v === 'leave') { l++; sessionStatuses[s.id] = 'leave'; }
+      } else if (rec && Object.keys(rec).length > 0) {
+        // 該場有點名但此人無記錄（預設出席）
+        p++;
+        sessionStatuses[s.id] = 'present';
       } else {
-        sessionStatuses[s.id] = 'nodata';
+        sessionStatuses[s.id] = 'nodata'; // 未點名
       }
     });
-    tP += p; tL += l;
-    let sessionsForThisMember = 0;
-    sortedSessions.forEach(s => {
-      const rec = DB.records[s.id];
-      if (rec && m.id in rec) sessionsForThisMember++;
-    });
-    const rate = sessionsForThisMember > 0 ? Math.round(p / sessionsForThisMember * 100) : 0;
-    return { m, p, l, rate, sequence: idx + 1, sessionStatuses };
+    // 分母 = 屬於此成員類別且已點名的場次
+    const denom = sortedSessions.filter(s => {
+      const sessionCt = s.courseType || '神鼓陣';
+      return sessionCt === memberCt && sessionHasRecord[s.id];
+    }).length;
+    const rate = denom > 0 ? Math.round(p / denom * 100) : 0;
+    return { m, p, l, rate, denom, sequence: idx + 1, sessionStatuses };
   });
+
+  // 月平均出席人數：有點名場次的出席人數加總 / 有點名場次數
+  const recordedSessions = sortedSessions.filter(s => sessionHasRecord[s.id]);
+  const avgAttend = recordedSessions.length > 0
+    ? Math.round(recordedSessions.reduce((sum, s) => sum + (sessionAttendCounts[s.id] || 0), 0) / recordedSessions.length)
+    : 0;
+
+  // 月平均出席率：各場（出席人數/應到人數）的平均
+  let rateSum = 0, rateCount = 0;
+  recordedSessions.forEach(s => {
+    const total = sessionMembers[s.id].length;
+    if (total > 0) {
+      rateSum += (sessionAttendCounts[s.id] || 0) / total * 100;
+      rateCount++;
+    }
+  });
+  const avgRate = rateCount > 0 ? Math.round(rateSum / rateCount) : 0;
 
   // 排序
   const { key, dir } = statsSort;
@@ -2575,12 +2617,6 @@ function renderStats() {
     else                     { av = a.sequence; bv = b.sequence; }
     return dir * (av - bv);
   });
-
-  const avgRate = tP + tL > 0 ? Math.round(tP / (tP + tL) * 100) : 0;
-  const totalMembers = members.length;
-  const avgAttend = sortedSessions.length > 0
-    ? Math.round(sortedSessions.reduce((s, sess) => s + (sessionAttendCounts[sess.id] || 0), 0) / sortedSessions.length)
-    : 0;
 
   // 月份標籤
   const monthLabel = month !== 0 ? `${year}年${month}月` : `${year}年度`;
@@ -2631,8 +2667,9 @@ function renderStats() {
     const d = new Date(s.date);
     const mm = d.getMonth()+1;
     const dd = String(d.getDate()).padStart(2,'0');
-    const cnt = sessionAttendCounts[s.id] || 0;
-    theadHtml += `<th class="col-session-date"><span class="session-date-th-date">${mm}/${dd}</span><span class="session-date-th-count">出席:${cnt}</span></th>`;
+    const cnt = sessionAttendCounts[s.id];
+    const cntLabel = cnt !== null ? `出席:${cnt}` : `未點名`;
+    theadHtml += `<th class="col-session-date"><span class="session-date-th-date">${mm}/${dd}</span><span class="session-date-th-count">${cntLabel}</span></th>`;
   });
 
   theadHtml += `<th class="col-stats-rate" onclick="sortStats('rate')" style="text-align:center; cursor:pointer;">出席率 <span class="sort-indicator" id="sort-rate">${statsSort.key==='rate'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th></tr>`;
@@ -2640,16 +2677,19 @@ function renderStats() {
 
   // 重建 tbody
   tbody.innerHTML = rows.map((r, rowIdx) => {
-    const rateClass = r.rate >= 100 ? 'high' : r.rate >= 60 ? 'mid' : 'low';
-    const rateBgClass = r.rate >= 100 ? 'rate-cell-high' : r.rate >= 60 ? 'rate-cell-mid' : 'rate-cell-low';
-    const total = r.p + r.l;
+    const rateClass = r.denom === 0 ? 'mid' : r.rate >= 100 ? 'high' : r.rate >= 60 ? 'mid' : 'low';
+    const rateBgClass = r.denom === 0 ? '' : r.rate >= 100 ? 'rate-cell-high' : r.rate >= 60 ? 'rate-cell-mid' : 'rate-cell-low';
 
     let sessionCells = sortedSessions.map(s => {
       const status = r.sessionStatuses[s.id];
-      if (status === 'present') return `<td class="td-attend present-cell">✓</td>`;
-      if (status === 'leave')   return `<td class="td-attend absent-cell">✕</td>`;
+      if (status === 'present')   return `<td class="td-attend present-cell">✓</td>`;
+      if (status === 'leave')     return `<td class="td-attend absent-cell">✕</td>`;
+      if (status === 'diff-type') return `<td class="td-attend nodata-cell" style="font-size:10px; color:var(--border);">╌</td>`;
       return `<td class="td-attend nodata-cell">—</td>`;
     }).join('');
+
+    const rateText = r.denom > 0 ? `${r.rate}%` : '—';
+    const subText  = r.denom > 0 ? `(${r.p}/${r.denom})` : '';
 
     return `<tr class="clickable-row" onclick="toggleRowHighlight(this)">
       <td class="col-stats-seq" style="text-align:center;">
@@ -2660,8 +2700,8 @@ function renderStats() {
       <td class="col-stats-hall" style="color:var(--text3); font-size:13px;">${r.m.hall ? esc(r.m.hall) : '<span style="color:var(--border)">—</span>'}</td>
       ${sessionCells}
       <td class="col-stats-rate ${rateBgClass}" style="text-align:center; padding:10px 8px !important;">
-        <span class="rate-cell-val ${rateClass}">${r.rate}%</span>
-        <span class="rate-cell-sub">(${r.p}/${total || sortedSessions.length})</span>
+        <span class="rate-cell-val ${rateClass}">${rateText}</span>
+        <span class="rate-cell-sub">${subText}</span>
       </td>
     </tr>`;
   }).join('');
