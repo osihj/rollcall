@@ -856,8 +856,14 @@
     white-space: nowrap;
   }
   .stats-cell-center {
-    text-align: center;
-    vertical-align: middle;
+    text-align: center !important;
+    vertical-align: middle !important;
+  }
+  #stats-table .stats-name-cell,
+  #stats-table .course-badge,
+  #stats-table .role-badge {
+    margin-left: auto;
+    margin-right: auto;
   }
 
   /* ── STAT CARD COMPACT（報表用） ── */
@@ -877,7 +883,18 @@
 
   /* ── STATS TABLE 行距調整 ── */
   #stats-table td { padding: 10px 6px; }
-  #stats-table th { padding: 10px 6px; text-align: center; vertical-align: middle; }
+  #stats-table th { padding: 10px 6px; text-align: center !important; vertical-align: middle; }
+  #stats-table th[class*="col-stats-"],
+  #stats-table td[class*="col-stats-"],
+  #stats-table .col-session-date,
+  #stats-table .td-attend {
+    text-align: center !important;
+    vertical-align: middle !important;
+  }
+  #stats-table th[class*="col-stats-"],
+  #stats-table td[class*="col-stats-"] {
+    font-size: 13px;
+  }
   #stats-table .col-stats-seq { padding-left: 5px; padding-right: 5px; }
   #stats-table .td-attend { padding: 10px 3px !important; }
   #stats-table .col-stats-name,
@@ -885,8 +902,8 @@
   #stats-table .col-stats-hall,
   #stats-table .col-stats-course,
   #stats-table .col-stats-role {
-    text-align: center;
-    vertical-align: middle;
+    text-align: center !important;
+    vertical-align: middle !important;
   }
   @media (max-width: 520px) {
     #stats-table {
