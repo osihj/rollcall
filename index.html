@@ -306,6 +306,8 @@
     font-family: 'Roboto', 'Noto Sans TC', sans-serif;
     white-space: nowrap;
   }
+
+  /* 桌機：按鈕在右側同一行 */
   .session-header-actions {
     display: flex; gap: 6px; align-items: center; flex-shrink: 0;
     margin-left: auto;
@@ -319,6 +321,18 @@
     flex-shrink: 0; margin-left: 4px;
   }
   .session-item.open .session-toggle-icon { transform: rotate(180deg); }
+
+  /* 手機：按鈕移到第二行，獨立於資訊下方 */
+  @media (max-width: 520px) {
+    .session-header { flex-wrap: wrap; align-items: flex-start; position: relative; }
+    .session-info { flex-basis: calc(100% - 82px); min-width: 0; }
+    .session-header-actions {
+      width: 100%; margin-left: 0;
+      padding-left: 68px;
+      flex-wrap: wrap;
+    }
+    .session-toggle-icon { position: absolute; top: 14px; right: 16px; margin-left: 0; }
+  }
 
   /* 摺疊區域 */
   .session-collapse {
