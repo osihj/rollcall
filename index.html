@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>活動行事曆</title>
+<title>點名管理系統</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -911,7 +911,7 @@
 <!-- Firebase Login UI -->
 <div id="login-screen" style="position:fixed;inset:0;background:#f8f7f4;display:flex;justify-content:center;align-items:center;z-index:99999;">
   <div style="background:#fff;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);text-align:center;width:90%;max-width:320px;">
-    <div style="font-size:24px;font-weight:700;margin-bottom:10px;">活動行事曆</div>
+    <div style="font-size:24px;font-weight:700;margin-bottom:10px;">點名管理系統</div>
     <div style="font-size:14px;color:#666;margin-bottom:24px;">請使用 Google 帳號登入</div>
     <button onclick="googleLogin()" style="width:100%;padding:14px;border:none;border-radius:10px;background:#2c5234;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">
       使用 Google 登入
@@ -922,10 +922,7 @@
 <div id="app-container" style="display:none;">
 
 <div id="user-bar" style="position:fixed;top:0;left:0;right:0;height:50px;background:#fff;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;padding:0 16px;z-index:1000;">
-  <div style="font-size:14px;display:flex;align-items:center;gap:8px;">
-  <i class="fa-solid fa-star" style="font-size:13px;color:#b8621d;"></i>
-  <span id="user-name"></span>
-</div>
+  <div style="font-size:14px;">👤 <span id="user-name"></span></div>
   <button onclick="logout()" style="border:none;background:#eee;padding:8px 12px;border-radius:8px;cursor:pointer;">登出</button>
 </div>
 
@@ -1017,7 +1014,7 @@
 <div id="page-sessions" class="page">
   <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <div></div>
-    <button class="btn btn-primary btn-sm admin-only" onclick="openSessionModal()">＋ 新增單堂活動</button>
+    <button class="btn btn-primary btn-sm" onclick="openSessionModal()">＋ 新增單堂活動</button>
   </div>
 
   <div class="card" style="padding: 16px 20px; margin-bottom:16px;">
@@ -2943,8 +2940,6 @@ window.logout = async function () {
   await signOut(auth);
 };
 
-window.IS_ADMIN = false;
-
 onAuthStateChanged(auth, (user) => {
 
   if (!user) {
@@ -2960,11 +2955,6 @@ onAuthStateChanged(auth, (user) => {
     user.displayName || user.email;
 
   const isAdmin = user.email === ADMIN_EMAIL;
-  window.IS_ADMIN = isAdmin;
-
-  document.querySelectorAll(".admin-only").forEach(el => {
-    el.style.display = isAdmin ? "" : "none";
-  });
 
   if (!isAdmin) {
 
@@ -2978,10 +2968,6 @@ onAuthStateChanged(auth, (user) => {
       if (el) el.style.display = "none";
     });
 
-    document.querySelectorAll('[onclick*="editSession"], [onclick*="copySession"], [onclick*="deleteSession"], [onclick*="openSessionModal"]').forEach(el => {
-      el.style.display = "none";
-    });
-
     if (typeof switchPage === "function") {
       switchPage("sessions");
     }
@@ -2989,20 +2975,6 @@ onAuthStateChanged(auth, (user) => {
 });
 
 window.firebaseDB = db;
-</script>
-
-
-<script>
-document.addEventListener("click", function(e) {
-  if (!window.IS_ADMIN) {
-    const btn = e.target.closest('[onclick*="editSession"], [onclick*="copySession"], [onclick*="deleteSession"], [onclick*="openSessionModal"]');
-    if (btn) {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }
-  }
-}, true);
 </script>
 
 </body>
