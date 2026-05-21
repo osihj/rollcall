@@ -785,6 +785,67 @@
   .role-badge-leader  { background: #fdf2f8; color: #9d174d; border: 1px solid rgba(157,23,77,0.18); }
   .role-badge-window  { background: #eff6ff; color: #1d4ed8; border: 1px solid rgba(29,78,216,0.18); }
   .role-badge-member  { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+
+  /* ── STATS MONTH BUTTONS ── */
+  .stats-month-btn {
+    padding: 7px 16px; border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text2);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; white-space: nowrap;
+    transition: all 0.2s; font-family: inherit;
+  }
+  .stats-month-btn:hover { background: var(--surface2); border-color: #d1cdc5; }
+  .stats-month-btn.active {
+    background: var(--text); color: #fff;
+    border-color: var(--text);
+  }
+
+  /* ── STATS TABLE: session date header ── */
+  .col-session-date {
+    min-width: 60px; text-align: center;
+    white-space: nowrap;
+    background: var(--surface2);
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    cursor: default !important;
+    vertical-align: middle;
+    padding: 10px 6px !important;
+  }
+  .col-session-date:hover { background: var(--surface2) !important; }
+  .session-date-th-date { font-size: 13px; font-weight: 700; color: var(--text); display: block; line-height: 1.3; }
+  .session-date-th-count { font-size: 11px; font-weight: 500; color: var(--text3); display: block; margin-top: 2px; }
+
+  /* attend cell */
+  .td-attend { text-align: center; font-size: 15px; padding: 12px 6px !important; }
+  .td-attend.present-cell { color: #2c7a3f; }
+  .td-attend.absent-cell  { color: var(--red); }
+  .td-attend.nodata-cell  { color: var(--border); font-size: 12px; }
+
+  /* ── STATS RATE CELL ── */
+  .rate-cell-high { background: #dbeafe !important; }
+  .rate-cell-mid  { background: var(--yellow-light) !important; }
+  .rate-cell-low  { background: var(--red-light) !important; }
+  .rate-cell-val {
+    display: block;
+    font-family: 'Roboto', sans-serif; font-weight: 700;
+    font-size: 13px; line-height: 1.4;
+  }
+  .rate-cell-val.high { color: #1e40af; }
+  .rate-cell-val.mid  { color: var(--yellow); }
+  .rate-cell-val.low  { color: var(--red); }
+  .rate-cell-sub {
+    display: block; font-size: 11px; font-weight: 500;
+    opacity: 0.72; margin-top: 1px;
+    font-family: 'Roboto', sans-serif;
+  }
+
+  /* Stats col widths */
+  .col-stats-seq  { width: 36px; min-width: 36px; text-align: center; white-space: nowrap; }
+  .col-stats-name { min-width: 72px; white-space: nowrap; }
+  .col-stats-id   { min-width: 74px; white-space: nowrap; font-family: 'Roboto','Noto Sans TC',sans-serif; }
+  .col-stats-hall { min-width: 56px; white-space: nowrap; }
+  .col-stats-rate { min-width: 90px; text-align: center; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -1008,49 +1069,54 @@
 
 <!-- ════════════════ 統計報表 ════════════════ -->
 <div id="page-stats" class="page">
-  <div class="card">
+
+  <!-- 篩選列：年份 + 名單類別 -->
+  <div class="card" style="padding:16px 20px; margin-bottom:16px;">
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-      <select id="stats-year" onchange="renderStats()">
+      <select id="stats-year" onchange="renderStats()" style="flex:0 0 auto; width:auto;">
+        <option value="2024">2024 年</option>
         <option value="2025">2025 年</option>
         <option value="2026" selected>2026 年</option>
         <option value="2027">2027 年</option>
       </select>
-      <select id="stats-month" onchange="renderStats()">
-        <option value="0">整年度數據</option>
-        <option value="1">1 月</option><option value="2">2 月</option><option value="3">3 月</option>
-        <option value="4">4 月</option><option value="5">5 月</option><option value="6">6 月</option>
-        <option value="7">7 月</option><option value="8">8 月</option><option value="9">9 月</option>
-        <option value="10">10 月</option><option value="11">11 月</option><option value="12">12 月</option>
-      </select>
-      <select id="stats-course-type" onchange="renderStats()">
+      <select id="stats-course-type" onchange="renderStats()" style="flex:1; min-width:120px;">
         <option value="ALL">全部名單類別</option>
       </select>
-      <span style="font-size:12px; color:var(--text3);">點欄位標題可排序 ｜ 紅底 = 出席率低於 60%</span>
     </div>
   </div>
+
+  <!-- 月份選擇按鈕 -->
+  <div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <div style="font-size:12px; font-weight:600; color:var(--text3); margin-bottom:10px; letter-spacing:0.06em;">選擇月份</div>
+    <div id="stats-month-btns" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+  </div>
+
+  <!-- 統計卡片 -->
   <div id="stats-summary" class="stats-grid" style="margin-bottom:16px;"></div>
+
+  <!-- 活動明細點選區 -->
   <div id="stats-sessions-info" style="display:none; margin-bottom:16px;"></div>
-  <div class="card" style="padding:16px 0;">
+
+  <!-- 報表主表格 -->
+  <div class="card" style="padding:0; overflow:hidden;">
     <div class="table-wrap">
       <table id="stats-table">
-        <thead>
+        <thead id="stats-thead">
           <tr>
-            <th class="col-seq" onclick="sortStats('seq')" style="text-align:center;">序 <span class="sort-indicator" id="sort-seq"></span></th>
-            <th class="col-name" onclick="sortStats('name')" style="text-align:center;">姓名 <span class="sort-indicator" id="sort-name"></span></th>
-            <th class="col-gender" onclick="sortStats('gender')" style="text-align:center; cursor:pointer;">性別 <span class="sort-indicator" id="sort-gender"></span></th>
-            <th class="col-id" onclick="sortStats('id')" style="text-align:center; cursor:pointer;">研修代號 <span class="sort-indicator" id="sort-id"></span></th>
-            <th class="col-id" onclick="sortStats('hall')" style="text-align:center; cursor:pointer;">館別 <span class="sort-indicator" id="sort-hall"></span></th>
-            <th class="col-type" onclick="sortStats('type')" style="text-align:center; cursor:pointer;">名單類別 <span class="sort-indicator" id="sort-type"></span></th>
-            <th class="col-role" onclick="sortStats('role')" style="text-align:center; cursor:pointer;">身分 <span class="sort-indicator" id="sort-role"></span></th>
-            <th class="col-num" onclick="sortStats('present')" style="text-align:center;">出席 <span class="sort-indicator" id="sort-present"></span></th>
-            <th class="col-num" onclick="sortStats('leave')" style="text-align:center;">請假 <span class="sort-indicator" id="sort-leave"></span></th>
-            <th class="col-rate" onclick="sortStats('rate')" style="text-align:center;">出席率 <span class="sort-indicator" id="sort-rate"></span></th>
+            <th class="col-seq" onclick="sortStats('seq')" style="text-align:center;">序 <span class="sort-indicator" id="sort-seq">⇅</span></th>
+            <th class="col-name" onclick="sortStats('name')">姓名 <span class="sort-indicator" id="sort-name">⇅</span></th>
+            <th class="col-id" onclick="sortStats('id')" style="cursor:pointer;">研修代號 <span class="sort-indicator" id="sort-id">⇅</span></th>
+            <th class="col-id" onclick="sortStats('hall')" style="cursor:pointer;">館別 <span class="sort-indicator" id="sort-hall">⇅</span></th>
+            <!-- 活動日期欄位由 JS 動態插入 -->
+            <th class="col-rate" onclick="sortStats('rate')" style="text-align:center; cursor:pointer;">出席率 <span class="sort-indicator" id="sort-rate">⇅</span></th>
           </tr>
         </thead>
         <tbody id="stats-tbody"></tbody>
       </table>
     </div>
   </div>
+  <!-- hidden select for backward compat -->
+  <select id="stats-month" style="display:none;"><option value="0" selected>0</option></select>
 </div>
 
 <!-- ════════════════ MODALS ════════════════ -->
@@ -2352,6 +2418,35 @@ function copyLotteryResult(btn, text) {
 /* ══════════════════════════════════════════
    統計報表
 ══════════════════════════════════════════ */
+// 目前選中的報表月份（0=全年）
+let statsMonth = 0;
+
+function buildStatsMonthBtns() {
+  const year = parseInt(document.getElementById('stats-year').value);
+  const container = document.getElementById('stats-month-btns');
+  if (!container) return;
+
+  // 找出這一年有資料的月份
+  const monthsWithData = new Set();
+  DB.sessions.forEach(s => {
+    const d = new Date(s.date);
+    if (d.getFullYear() === year) monthsWithData.add(d.getMonth() + 1);
+  });
+
+  let html = `<button class="stats-month-btn ${statsMonth === 0 ? 'active' : ''}" onclick="setStatsMonth(0)">全年</button>`;
+  for (let m = 1; m <= 12; m++) {
+    if (monthsWithData.has(m)) {
+      html += `<button class="stats-month-btn ${statsMonth === m ? 'active' : ''}" onclick="setStatsMonth(${m})">${year}年${m}月</button>`;
+    }
+  }
+  container.innerHTML = html;
+}
+
+function setStatsMonth(m) {
+  statsMonth = m;
+  renderStats();
+}
+
 function sortStats(key) {
   if (statsSort.key === key) { statsSort.dir *= -1; }
   else { statsSort.key = key; statsSort.dir = 1; }
@@ -2360,11 +2455,14 @@ function sortStats(key) {
 
 function renderStats() {
   const year  = parseInt(document.getElementById('stats-year').value);
-  const month = parseInt(document.getElementById('stats-month').value);
+  const month = statsMonth;
   const courseTypeFilter = document.getElementById('stats-course-type') ? document.getElementById('stats-course-type').value : 'ALL';
 
+  // 重建月份按鈕
+  buildStatsMonthBtns();
+
   // 更新排序指示
-  ['seq','name','gender','id','hall','type','role','present','leave','rate'].forEach(k => {
+  ['seq','name','id','hall','rate'].forEach(k => {
     const el = document.getElementById('sort-' + k);
     if (el) el.textContent = statsSort.key === k ? (statsSort.dir === 1 ? '↑' : '↓') : '⇅';
   });
@@ -2373,15 +2471,14 @@ function renderStats() {
     const d = new Date(s.date);
     if (d.getFullYear() !== year) return false;
     if (month !== 0 && (d.getMonth()+1) !== month) return false;
-    // 名單類別篩選：ALL 或符合
     if (courseTypeFilter !== 'ALL' && (s.courseType || '神鼓陣') !== courseTypeFilter) return false;
     return true;
   });
 
   const summaryEl = document.getElementById('stats-summary');
   const tbody     = document.getElementById('stats-tbody');
+  const thead     = document.getElementById('stats-thead');
 
-  // 只統計對應名單類別的成員
   const members = courseTypeFilter === 'ALL'
     ? DB.members
     : DB.members.filter(m => (m.courseType || '神鼓陣') === courseTypeFilter);
@@ -2392,94 +2489,161 @@ function renderStats() {
     const infoEl2 = document.getElementById('stats-sessions-info');
     if (infoEl2) infoEl2.style.display = 'none';
     tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text3); padding:32px;">指定期間內尚無歷史點名數據</td></tr>';
+    // 重置 thead
+    thead.innerHTML = `<tr>
+      <th class="col-stats-seq" onclick="sortStats('seq')" style="text-align:center;">序 <span class="sort-indicator" id="sort-seq">⇅</span></th>
+      <th class="col-stats-name" onclick="sortStats('name')">姓名 <span class="sort-indicator" id="sort-name">⇅</span></th>
+      <th class="col-stats-id" onclick="sortStats('id')" style="cursor:pointer;">研修代號 <span class="sort-indicator" id="sort-id">⇅</span></th>
+      <th class="col-stats-hall" onclick="sortStats('hall')" style="cursor:pointer;">館別 <span class="sort-indicator" id="sort-hall">⇅</span></th>
+      <th class="col-stats-rate" onclick="sortStats('rate')" style="text-align:center; cursor:pointer;">出席率 <span class="sort-indicator" id="sort-rate">⇅</span></th>
+    </tr>`;
     return;
   }
 
+  // 排序活動日期
+  const sortedSessions = [...sessions].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // 計算每場活動出席人數
+  const sessionAttendCounts = {};
+  sortedSessions.forEach(s => {
+    const rec = DB.records[s.id] || {};
+    let cnt = 0;
+    members.forEach(m => {
+      if (m.id in rec) {
+        const v = rec[m.id];
+        if (v === 'absent' || v === 'present' || v === undefined) cnt++;
+      }
+    });
+    sessionAttendCounts[s.id] = cnt;
+  });
+
+  // 計算每個成員資料
   let tP = 0, tL = 0;
   let rows = members.map((m, idx) => {
     let p = 0, l = 0;
-    sessions.forEach(s => {
+    const sessionStatuses = {};
+    sortedSessions.forEach(s => {
       const rec = DB.records[s.id];
-      // 只有當該活動已點過名時，才計入統計
       if (rec && m.id in rec) {
         const v = rec[m.id];
-        if (v === 'absent' || v === 'present' || v === undefined) p++;
-        else if (v === 'leave') l++;
+        if (v === 'absent' || v === 'present' || v === undefined) { p++; sessionStatuses[s.id] = 'present'; }
+        else if (v === 'leave') { l++; sessionStatuses[s.id] = 'leave'; }
+      } else {
+        sessionStatuses[s.id] = 'nodata';
       }
     });
     tP += p; tL += l;
-    // 只計算該成員已點過名的活動次數，作為分母
     let sessionsForThisMember = 0;
-    sessions.forEach(s => {
+    sortedSessions.forEach(s => {
       const rec = DB.records[s.id];
       if (rec && m.id in rec) sessionsForThisMember++;
     });
     const rate = sessionsForThisMember > 0 ? Math.round(p / sessionsForThisMember * 100) : 0;
-    return { m, p, l, rate, sequence: idx + 1 };
+    return { m, p, l, rate, sequence: idx + 1, sessionStatuses };
   });
 
   // 排序
   const { key, dir } = statsSort;
   rows.sort((a, b) => {
     let av, bv;
-    if      (key === 'seq')     { av = a.sequence; bv = b.sequence; }
-    else if (key === 'name')    { return dir * a.m.name.localeCompare(b.m.name, 'zh-Hant'); }
-    else if (key === 'gender')  { return dir * (a.m.gender||'女').localeCompare(b.m.gender||'女', 'zh-Hant'); }
-    else if (key === 'id')      { return dir * (a.m.memberId||'').localeCompare(b.m.memberId||'', 'zh-Hant'); }
-    else if (key === 'hall')    { return dir * (a.m.hall||'').localeCompare(b.m.hall||'', 'zh-Hant'); }
-    else if (key === 'type')    { return dir * (a.m.courseType||'').localeCompare(b.m.courseType||'', 'zh-Hant'); }
-    else if (key === 'role')    { return dir * (a.m.role||'').localeCompare(b.m.role||'', 'zh-Hant'); }
-    else if (key === 'present') { av = a.p; bv = b.p; }
-    else if (key === 'leave')   { av = a.l; bv = b.l; }
-    else if (key === 'rate')    { av = a.rate; bv = b.rate; }
-    else                        { av = a.sequence; bv = b.sequence; }
+    if      (key === 'seq')  { av = a.sequence; bv = b.sequence; }
+    else if (key === 'name') { return dir * a.m.name.localeCompare(b.m.name, 'zh-Hant'); }
+    else if (key === 'id')   { return dir * (a.m.memberId||'').localeCompare(b.m.memberId||'', 'zh-Hant'); }
+    else if (key === 'hall') { return dir * (a.m.hall||'').localeCompare(b.m.hall||'', 'zh-Hant'); }
+    else if (key === 'rate') { av = a.rate; bv = b.rate; }
+    else                     { av = a.sequence; bv = b.sequence; }
     return dir * (av - bv);
   });
 
   const avgRate = tP + tL > 0 ? Math.round(tP / (tP + tL) * 100) : 0;
+  const totalMembers = members.length;
+  const avgAttend = sortedSessions.length > 0
+    ? Math.round(sortedSessions.reduce((s, sess) => s + (sessionAttendCounts[sess.id] || 0), 0) / sortedSessions.length)
+    : 0;
 
-  // 組合月份標題
-  const monthLabel = month !== 0
-    ? `${year}/${String(month).padStart(2,'0')} 共 ${sessions.length} 堂活動`
-    : `${year} 年度 共 ${sessions.length} 堂活動`;
+  // 月份標籤
+  const monthLabel = month !== 0 ? `${year}年${month}月` : `${year}年度`;
 
-  // 活動日期列表（可點選）
-  const sortedDates = [...sessions].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const dateList = sortedDates.map(s => {
+  // 統計卡片
+  summaryEl.style.gridTemplateColumns = '1fr 1fr 1fr';
+  summaryEl.innerHTML = `
+    <div class="stat-card">
+      <div style="font-size:12px; font-weight:500; color:var(--text2); margin-bottom:8px; letter-spacing:0.04em;">活動場次</div>
+      <div class="stat-num">${sortedSessions.length}</div>
+      <div class="stat-label">${monthLabel}</div>
+    </div>
+    <div class="stat-card">
+      <div style="font-size:12px; font-weight:500; color:var(--text2); margin-bottom:8px; letter-spacing:0.04em;">平均出席人數</div>
+      <div class="stat-num">${avgAttend}</div>
+      <div class="stat-label">人</div>
+    </div>
+    <div class="stat-card green">
+      <div style="font-size:12px; font-weight:500; color:var(--text2); margin-bottom:8px; letter-spacing:0.04em;">月份平均出席率</div>
+      <div class="stat-num">${avgRate}%</div>
+      <div class="stat-label">全體平均</div>
+    </div>`;
+
+  // 活動日期 chips（可點選查看明細）
+  const infoEl = document.getElementById('stats-sessions-info');
+  infoEl.style.display = 'block';
+  const dateList = sortedSessions.map(s => {
     const d = new Date(s.date);
-    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const mm = d.getMonth()+1;
     const dd = String(d.getDate()).padStart(2,'0');
     const hasRecord = DB.records[s.id] && Object.keys(DB.records[s.id]).length > 0;
     const shortName = s.name.length > 6 ? s.name.slice(0,6)+'…' : s.name;
     return `<button class="session-date-chip" id="chip-${s.id}" onclick="toggleSessionDetail('${s.id}')">${mm}/${dd} <span class="chip-sub">${shortName}${hasRecord ? '' : '・未點名'}</span></button>`;
   }).join('');
-
-  summaryEl.innerHTML = `
-    <div class="stat-card green"><div class="stat-num">${avgRate}%</div><div class="stat-label">平均出席率</div></div>`;
-  summaryEl.style.gridTemplateColumns = '1fr';
-
-  const infoEl = document.getElementById('stats-sessions-info');
-  infoEl.style.display = 'block';
   infoEl.innerHTML = `
     <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow-sm);">
-      <div style="font-size:13px; font-weight:700; color:var(--text2); margin-bottom:10px; letter-spacing:0.05em;">${monthLabel} <span style="font-weight:400; color:var(--text3); font-size:12px;">・點選日期查看當日出席明細</span></div>
+      <div style="font-size:13px; font-weight:700; color:var(--text2); margin-bottom:10px; letter-spacing:0.05em;">${monthLabel} 共 ${sortedSessions.length} 堂活動 <span style="font-weight:400; color:var(--text3); font-size:12px;">・點選日期查看當日出席明細</span></div>
       <div style="display:flex; flex-wrap:wrap; gap:6px;" id="session-date-chips">${dateList}</div>
     </div>
     <div id="session-detail-panel" style="display:none; margin-top:12px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm);"></div>`;
 
-  tbody.innerHTML = rows.map(r => `
-    <tr class="clickable-row ${r.rate < 60 ? 'low-rate' : ''}" onclick="toggleRowHighlight(this)">
-      <td class="col-seq" style="text-align:center;"><span style="font-size:13px; color:var(--text3);">${r.sequence}</span></td>
-      <td class="col-name"><strong>${esc(r.m.name)}</strong></td>
-      <td class="col-gender" style="text-align:center; color:var(--text3); font-size:13px;">${esc(r.m.gender || '女')}</td>
-      <td class="col-id" style="font-family:'Roboto','Noto Sans TC',sans-serif; color:var(--text3); font-size:13px;">${r.m.memberId ? esc(r.m.memberId) : '<span style="color:var(--text3)">—</span>'}</td>
-      <td class="col-id" style="color:var(--text3); font-size:13px;">${r.m.hall ? esc(r.m.hall) : '<span style="color:var(--text3)">—</span>'}</td>
-      <td class="col-type"><span class="course-badge">${esc(r.m.courseType || '神鼓陣')}</span></td>
-      <td class="col-role"><span class="${roleClass[r.m.role] || 'role-badge role-badge-member'}">${esc(r.m.role || '組員')}</span></td>
-      <td class="col-num" style="text-align:center;">${r.p}</td>
-      <td class="col-num" style="text-align:center;">${r.l}</td>
-      <td class="col-rate" style="text-align:center;"><span class="pct ${r.rate>=80?'high':r.rate>=60?'mid':'low'}">${r.rate}%</span></td>
-    </tr>`).join('');
+  // 重建 thead：固定欄 + 活動日期欄 + 出席率欄
+  let theadHtml = `<tr>
+    <th class="col-stats-seq" onclick="sortStats('seq')" style="text-align:center;">序 <span class="sort-indicator" id="sort-seq">${statsSort.key==='seq'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+    <th class="col-stats-name" onclick="sortStats('name')">姓名 <span class="sort-indicator" id="sort-name">${statsSort.key==='name'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+    <th class="col-stats-id" onclick="sortStats('id')" style="cursor:pointer;">研修代號 <span class="sort-indicator" id="sort-id">${statsSort.key==='id'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+    <th class="col-stats-hall" onclick="sortStats('hall')" style="cursor:pointer;">館別 <span class="sort-indicator" id="sort-hall">${statsSort.key==='hall'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>`;
+
+  sortedSessions.forEach(s => {
+    const d = new Date(s.date);
+    const mm = d.getMonth()+1;
+    const dd = String(d.getDate()).padStart(2,'0');
+    const cnt = sessionAttendCounts[s.id] || 0;
+    theadHtml += `<th class="col-session-date"><span class="session-date-th-date">${mm}/${dd}</span><span class="session-date-th-count">出席:${cnt}</span></th>`;
+  });
+
+  theadHtml += `<th class="col-stats-rate" onclick="sortStats('rate')" style="text-align:center; cursor:pointer;">出席率 <span class="sort-indicator" id="sort-rate">${statsSort.key==='rate'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th></tr>`;
+  thead.innerHTML = theadHtml;
+
+  // 重建 tbody
+  tbody.innerHTML = rows.map((r, rowIdx) => {
+    const rateClass = r.rate >= 100 ? 'high' : r.rate >= 60 ? 'mid' : 'low';
+    const rateBgClass = r.rate >= 100 ? 'rate-cell-high' : r.rate >= 60 ? 'rate-cell-mid' : 'rate-cell-low';
+    const total = r.p + r.l;
+
+    let sessionCells = sortedSessions.map(s => {
+      const status = r.sessionStatuses[s.id];
+      if (status === 'present') return `<td class="td-attend present-cell">✓</td>`;
+      if (status === 'leave')   return `<td class="td-attend absent-cell">✕</td>`;
+      return `<td class="td-attend nodata-cell">—</td>`;
+    }).join('');
+
+    return `<tr class="clickable-row" onclick="toggleRowHighlight(this)">
+      <td class="col-stats-seq" style="text-align:center;"><span style="font-size:13px; color:var(--text3);">${r.sequence}</span></td>
+      <td class="col-stats-name"><strong>${esc(r.m.name)}</strong></td>
+      <td class="col-stats-id" style="color:var(--text3); font-size:13px;">${r.m.memberId ? esc(r.m.memberId) : '<span style="color:var(--border)">—</span>'}</td>
+      <td class="col-stats-hall" style="color:var(--text3); font-size:13px;">${r.m.hall ? esc(r.m.hall) : '<span style="color:var(--border)">—</span>'}</td>
+      ${sessionCells}
+      <td class="col-stats-rate ${rateBgClass}" style="text-align:center; padding:10px 8px !important;">
+        <span class="rate-cell-val ${rateClass}">${r.rate}%</span>
+        <span class="rate-cell-sub">(${r.p}/${total || sortedSessions.length})</span>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function pickSessionColor(el) {
