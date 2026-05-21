@@ -922,17 +922,18 @@
 <div id="app-container" style="display:none;">
 
 <div id="user-bar" style="position:fixed;top:0;left:0;right:0;height:50px;background:#fff;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;padding:0 16px;z-index:1000;">
-  <div style="font-size:14px;display:flex;align-items:center;gap:8px;color:var(--text);">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-       xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 3.8L14.5 9.1L20.3 9.9L16 14L17.1 19.8L12 16.9L6.9 19.8L8 14L3.7 9.9L9.5 9.1L12 3.8Z"
-          stroke="#8A7F72"
-          stroke-width="1.6"
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
-  </svg>
-  <span id="user-name"></span>
+  
+<div style="font-size:14px;display:flex;align-items:center;gap:8px;color:var(--text);">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 3.8L14.5 9.1L20.3 9.9L16 14L17.1 19.8L12 16.9L6.9 19.8L8 14L3.7 9.9L9.5 9.1L12 3.8Z"
+stroke="#8A7F72"
+stroke-width="1.6"
+stroke-linecap="round"
+stroke-linejoin="round"/>
+</svg>
+<span id="user-name"></span>
 </div>
+
   <button onclick="logout()" style="border:none;background:#eee;padding:8px 12px;border-radius:8px;cursor:pointer;">登出</button>
 </div>
 
@@ -1024,7 +1025,7 @@
 <div id="page-sessions" class="page">
   <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <div></div>
-    <button id="btn-add-session" class="btn btn-primary btn-sm" onclick="openSessionModal()">＋ 新增單堂活動</button>
+    <button class="btn btn-primary btn-sm" onclick="openSessionModal()">＋ 新增單堂活動</button>
   </div>
 
   <div class="card" style="padding: 16px 20px; margin-bottom:16px;">
@@ -2993,65 +2994,38 @@ window.ADMIN_EMAILS = [
   "你的管理者@gmail.com"
 ];
 
-window.isAdminUser = false;
+window.isAdminUser = true;
 
 function applyRolePermissions(user){
+
   if(!user) return;
 
-  // 管理者判定
   window.isAdminUser = window.ADMIN_EMAILS.includes(user.email);
 
-  // 非管理者隱藏新增活動
-  const addBtn = document.getElementById('btn-add-session');
-
-  if(addBtn){
-    addBtn.style.display = window.isAdminUser ? '' : 'none';
-  }
-
-  // 非管理者隱藏編輯/複製/刪除
+  // 非管理者隱藏新增按鈕
   if(!window.isAdminUser){
 
-    document.querySelectorAll('button').forEach(btn=>{
-      const text = (btn.innerText || '').trim();
+    setTimeout(()=>{
 
-      if(
-        text.includes('編輯') ||
-        text.includes('複製') ||
-        text.includes('刪除')
-      ){
-        btn.style.display = 'none';
-      }
-    });
+      document.querySelectorAll('button').forEach(btn=>{
+
+        const text = (btn.innerText || '').trim();
+
+        if(
+          text.includes('新增') ||
+          text.includes('編輯') ||
+          text.includes('複製') ||
+          text.includes('刪除')
+        ){
+          btn.style.display = 'none';
+        }
+
+      });
+
+    }, 500);
+
   }
 }
-
-// 非管理者阻止功能執行
-document.addEventListener('click', function(e){
-
-  if(window.isAdminUser) return;
-
-  const btn = e.target.closest('button');
-
-  if(!btn) return;
-
-  const text = (btn.innerText || '').trim();
-
-  const blocked =
-    text.includes('新增') ||
-    text.includes('編輯') ||
-    text.includes('複製') ||
-    text.includes('刪除');
-
-  if(blocked){
-    e.preventDefault();
-    e.stopImmediatePropagation();
-
-    if(typeof showToast === 'function'){
-      showToast('非管理者無法操作活動');
-    }
-  }
-
-}, true);
 </script>
 
 </body>
