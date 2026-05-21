@@ -1107,7 +1107,7 @@
   <div class="card">
     <div class="card-title"><div class="title-text-wrapper">選擇參與分組的成員</div></div>
     <div style="font-size:13px; color:var(--text2); margin-bottom:12px;">
-      點選成員切換是否參與。點 ★ 標記為組長（分組時優先分配到不同組）。出席名單可從點名功能同步。
+      1.點選成員切換是否參與。2.點 ★ 標記為組長(分組時優先分配到不同組)。3.出席名單可從點名功能同步。
     </div>
 
     <!-- 名單類別篩選 -->
@@ -2729,7 +2729,7 @@ function renderStats() {
   }).join('');
   infoEl.innerHTML = `
     <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow-sm);">
-      <div style="font-size:13px; font-weight:700; color:var(--text2); margin-bottom:10px; letter-spacing:0.05em;">${monthLabel} 共 ${sortedSessions.length} 次活動 <span style="font-weight:400; color:var(--text3); font-size:12px;">・點選日期查看當日出席明細</span></div>
+      <div style="font-size:13px; font-weight:700; color:var(--text2); margin-bottom:10px; letter-spacing:0.05em;">${monthLabel} 共 ${sortedSessions.length} 次活動 <span style="font-weight:400; color:var(--text3); font-size:12px;">・點選日期查看出席明細</span></div>
       <div style="display:flex; flex-wrap:wrap; gap:6px;" id="session-date-chips">${dateList}</div>
     </div>
     <div id="session-detail-panel" style="display:none; margin-top:12px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm);"></div>`;
