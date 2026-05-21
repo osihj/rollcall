@@ -295,16 +295,25 @@
   .session-info { flex: 1; min-width: 0; }
   .session-name {
     font-weight: 700; font-size: 15px; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-bottom: 2px;
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: nowrap; margin-bottom: 4px;
+  }
+  .session-name-text {
+    /* 名稱縮短但 badge 始終緊跟在旁 */
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 0 1 auto; min-width: 0;
+  }
+  .session-name .course-badge {
+    flex-shrink: 0;   /* badge 不壓縮 */
   }
   .session-meta-row {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   }
   .session-sub {
-    font-size: 13px; color: var(--text2);
+    font-size: 15px; color: var(--text2);
     font-family: 'Roboto', 'Noto Sans TC', sans-serif;
     white-space: nowrap;
+    font-weight: 500;
   }
 
   /* 桌機：按鈕在右側同一行 */
@@ -1511,10 +1520,12 @@ function renderSessions() {
             <span class="session-day" style="color:${borderColor};">${d.getDate()}</span>
           </div>
           <div class="session-info">
-            <div class="session-name">${esc(s.name)}</div>
+            <div class="session-name">
+              <span class="session-name-text">${esc(s.name)}</span>
+              <span class="course-badge" style="background:var(--surface);color:${borderColor};border-color:${borderColor};flex-shrink:0;">${esc(s.courseType||'神鼓陣')}</span>
+            </div>
             <div class="session-meta-row">
               <span class="session-sub">${s.timeStart}～${s.timeEnd}</span>
-              <span class="course-badge" style="background:var(--surface);color:${borderColor};border-color:${borderColor};">${esc(s.courseType||'神鼓陣')}</span>
             </div>
           </div>
           <div class="session-header-actions">
