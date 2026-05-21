@@ -1025,7 +1025,7 @@
 <div id="page-sessions" class="page">
   <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <div></div>
-    <button id="btn-add-session" class="btn btn-primary btn-sm" onclick="openSessionModal()">＋ 新增單堂活動</button>
+    <button id="btn-add-session" class="btn btn-primary btn-sm" onclick="if(checkAdminPermission('非管理者無法新增活動')) openSessionModal()">＋ 新增單堂活動</button>
   </div>
 
   <div class="card" style="padding: 16px 20px; margin-bottom:16px;">
@@ -2990,57 +2990,37 @@ window.firebaseDB = db;
 
 
 <script>
-window.isAdminUser = false;
 window.ADMIN_EMAILS = [
   "你的管理者@gmail.com"
 ];
+
+window.isAdminUser = true;
 
 function applyRolePermissions(user){
   if(!user) return;
 
   window.isAdminUser = window.ADMIN_EMAILS.includes(user.email);
 
-  if(!window.isAdminUser){
-    const addBtn = document.getElementById('btn-add-session');
-    if(addBtn){
-      addBtn.style.display = 'none';
-    }
+  const addBtn = document.getElementById('btn-add-session');
+
+  if(addBtn){
+    addBtn.style.display = window.isAdminUser ? '' : 'none';
   }
 }
 
-window.addEventListener('DOMContentLoaded', function(){
-
-  const guard = function(fn, msg){
-    return function(...args){
-      if(!window.isAdminUser){
-        if(typeof showToast === 'function'){
-          showToast(msg);
-        } else {
-          alert(msg);
-        }
-        return;
-      }
-      return fn.apply(this, args);
-    }
-  };
-
-  if(typeof window.openSessionModal === 'function'){
-    window.openSessionModal = guard(window.openSessionModal, '非管理者無法操作活動');
+function checkAdminPermission(message){
+  if(window.isAdminUser){
+    return true;
   }
 
-  if(typeof window.editSession === 'function'){
-    window.editSession = guard(window.editSession, '非管理者無法編輯活動');
+  if(typeof showToast === 'function'){
+    showToast(message);
+  } else {
+    alert(message);
   }
 
-  if(typeof window.copySession === 'function'){
-    window.copySession = guard(window.copySession, '非管理者無法複製活動');
-  }
-
-  if(typeof window.deleteSession === 'function'){
-    window.deleteSession = guard(window.deleteSession, '非管理者無法刪除活動');
-  }
-
-});
+  return false;
+}
 </script>
 
 </body>
