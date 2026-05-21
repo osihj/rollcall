@@ -217,36 +217,40 @@
   }
   .gender-tag { font-size: 12px; color: var(--text3); font-weight: normal; }
 
-  /* 手機版組員列表：緊湊單行 */
+  /* 手機版組員列表：兩行佈局 */
   .member-mobile-only  { display: none; }
   .member-desktop-only { display: flex; }
   @media (max-width: 520px) {
-    .member-mobile-only  { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 0; }
+    .member-mobile-only  { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 6px; }
     .member-desktop-only { display: none !important; }
     .member-list-header  { display: none; }
     .member-item {
-      flex-wrap: nowrap; gap: 8px;
-      padding: 11px 12px; align-items: center;
+      flex-wrap: nowrap; gap: 10px;
+      padding: 14px 12px; align-items: flex-start;
     }
-    .member-item .num-badge { margin-top: 0; flex-shrink: 0; }
-    /* 主資訊行：姓名 + 研修代號 + badges 全在同一行，按鈕靠右 */
+    .member-item .num-badge { margin-top: 2px; flex-shrink: 0; }
+    /* 第一行：姓名 + 性別代號 + badges */
     .member-item-main {
       display: flex; align-items: center; gap: 6px;
-      flex: 1; min-width: 0; flex-wrap: nowrap; overflow: hidden;
+      flex: 1; min-width: 0; flex-wrap: wrap;
     }
     .member-item-name {
-      font-weight: 700; font-size: 14px; white-space: nowrap; flex-shrink: 0;
+      font-weight: 700; font-size: 15px; white-space: nowrap; flex-shrink: 0;
     }
     .member-item-meta {
-      font-size: 12px; color: var(--text3);
+      font-size: 13px; color: var(--text3);
       font-family: "Roboto","Noto Sans TC",sans-serif;
       white-space: nowrap; flex-shrink: 0;
     }
     .member-item-badges {
       display: flex; gap: 4px; flex-shrink: 0;
     }
+    /* 第二行：按鈕靠右 */
     .member-item-actions {
-      display: flex; gap: 6px; flex-shrink: 0; margin-left: auto;
+      display: flex; gap: 6px; justify-content: flex-end;
+    }
+    .member-item-actions .btn-sm {
+      font-size: 13px; padding: 6px 16px;
     }
   }
 
@@ -1422,7 +1426,7 @@ function renderMembers() {
         <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button>
         <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">刪除</button>
       </div>
-      <!-- 手機版：單行緊湊 -->
+      <!-- 手機版：兩行佈局 -->
       <div class="member-mobile-only">
         <div class="member-item-main">
           <span class="member-item-name">${esc(m.name)}</span>
