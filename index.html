@@ -360,26 +360,49 @@
   }
   .session-item.open .session-toggle-icon { transform: rotate(180deg); }
 
-  /* 手機：資訊區佔滿，按鈕獨立第二行 */
+  /* 手機：三點選單取代按鈕列 */
+  .session-toggle-mobile { display: none; }
+  .session-more-btn {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; color: var(--text3);
+    padding: 0 6px; line-height: 1; flex-shrink: 0;
+    letter-spacing: 2px; touch-action: manipulation;
+  }
+  .session-popover {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.14);
+    z-index: 200; display: none; overflow: hidden; min-width: 100px;
+  }
+  .session-popover.show { display: block; }
+  .session-popover-btn {
+    display: block; width: 100%; padding: 11px 18px;
+    background: none; border: none; cursor: pointer;
+    font-size: 14px; font-family: inherit; text-align: left;
+    transition: background 0.15s;
+  }
+  .session-popover-btn.edit { color: var(--text); border-bottom: 1px solid var(--border); }
+  .session-popover-btn.copy { color: var(--text); border-bottom: 1px solid var(--border); }
+  .session-popover-btn.del  { color: var(--red); }
+  .session-popover-btn:active { background: var(--surface2); }
   @media (max-width: 520px) {
     .session-header {
-      flex-wrap: wrap;
-      align-items: flex-start;
+      flex-wrap: nowrap;
+      align-items: center;
       gap: 10px;
       padding: 12px 14px;
+      position: relative;
     }
     .session-header > .session-date-box { flex-shrink: 0; }
     .session-header > .session-info { flex: 1; min-width: 0; }
-    /* 按鈕區換到第二行，向右縮排對齊資訊文字 */
-    .session-header-actions {
-      width: 100%;
-      margin-left: 0;
-      padding-left: 64px;
-      flex-wrap: nowrap;
-      gap: 6px;
+    .session-header-actions { display: none !important; }
+    .session-more-btn { display: block; }
+    .session-toggle-mobile {
+      display: block; font-size: 12px; color: var(--text3);
+      transition: transform 0.25s ease; flex-shrink: 0;
     }
-    .session-toggle-icon { margin-left: auto; }
-    .session-header-actions .btn-sm { font-size: 12px; padding: 5px 10px; }
+    .session-item.open .session-toggle-mobile { transform: rotate(180deg); }
   }
 
   /* 摺疊區域 */
@@ -1629,6 +1652,13 @@ function renderSessions() {
             <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteSession('${s.id}')">刪除</button>
             <span class="session-toggle-icon">&#9660;</span>
           </div>
+          <button class="session-more-btn" onclick="event.stopPropagation();toggleSessionPopover(event,'spop-${s.id}')" aria-label="更多操作">⋯</button>
+          <span class="session-toggle-icon session-toggle-mobile">&#9660;</span>
+          <div class="session-popover" id="spop-${s.id}">
+            <button class="session-popover-btn edit" onclick="closeAllSessionPopovers();editSession('${s.id}')">編輯</button>
+            <button class="session-popover-btn copy" onclick="closeAllSessionPopovers();duplicateSession('${s.id}')">複製</button>
+            <button class="session-popover-btn del"  onclick="closeAllSessionPopovers();deleteSession('${s.id}')">刪除</button>
+          </div>
         </div>
         <div class="session-collapse">
           <div class="session-collapse-row">
@@ -2448,6 +2478,18 @@ function pickSessionColor(el) {
   document.getElementById('s-color').value = el.dataset.color;
 }
 
+function toggleSessionPopover(e, id) {
+  e.stopPropagation();
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isOpen = el.classList.contains('show');
+  closeAllSessionPopovers();
+  closeAllPopovers();
+  if (!isOpen) el.classList.add('show');
+}
+function closeAllSessionPopovers() {
+  document.querySelectorAll('.session-popover.show').forEach(p => p.classList.remove('show'));
+}
 function toggleMemberPopover(e, id) {
   e.stopPropagation();
   const el = document.getElementById(id);
@@ -2459,7 +2501,7 @@ function toggleMemberPopover(e, id) {
 function closeAllPopovers() {
   document.querySelectorAll('.member-popover.show').forEach(p => p.classList.remove('show'));
 }
-document.addEventListener('click', closeAllPopovers);
+document.addEventListener('click', () => { closeAllPopovers(); closeAllSessionPopovers(); });
 
 function toggleRowHighlight(row) {
   const isSelected = row.classList.contains('row-selected');
