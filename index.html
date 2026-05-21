@@ -221,14 +221,15 @@
   .member-mobile-only  { display: none; }
   .member-desktop-only { display: flex; }
   @media (max-width: 520px) {
-    .member-mobile-only  { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 6px; }
+    .member-mobile-only  { display: flex; flex: 1; min-width: 0; flex-direction: row; align-items: center; gap: 0; }
     .member-desktop-only { display: none !important; }
     .member-list-header  { display: none; }
     .member-item {
       flex-wrap: nowrap; gap: 10px;
-      padding: 14px 12px; align-items: flex-start;
+      padding: 14px 12px; align-items: center;
+      position: relative;
     }
-    .member-item .num-badge { margin-top: 2px; flex-shrink: 0; }
+    .member-item .num-badge { flex-shrink: 0; }
     /* 第一行：姓名 + 性別代號 + badges */
     .member-item-main {
       display: flex; align-items: center; gap: 6px;
@@ -245,13 +246,31 @@
     .member-item-badges {
       display: flex; gap: 4px; flex-shrink: 0;
     }
-    /* 第二行：按鈕靠右 */
-    .member-item-actions {
-      display: flex; gap: 6px; justify-content: flex-end;
+    /* 三點選單按鈕 */
+    .member-more-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text3);
+      padding: 0 6px; line-height: 1; flex-shrink: 0;
+      letter-spacing: 2px;
     }
-    .member-item-actions .btn-sm {
-      font-size: 13px; padding: 6px 16px;
+    /* 浮動選單 */
+    .member-popover {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.14);
+      z-index: 200; display: none; overflow: hidden; min-width: 100px;
     }
+    .member-popover.show { display: block; }
+    .member-popover-btn {
+      display: block; width: 100%; padding: 11px 18px;
+      background: none; border: none; cursor: pointer;
+      font-size: 14px; font-family: inherit;
+      text-align: left; transition: background 0.15s;
+    }
+    .member-popover-btn:first-child { color: var(--text); border-bottom: 1px solid var(--border); }
+    .member-popover-btn:first-child:active { background: var(--surface2); }
+    .member-popover-btn:last-child { color: var(--red); }
+    .member-popover-btn:last-child:active { background: var(--red-light); }
   }
 
   /* ── SESSIONS ── */
@@ -1426,7 +1445,7 @@ function renderMembers() {
         <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button>
         <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">刪除</button>
       </div>
-      <!-- 手機版：兩行佈局 -->
+      <!-- 手機版：單行 + 三點浮動選單 -->
       <div class="member-mobile-only">
         <div class="member-item-main">
           <span class="member-item-name">${esc(m.name)}</span>
@@ -1436,9 +1455,10 @@ function renderMembers() {
             <span class="${roleClass[m.role] || 'role-badge role-badge-member'}">${esc(m.role || '組員')}</span>
           </div>
         </div>
-        <div class="member-item-actions">
-          <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">刪除</button>
+        <button class="member-more-btn" onclick="toggleMemberPopover(event,'popover-${m.id}')" aria-label="更多操作">⋯</button>
+        <div class="member-popover" id="popover-${m.id}">
+          <button class="member-popover-btn" onclick="closeAllPopovers();editMember('${m.id}')">編輯</button>
+          <button class="member-popover-btn" onclick="closeAllPopovers();deleteMember('${m.id}')">刪除</button>
         </div>
       </div>
     </div>`).join('');
@@ -2427,6 +2447,19 @@ function pickSessionColor(el) {
   el.classList.add('selected');
   document.getElementById('s-color').value = el.dataset.color;
 }
+
+function toggleMemberPopover(e, id) {
+  e.stopPropagation();
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isOpen = el.classList.contains('show');
+  closeAllPopovers();
+  if (!isOpen) el.classList.add('show');
+}
+function closeAllPopovers() {
+  document.querySelectorAll('.member-popover.show').forEach(p => p.classList.remove('show'));
+}
+document.addEventListener('click', closeAllPopovers);
 
 function toggleRowHighlight(row) {
   const isSelected = row.classList.contains('row-selected');
