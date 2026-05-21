@@ -322,16 +322,26 @@
   }
   .session-item.open .session-toggle-icon { transform: rotate(180deg); }
 
-  /* 手機：按鈕移到第二行，獨立於資訊下方 */
+  /* 手機：資訊區佔滿，按鈕獨立第二行 */
   @media (max-width: 520px) {
-    .session-header { flex-wrap: wrap; align-items: flex-start; position: relative; }
-    .session-info { flex-basis: calc(100% - 82px); min-width: 0; }
-    .session-header-actions {
-      width: 100%; margin-left: 0;
-      padding-left: 68px;
+    .session-header {
       flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
     }
-    .session-toggle-icon { position: absolute; top: 14px; right: 16px; margin-left: 0; }
+    .session-header > .session-date-box { flex-shrink: 0; }
+    .session-header > .session-info { flex: 1; min-width: 0; }
+    /* 按鈕區換到第二行，向右縮排對齊資訊文字 */
+    .session-header-actions {
+      width: 100%;
+      margin-left: 0;
+      padding-left: 64px;
+      flex-wrap: nowrap;
+      gap: 6px;
+    }
+    .session-toggle-icon { margin-left: auto; }
+    .session-header-actions .btn-sm { font-size: 12px; padding: 5px 10px; }
   }
 
   /* 摺疊區域 */
