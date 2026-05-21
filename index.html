@@ -246,18 +246,33 @@
 
   /* ── SESSIONS ── */
   .session-item {
-    display: flex; align-items: flex-start; gap: 14px;
-    padding: 16px; background: var(--surface); border-radius: 12px;
-    margin-bottom: 12px; border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm); transition: all 0.3s ease;
+    background: var(--surface);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
     scroll-margin-top: 80px;
+    transition: box-shadow 0.3s ease;
+    /* 左邊框顏色由 JS 動態設定 */
+    border-left-width: 4px;
   }
-  .session-item:hover { border-color: #d1cdc5; }
+  .session-item:hover { box-shadow: 0 4px 16px rgba(44,42,39,0.08); }
   .session-item.highlight-active {
     background: var(--surface2) !important;
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 12px rgba(44, 82, 52, 0.15);
+    box-shadow: 0 0 12px rgba(44, 82, 52, 0.15) !important;
   }
+
+  /* 頭部：永遠顯示 */
+  .session-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .session-header:hover { background: var(--surface2); }
+
   /* 左側日曆縮圖 */
   .session-date-box {
     background: var(--surface); border: 1px solid var(--border);
@@ -275,19 +290,57 @@
     padding: 6px 0 8px; display: block;
     background: var(--surface);
   }
-  /* 右側內容 */
+
+  /* 右側頭部內容 */
   .session-info { flex: 1; min-width: 0; }
   .session-name {
     font-weight: 700; font-size: 15px; color: var(--text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     margin-bottom: 2px;
   }
+  .session-meta-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
   .session-sub {
     font-size: 13px; color: var(--text2);
     font-family: 'Roboto', 'Noto Sans TC', sans-serif;
-    white-space: nowrap; margin-bottom: 8px;
+    white-space: nowrap;
   }
-  .session-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .session-header-actions {
+    display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+    margin-left: auto;
+  }
+  .session-header-actions .btn-sm { font-size: 12px; padding: 5px 12px; }
+
+  /* 摺疊箭頭 */
+  .session-toggle-icon {
+    font-size: 12px; color: var(--text3);
+    transition: transform 0.25s ease;
+    flex-shrink: 0; margin-left: 4px;
+  }
+  .session-item.open .session-toggle-icon { transform: rotate(180deg); }
+
+  /* 摺疊區域 */
+  .session-collapse {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 14px 16px;
+    background: var(--surface);
+  }
+  .session-item.open .session-collapse { display: block; }
+
+  .session-collapse-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 13px; color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .session-collapse-row:last-child { margin-bottom: 0; }
+  .session-collapse-label {
+    font-size: 12px; font-weight: 600; color: var(--text3);
+    white-space: nowrap; min-width: 64px; padding-top: 1px;
+    letter-spacing: 0.04em;
+  }
+
   .color-opt {
     width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
     border: 2.5px solid transparent; transition: transform .12s, border-color .12s; flex-shrink: 0;
@@ -296,6 +349,9 @@
   .color-opt:hover { transform: scale(1.1); }
   .session-actions .course-badge { cursor: default; font-size: 12px; padding: 3px 10px; }
   .session-actions .btn-sm { font-size: 12px; padding: 5px 12px; }
+
+  /* course-badge 圓角與原本一致 */
+  .course-badge { border-radius: 10px !important; }
 
   /* ── CALENDAR ── */
   .calendar-month-grid {
@@ -967,15 +1023,13 @@
       <button class="close-btn" onclick="closeModal('modal-session')">✕</button>
     </div>
     <input type="hidden" id="edit-session-id">
-    <div class="form-group"><label>活動名稱 *</label><input type="text" id="s-name" placeholder=""></div>
+    <div class="form-group"><label>活動名稱 *</label><input type="text" id="s-name" placeholder="例：神鼓陣常態練習"></div>
     <div class="form-group"><label>日期 *</label><input type="date" id="s-date"></div>
     <div class="form-row">
       <div class="form-group"><label>開始時間</label><select id="s-time-start"></select></div>
       <div class="form-group"><label>結束時間</label><select id="s-time-end"></select></div>
     </div>
     <div class="form-group"><label>名單類別 *</label><select id="s-course-type"></select></div>
-    <div class="form-group"><label>值班小幫手</label><input type="text" id="s-helper" placeholder=""></div>
-    <div class="form-group"><label>備註</label><textarea id="s-notes" style="min-height:80px; resize:vertical;"></textarea></div>
     <div class="form-group">
       <label>活動顏色</label>
       <div style="display:flex;gap:10px;align-items:center;padding:4px 0;" id="s-color-picker">
@@ -989,10 +1043,9 @@
       </div>
     </div>
     <input type="hidden" id="s-color" value="#2c5234">
-    <div style="display:flex; gap:12px;">
-      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-session')">取消</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="saveSession()">確認儲存</button>
-    </div>
+    <div class="form-group"><label>值班小幫手</label><input type="text" id="s-helper" placeholder="例：志工姓名"></div>
+    <div class="form-group"><label>備註</label><input type="text" id="s-note" placeholder="例：加練、場地異動…"></div>
+    <button class="btn btn-primary btn-block" onclick="saveSession()">確認儲存</button>
   </div>
 </div>
 
@@ -1423,36 +1476,38 @@ function renderSessions() {
   if (!monthSessions.length) { list.innerHTML = '<div class="empty-state"><div class="empty-dot"></div><br>本月無排定活動</div>'; return; }
   list.innerHTML = monthSessions.map(s => {
     const d = new Date(s.date);
-    const hasContent = (s.helper && s.helper.trim()) || (s.notes && s.notes.trim());
     const borderColor = s.color || '#2c5234';
-    const borderStyle = hasContent ? `border-left: 3px solid ${borderColor};` : '';
-    const collapsedBorderStyle = hasContent ? `border-left: 3px solid ${borderColor};` : '';
+    const hasHelper = s.helper && s.helper.trim();
+    const hasNote   = s.note   && s.note.trim();
     return `
-      <div class="session-item" id="session-card-${s.id}" style="margin-bottom:12px; padding:0;">
-        <div onclick="const detail = this.parentElement.querySelector('.session-detail'); detail.style.display = detail.style.display === 'none' ? 'block' : 'none'; const arrow = this.querySelector('.session-toggle-arrow'); arrow.style.transform = detail.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';" style="display:flex; flex-direction:row; align-items:flex-start; gap:12px; padding:14px; background:var(--surface); border-radius:12px 12px 0 0; border:1px solid var(--border); ${borderStyle} cursor:pointer; transition:all 0.3s ease; flex-wrap: wrap;">
-          <div class="session-date-box" style="background:var(--surface); border:1px solid var(--border); border-radius:10px; text-align:center; flex-shrink:0; width:54px; overflow:hidden;">
-            <span class="session-month" style="font-size:10px; font-weight:600; color:var(--text2); background:var(--surface2); padding:3px 0; display:block; letter-spacing:0.04em;">${d.getMonth()+1}月</span>
-            <span class="session-day" style="font-size:22px; font-weight:700; line-height:1; font-family:'Roboto', sans-serif; padding:6px 0 8px; display:block; color:${borderColor};">${d.getDate()}</span>
+      <div class="session-item" id="session-card-${s.id}" style="border-left-color:${borderColor};">
+        <div class="session-header" onclick="toggleSessionCard('${s.id}')">
+          <div class="session-date-box">
+            <span class="session-month">${d.getMonth()+1}月</span>
+            <span class="session-day" style="color:${borderColor};">${d.getDate()}</span>
           </div>
-          <div style="flex:1; min-width:200px;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px; flex-wrap:wrap;">
-              <div class="session-name" style="font-weight:700; font-size:15px; color:var(--text); white-space:normal; word-break:break-word;">${esc(s.name)}</div>
-              <span class="course-badge" style="background:var(--surface); color:${borderColor}; border:0.5px solid var(--border); font-size:11px; padding:4px 10px; border-radius:8px; font-weight:500; cursor:default; flex-shrink:0; white-space:nowrap;">${esc(s.courseType||'神鼓陣')}</span>
+          <div class="session-info">
+            <div class="session-name">${esc(s.name)}</div>
+            <div class="session-meta-row">
+              <span class="session-sub">${s.timeStart}～${s.timeEnd}</span>
+              <span class="course-badge" style="background:var(--surface);color:${borderColor};border-color:${borderColor};">${esc(s.courseType||'神鼓陣')}</span>
             </div>
-            <div class="session-sub" style="font-size:12px; color:var(--text2); font-family:'Roboto', 'Noto Sans TC', sans-serif; white-space:nowrap;">${s.timeStart}～${s.timeEnd}</div>
           </div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start; flex-shrink:0; width:100%; min-width:fit-content;">
-            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editSession('${s.id}')" style="font-size:11px; padding:4px 10px;">編輯</button>
-            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); duplicateSession('${s.id}')" style="font-size:11px; padding:4px 10px;">複製</button>
-            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteSession('${s.id}')" style="font-size:11px; padding:4px 10px;">刪除</button>
-            <div class="session-toggle-arrow" style="font-size:14px; transition:transform 0.3s ease; margin-left:auto; ${hasContent ? 'transform:rotate(180deg);' : ''}">${hasContent ? '▼' : '▼'}</div>
+          <div class="session-header-actions">
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editSession('${s.id}')">編輯</button>
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();duplicateSession('${s.id}')">複製</button>
+            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteSession('${s.id}')">刪除</button>
+            <span class="session-toggle-icon">&#9660;</span>
           </div>
         </div>
-        <div class="session-detail" style="display:${hasContent ? 'block' : 'none'}; padding:12px 14px; background:var(--bg); border:1px solid var(--border); border-top:none; border-radius:0 0 12px 12px; ${collapsedBorderStyle}">
-          <div style="font-size:12px; line-height:1.6;">
-            ${s.helper ? `<div style="color:var(--text2); margin-bottom:4px;">值班小幫手：${esc(s.helper)}</div>` : ''}
-            ${s.notes ? `<div style="color:var(--text2); word-break:break-word;">${esc(s.notes)}</div>` : ''}
-            ${!s.helper && !s.notes ? '<div style="color:var(--text2);">無額外資訊</div>' : ''}
+        <div class="session-collapse">
+          <div class="session-collapse-row">
+            <span class="session-collapse-label">值班小幫手</span>
+            <span>${hasHelper ? esc(s.helper) : '<span style="color:var(--text3)">未填寫</span>'}</span>
+          </div>
+          <div class="session-collapse-row">
+            <span class="session-collapse-label">備註</span>
+            <span>${hasNote ? esc(s.note) : '<span style="color:var(--text3)">無備註</span>'}</span>
           </div>
         </div>
       </div>`;
@@ -1555,6 +1610,12 @@ function scrollToSessionCard(sessionId) {
   }
 }
 
+function toggleSessionCard(sessionId) {
+  const card = document.getElementById(`session-card-${sessionId}`);
+  if (!card) return;
+  card.classList.toggle('open');
+}
+
 // 已移除左右滑動檢視月曆的功能
 // function calTouchStart(e) { window._calTouchX = e.touches[0].clientX; }
 // function calTouchEnd(e) {
@@ -1584,10 +1645,10 @@ function openSessionModal() {
   document.getElementById('s-time-start').value = '19:00';
   document.getElementById('s-time-end').value   = '21:00';
   if (DB.courseTypes.length > 0) document.getElementById('s-course-type').value = DB.courseTypes[0];
-  document.getElementById('s-helper').value = '';
-  document.getElementById('s-notes').value = '';
   document.getElementById('s-color').value = '#0f9d58';
   document.querySelectorAll('.color-opt').forEach((el, i) => el.classList.toggle('selected', i === 0));
+  document.getElementById('s-helper').value = '';
+  document.getElementById('s-note').value = '';
   openModal('modal-session');
 }
 
@@ -1601,13 +1662,13 @@ function editSession(id) {
   document.getElementById('s-time-start').value = s.timeStart;
   document.getElementById('s-time-end').value   = s.timeEnd;
   document.getElementById('s-course-type').value = s.courseType || '神鼓陣';
-  document.getElementById('s-helper').value = s.helper || '';
-  document.getElementById('s-notes').value = s.notes || '';
   const savedColor = s.color || '#0f9d58';
   document.getElementById('s-color').value = savedColor;
   document.querySelectorAll('.color-opt').forEach(el => {
     el.classList.toggle('selected', el.dataset.color === savedColor);
   });
+  document.getElementById('s-helper').value = s.helper || '';
+  document.getElementById('s-note').value   = s.note   || '';
   openModal('modal-session');
 }
 
@@ -1617,8 +1678,6 @@ function saveSession() {
   if (!name || !date) { showToast('請填寫完整資訊'); return; }
   const courseType = document.getElementById('s-course-type').value || '神鼓陣';
   const color = document.getElementById('s-color').value || '#0f9d58';
-  const helper = document.getElementById('s-helper').value.trim();
-  const notes = document.getElementById('s-notes').value.trim();
   const editId = document.getElementById('edit-session-id').value;
   if (editId) {
     const idx = DB.sessions.findIndex(s => s.id === editId);
@@ -1626,7 +1685,9 @@ function saveSession() {
       DB.sessions[idx] = { ...DB.sessions[idx], name, date,
         timeStart: document.getElementById('s-time-start').value,
         timeEnd:   document.getElementById('s-time-end').value,
-        courseType, color, helper, notes
+        courseType, color,
+        helper: document.getElementById('s-helper').value.trim(),
+        note:   document.getElementById('s-note').value.trim()
       };
       saveDB(); closeModal('modal-session');
       currentSessionYear  = new Date(date).getFullYear();
@@ -1640,7 +1701,9 @@ function saveSession() {
       name, date,
       timeStart: document.getElementById('s-time-start').value,
       timeEnd:   document.getElementById('s-time-end').value,
-      courseType, color, helper, notes
+      courseType, color,
+      helper: document.getElementById('s-helper').value.trim(),
+      note:   document.getElementById('s-note').value.trim()
     });
     saveDB(); closeModal('modal-session');
     currentSessionYear  = new Date(date).getFullYear();
@@ -1656,7 +1719,7 @@ function duplicateSession(id) {
   const d = new Date(target.date);
   d.setDate(d.getDate() + 7);
   const nextDate = d.toISOString().split('T')[0];
-  DB.sessions.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,3), name: target.name, date: nextDate, timeStart: target.timeStart, timeEnd: target.timeEnd, courseType: target.courseType || '神鼓陣', color: target.color, helper: target.helper, notes: target.notes });
+  DB.sessions.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,3), name: target.name, date: nextDate, timeStart: target.timeStart, timeEnd: target.timeEnd, courseType: target.courseType || '神鼓陣' });
   saveDB();
   currentSessionYear  = d.getFullYear();
   currentSessionMonth = d.getMonth() + 1;
