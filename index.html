@@ -597,7 +597,8 @@
   .pct.high { color: var(--accent); }
   .pct.mid  { color: var(--accent2); }
   .pct.low  { color: var(--red); }
-  .sort-indicator { font-size: 11px; margin-left: 4px; color: var(--text3); }
+  .sort-indicator { font-size: 10px; margin-left: 3px; color: var(--text3); }
+  th:hover .sort-indicator { color: var(--accent); }
 
   /* ── SESSION DATE CHIP ── */
   .session-date-chip {
@@ -1034,15 +1035,16 @@
       <table id="stats-table">
         <thead>
           <tr>
-            <th class="col-seq" onclick="sortStats('seq')">序 <span class="sort-indicator" id="sort-seq"></span></th>
-            <th class="col-name" onclick="sortStats('name')">姓名 <span class="sort-indicator" id="sort-name"></span></th>
-            <th class="col-gender">性別</th>
-            <th class="col-id">研修代號</th>
-            <th class="col-type">類別</th>
-            <th class="col-role">身分</th>
-            <th class="col-num" onclick="sortStats('present')">出席 <span class="sort-indicator" id="sort-present"></span></th>
-            <th class="col-num" onclick="sortStats('leave')">請假 <span class="sort-indicator" id="sort-leave"></span></th>
-            <th class="col-rate" onclick="sortStats('rate')">出席率 <span class="sort-indicator" id="sort-rate"></span></th>
+            <th class="col-seq" onclick="sortStats('seq')" style="text-align:center;">序 <span class="sort-indicator" id="sort-seq"></span></th>
+            <th class="col-name" onclick="sortStats('name')" style="text-align:center;">姓名 <span class="sort-indicator" id="sort-name"></span></th>
+            <th class="col-gender" onclick="sortStats('gender')" style="text-align:center; cursor:pointer;">性別 <span class="sort-indicator" id="sort-gender"></span></th>
+            <th class="col-id" onclick="sortStats('id')" style="text-align:center; cursor:pointer;">研修代號 <span class="sort-indicator" id="sort-id"></span></th>
+            <th class="col-id" onclick="sortStats('hall')" style="text-align:center; cursor:pointer;">館別 <span class="sort-indicator" id="sort-hall"></span></th>
+            <th class="col-type" onclick="sortStats('type')" style="text-align:center; cursor:pointer;">名單類別 <span class="sort-indicator" id="sort-type"></span></th>
+            <th class="col-role" onclick="sortStats('role')" style="text-align:center; cursor:pointer;">身分 <span class="sort-indicator" id="sort-role"></span></th>
+            <th class="col-num" onclick="sortStats('present')" style="text-align:center;">出席 <span class="sort-indicator" id="sort-present"></span></th>
+            <th class="col-num" onclick="sortStats('leave')" style="text-align:center;">請假 <span class="sort-indicator" id="sort-leave"></span></th>
+            <th class="col-rate" onclick="sortStats('rate')" style="text-align:center;">出席率 <span class="sort-indicator" id="sort-rate"></span></th>
           </tr>
         </thead>
         <tbody id="stats-tbody"></tbody>
@@ -2362,9 +2364,9 @@ function renderStats() {
   const courseTypeFilter = document.getElementById('stats-course-type') ? document.getElementById('stats-course-type').value : 'ALL';
 
   // 更新排序指示
-  ['seq','name','present','leave','rate'].forEach(k => {
+  ['seq','name','gender','id','hall','type','role','present','leave','rate'].forEach(k => {
     const el = document.getElementById('sort-' + k);
-    if (el) el.textContent = statsSort.key === k ? (statsSort.dir === 1 ? '▲' : '▼') : '';
+    if (el) el.textContent = statsSort.key === k ? (statsSort.dir === 1 ? '↑' : '↓') : '⇅';
   });
 
   const sessions = DB.sessions.filter(s => {
@@ -2420,11 +2422,17 @@ function renderStats() {
   const { key, dir } = statsSort;
   rows.sort((a, b) => {
     let av, bv;
-    if (key === 'seq')     { av = a.sequence; bv = b.sequence; }
-    else if (key === 'name')    { av = a.m.name; bv = b.m.name; return dir * av.localeCompare(bv); }
+    if      (key === 'seq')     { av = a.sequence; bv = b.sequence; }
+    else if (key === 'name')    { return dir * a.m.name.localeCompare(b.m.name, 'zh-Hant'); }
+    else if (key === 'gender')  { return dir * (a.m.gender||'女').localeCompare(b.m.gender||'女', 'zh-Hant'); }
+    else if (key === 'id')      { return dir * (a.m.memberId||'').localeCompare(b.m.memberId||'', 'zh-Hant'); }
+    else if (key === 'hall')    { return dir * (a.m.hall||'').localeCompare(b.m.hall||'', 'zh-Hant'); }
+    else if (key === 'type')    { return dir * (a.m.courseType||'').localeCompare(b.m.courseType||'', 'zh-Hant'); }
+    else if (key === 'role')    { return dir * (a.m.role||'').localeCompare(b.m.role||'', 'zh-Hant'); }
     else if (key === 'present') { av = a.p; bv = b.p; }
     else if (key === 'leave')   { av = a.l; bv = b.l; }
     else if (key === 'rate')    { av = a.rate; bv = b.rate; }
+    else                        { av = a.sequence; bv = b.sequence; }
     return dir * (av - bv);
   });
 
@@ -2461,15 +2469,16 @@ function renderStats() {
 
   tbody.innerHTML = rows.map(r => `
     <tr class="clickable-row ${r.rate < 60 ? 'low-rate' : ''}" onclick="toggleRowHighlight(this)">
-      <td class="col-seq"><span style="font-size:13px; color:var(--text3);">${r.sequence}</span></td>
+      <td class="col-seq" style="text-align:center;"><span style="font-size:13px; color:var(--text3);">${r.sequence}</span></td>
       <td class="col-name"><strong>${esc(r.m.name)}</strong></td>
-      <td class="col-gender">${esc(r.m.gender || '女')}</td>
-      <td class="col-id">${esc(r.m.memberId || '—')}</td>
+      <td class="col-gender" style="text-align:center; color:var(--text3); font-size:13px;">${esc(r.m.gender || '女')}</td>
+      <td class="col-id" style="font-family:'Roboto','Noto Sans TC',sans-serif; color:var(--text3); font-size:13px;">${r.m.memberId ? esc(r.m.memberId) : '<span style="color:var(--text3)">—</span>'}</td>
+      <td class="col-id" style="color:var(--text3); font-size:13px;">${r.m.hall ? esc(r.m.hall) : '<span style="color:var(--text3)">—</span>'}</td>
       <td class="col-type"><span class="course-badge">${esc(r.m.courseType || '神鼓陣')}</span></td>
-      <td class="col-role"><span class="role-badge">${esc(r.m.role || '組員')}</span></td>
-      <td class="col-num">${r.p}</td>
-      <td class="col-num">${r.l}</td>
-      <td class="col-rate"><span class="pct ${r.rate>=80?'high':r.rate>=60?'mid':'low'}">${r.rate}%</span></td>
+      <td class="col-role"><span class="${roleClass[r.m.role] || 'role-badge role-badge-member'}">${esc(r.m.role || '組員')}</span></td>
+      <td class="col-num" style="text-align:center;">${r.p}</td>
+      <td class="col-num" style="text-align:center;">${r.l}</td>
+      <td class="col-rate" style="text-align:center;"><span class="pct ${r.rate>=80?'high':r.rate>=60?'mid':'low'}">${r.rate}%</span></td>
     </tr>`).join('');
 }
 
