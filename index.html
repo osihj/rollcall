@@ -967,13 +967,15 @@
       <button class="close-btn" onclick="closeModal('modal-session')">✕</button>
     </div>
     <input type="hidden" id="edit-session-id">
-    <div class="form-group"><label>活動名稱 *</label><input type="text" id="s-name" placeholder="例：神鼓陣常態練習"></div>
+    <div class="form-group"><label>活動名稱 *</label><input type="text" id="s-name" placeholder=""></div>
     <div class="form-group"><label>日期 *</label><input type="date" id="s-date"></div>
     <div class="form-row">
       <div class="form-group"><label>開始時間</label><select id="s-time-start"></select></div>
       <div class="form-group"><label>結束時間</label><select id="s-time-end"></select></div>
     </div>
     <div class="form-group"><label>名單類別 *</label><select id="s-course-type"></select></div>
+    <div class="form-group"><label>值班小幫手</label><input type="text" id="s-helper" placeholder=""></div>
+    <div class="form-group"><label>備註</label><textarea id="s-notes" style="min-height:80px; resize:vertical;"></textarea></div>
     <div class="form-group">
       <label>活動顏色</label>
       <div style="display:flex;gap:10px;align-items:center;padding:4px 0;" id="s-color-picker">
@@ -987,7 +989,10 @@
       </div>
     </div>
     <input type="hidden" id="s-color" value="#2c5234">
-    <button class="btn btn-primary btn-block" onclick="saveSession()">確認儲存</button>
+    <div style="display:flex; gap:12px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-session')">取消</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSession()">確認儲存</button>
+    </div>
   </div>
 </div>
 
@@ -1418,20 +1423,36 @@ function renderSessions() {
   if (!monthSessions.length) { list.innerHTML = '<div class="empty-state"><div class="empty-dot"></div><br>本月無排定活動</div>'; return; }
   list.innerHTML = monthSessions.map(s => {
     const d = new Date(s.date);
+    const hasContent = (s.helper && s.helper.trim()) || (s.notes && s.notes.trim());
+    const borderColor = s.color || '#2c5234';
+    const borderStyle = hasContent ? `border-left: 3px solid ${borderColor};` : '';
+    const collapsedBorderStyle = hasContent ? `border-left: 3px solid ${borderColor};` : '';
     return `
-      <div class="session-item" id="session-card-${s.id}">
-        <div class="session-date-box">
-          <span class="session-month">${d.getMonth()+1}月</span>
-          <span class="session-day" style="color:${s.color||'#2c5234'};">${d.getDate()}</span>
+      <div class="session-item" id="session-card-${s.id}" style="margin-bottom:12px; padding:0;">
+        <div onclick="const detail = this.parentElement.querySelector('.session-detail'); detail.style.display = detail.style.display === 'none' ? 'block' : 'none'; const arrow = this.querySelector('.session-toggle-arrow'); arrow.style.transform = detail.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';" style="display:flex; align-items:flex-start; gap:14px; padding:16px; background:var(--surface); border-radius:12px 12px 0 0; border:1px solid var(--border); ${borderStyle} cursor:pointer; transition:all 0.3s ease;">
+          <div class="session-date-box" style="background:var(--surface); border:1px solid var(--border); border-radius:10px; text-align:center; flex-shrink:0; width:54px; overflow:hidden;">
+            <span class="session-month" style="font-size:10px; font-weight:600; color:var(--text2); background:var(--surface2); padding:3px 0; display:block; letter-spacing:0.04em;">${d.getMonth()+1}月</span>
+            <span class="session-day" style="font-size:22px; font-weight:700; line-height:1; font-family:'Roboto', sans-serif; padding:6px 0 8px; display:block; color:${borderColor};">${d.getDate()}</span>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px;">
+              <div class="session-name" style="font-weight:700; font-size:15px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(s.name)}</div>
+              <span class="course-badge" style="background:var(--surface); color:${borderColor}; border:0.5px solid var(--border); font-size:12px; padding:5px 12px; border-radius:8px; font-weight:500; cursor:default; flex-shrink:0;">${esc(s.courseType||'神鼓陣')}</span>
+            </div>
+            <div class="session-sub" style="font-size:13px; color:var(--text2); font-family:'Roboto', 'Noto Sans TC', sans-serif; white-space:nowrap;">${s.timeStart}～${s.timeEnd}</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start; flex-shrink:0;">
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editSession('${s.id}')">編輯</button>
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); duplicateSession('${s.id}')">複製</button>
+            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteSession('${s.id}')">刪除</button>
+            <div class="session-toggle-arrow" style="font-size:16px; transition:transform 0.3s ease; margin-left:4px; ${hasContent ? 'transform:rotate(180deg);' : ''}">${hasContent ? '▼' : '▼'}</div>
+          </div>
         </div>
-        <div class="session-info">
-          <div class="session-name">${esc(s.name)}</div>
-          <div class="session-sub">${s.timeStart}～${s.timeEnd}</div>
-          <div class="session-actions">
-            <span class="course-badge" style="background:var(--surface);color:${s.color||''};border-color:${s.color||''};">${esc(s.courseType||'神鼓陣')}</span>
-            <button class="btn btn-secondary btn-sm" onclick="editSession('${s.id}')">編輯</button>
-            <button class="btn btn-secondary btn-sm" onclick="duplicateSession('${s.id}')">複製</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">刪除</button>
+        <div class="session-detail" style="display:${hasContent ? 'block' : 'none'}; padding:16px; background:var(--bg); border:1px solid var(--border); border-top:none; border-radius:0 0 12px 12px; ${collapsedBorderStyle}">
+          <div style="font-size:13px; line-height:1.6;">
+            ${s.helper ? `<div style="color:var(--text2); margin-bottom:4px;">值班小幫手：${esc(s.helper)}</div>` : ''}
+            ${s.notes ? `<div style="color:var(--text2);">備註：${esc(s.notes)}</div>` : ''}
+            ${!s.helper && !s.notes ? '<div style="color:var(--text2);">無額外資訊</div>' : ''}
           </div>
         </div>
       </div>`;
@@ -1563,6 +1584,8 @@ function openSessionModal() {
   document.getElementById('s-time-start').value = '19:00';
   document.getElementById('s-time-end').value   = '21:00';
   if (DB.courseTypes.length > 0) document.getElementById('s-course-type').value = DB.courseTypes[0];
+  document.getElementById('s-helper').value = '';
+  document.getElementById('s-notes').value = '';
   document.getElementById('s-color').value = '#0f9d58';
   document.querySelectorAll('.color-opt').forEach((el, i) => el.classList.toggle('selected', i === 0));
   openModal('modal-session');
@@ -1578,6 +1601,8 @@ function editSession(id) {
   document.getElementById('s-time-start').value = s.timeStart;
   document.getElementById('s-time-end').value   = s.timeEnd;
   document.getElementById('s-course-type').value = s.courseType || '神鼓陣';
+  document.getElementById('s-helper').value = s.helper || '';
+  document.getElementById('s-notes').value = s.notes || '';
   const savedColor = s.color || '#0f9d58';
   document.getElementById('s-color').value = savedColor;
   document.querySelectorAll('.color-opt').forEach(el => {
@@ -1592,6 +1617,8 @@ function saveSession() {
   if (!name || !date) { showToast('請填寫完整資訊'); return; }
   const courseType = document.getElementById('s-course-type').value || '神鼓陣';
   const color = document.getElementById('s-color').value || '#0f9d58';
+  const helper = document.getElementById('s-helper').value.trim();
+  const notes = document.getElementById('s-notes').value.trim();
   const editId = document.getElementById('edit-session-id').value;
   if (editId) {
     const idx = DB.sessions.findIndex(s => s.id === editId);
@@ -1599,7 +1626,7 @@ function saveSession() {
       DB.sessions[idx] = { ...DB.sessions[idx], name, date,
         timeStart: document.getElementById('s-time-start').value,
         timeEnd:   document.getElementById('s-time-end').value,
-        courseType, color
+        courseType, color, helper, notes
       };
       saveDB(); closeModal('modal-session');
       currentSessionYear  = new Date(date).getFullYear();
@@ -1613,7 +1640,7 @@ function saveSession() {
       name, date,
       timeStart: document.getElementById('s-time-start').value,
       timeEnd:   document.getElementById('s-time-end').value,
-      courseType, color
+      courseType, color, helper, notes
     });
     saveDB(); closeModal('modal-session');
     currentSessionYear  = new Date(date).getFullYear();
@@ -1629,7 +1656,7 @@ function duplicateSession(id) {
   const d = new Date(target.date);
   d.setDate(d.getDate() + 7);
   const nextDate = d.toISOString().split('T')[0];
-  DB.sessions.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,3), name: target.name, date: nextDate, timeStart: target.timeStart, timeEnd: target.timeEnd, courseType: target.courseType || '神鼓陣' });
+  DB.sessions.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,3), name: target.name, date: nextDate, timeStart: target.timeStart, timeEnd: target.timeEnd, courseType: target.courseType || '神鼓陣', color: target.color, helper: target.helper, notes: target.notes });
   saveDB();
   currentSessionYear  = d.getFullYear();
   currentSessionMonth = d.getMonth() + 1;
