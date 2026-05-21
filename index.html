@@ -91,7 +91,7 @@
   .nav-btn.active { color: var(--accent); font-weight: 600; }
 
   /* ── PAGES ── */
-  .page { display: none; padding: 32px 20px 80px; max-width: 760px; margin: 0 auto; }
+  .page { display: none; padding: 82px 20px 80px; max-width: 760px; margin: 0 auto; }
   .page.active { display: block; }
 
   /* ── CARDS ── */
@@ -856,14 +856,8 @@
     white-space: nowrap;
   }
   .stats-cell-center {
-    text-align: center !important;
-    vertical-align: middle !important;
-  }
-  #stats-table .stats-name-cell,
-  #stats-table .course-badge,
-  #stats-table .role-badge {
-    margin-left: auto;
-    margin-right: auto;
+    text-align: center;
+    vertical-align: middle;
   }
 
   /* ── STAT CARD COMPACT（報表用） ── */
@@ -883,18 +877,7 @@
 
   /* ── STATS TABLE 行距調整 ── */
   #stats-table td { padding: 10px 6px; }
-  #stats-table th { padding: 10px 6px; text-align: center !important; vertical-align: middle; }
-  #stats-table th[class*="col-stats-"],
-  #stats-table td[class*="col-stats-"],
-  #stats-table .col-session-date,
-  #stats-table .td-attend {
-    text-align: center !important;
-    vertical-align: middle !important;
-  }
-  #stats-table th[class*="col-stats-"],
-  #stats-table td[class*="col-stats-"] {
-    font-size: 13px;
-  }
+  #stats-table th { padding: 10px 6px; text-align: center; vertical-align: middle; }
   #stats-table .col-stats-seq { padding-left: 5px; padding-right: 5px; }
   #stats-table .td-attend { padding: 10px 3px !important; }
   #stats-table .col-stats-name,
@@ -902,8 +885,8 @@
   #stats-table .col-stats-hall,
   #stats-table .col-stats-course,
   #stats-table .col-stats-role {
-    text-align: center !important;
-    vertical-align: middle !important;
+    text-align: center;
+    vertical-align: middle;
   }
   @media (max-width: 520px) {
     #stats-table {
@@ -924,6 +907,25 @@
 </style>
 </head>
 <body>
+
+<!-- Firebase Login UI -->
+<div id="login-screen" style="position:fixed;inset:0;background:#f8f7f4;display:flex;justify-content:center;align-items:center;z-index:99999;">
+  <div style="background:#fff;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);text-align:center;width:90%;max-width:320px;">
+    <div style="font-size:24px;font-weight:700;margin-bottom:10px;">點名管理系統</div>
+    <div style="font-size:14px;color:#666;margin-bottom:24px;">請使用 Google 帳號登入</div>
+    <button onclick="googleLogin()" style="width:100%;padding:14px;border:none;border-radius:10px;background:#2c5234;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">
+      使用 Google 登入
+    </button>
+  </div>
+</div>
+
+<div id="app-container" style="display:none;">
+
+<div id="user-bar" style="position:fixed;top:0;left:0;right:0;height:50px;background:#fff;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;padding:0 16px;z-index:1000;">
+  <div style="font-size:14px;">👤 <span id="user-name"></span></div>
+  <button onclick="logout()" style="border:none;background:#eee;padding:8px 12px;border-radius:8px;cursor:pointer;">登出</button>
+</div>
+
 
 <nav>
   <div class="nav-inner">
@@ -2896,5 +2898,84 @@ function toggleSessionDetail(sid) {
   setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 }
 </script>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBXWiESc_oenlb-WF9wzsd4oFDampID9V8",
+  authDomain: "hererollcall.firebaseapp.com",
+  projectId: "hererollcall",
+  storageBucket: "hererollcall.firebasestorage.app",
+  messagingSenderId: "190944484790",
+  appId: "1:190944484790:web:3763a635f76e46adbcb517",
+  measurementId: "G-ENN8H5W8YQ"
+};
+
+const app = initializeApp(firebaseConfig);
+getAnalytics(app);
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// 改成你的 Google 帳號
+const ADMIN_EMAIL = "hsinglinstar@gmail.com";
+
+window.googleLogin = async function () {
+  const provider = new GoogleAuthProvider();
+
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    console.error(err);
+    alert("登入失敗");
+  }
+};
+
+window.logout = async function () {
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, (user) => {
+
+  if (!user) {
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("app-container").style.display = "none";
+    return;
+  }
+
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app-container").style.display = "block";
+
+  document.getElementById("user-name").textContent =
+    user.displayName || user.email;
+
+  const isAdmin = user.email === ADMIN_EMAIL;
+
+  if (!isAdmin) {
+
+    ["nav-members","nav-attendance","nav-lottery","nav-stats"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+
+    ["page-members","page-attendance","page-lottery","page-stats"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+
+    if (typeof switchPage === "function") {
+      switchPage("sessions");
+    }
+  }
+});
+
+window.firebaseDB = db;
+</script>
+
 </body>
 </html>
