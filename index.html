@@ -2500,10 +2500,6 @@ function renderStats() {
   const tbody     = document.getElementById('stats-tbody');
   const thead     = document.getElementById('stats-thead');
 
-  const members = courseTypeFilter === 'ALL'
-    ? DB.members
-    : DB.members.filter(m => (m.courseType || '神鼓陣') === courseTypeFilter);
-
   if (!sessions.length) {
     summaryEl.innerHTML = '';
     summaryEl.style.gridTemplateColumns = '';
@@ -2540,10 +2536,14 @@ function renderStats() {
     sessionHasRecord[s.id] = hasRec;
     let cnt = 0;
     sessionMembers[s.id].forEach(m => {
-      // 有點名紀錄時：有記錄且為出席才算；無點名紀錄時不計入
+      // 有點名紀錄時：
+      //   - 有記錄且為 absent(出席) 或 present(舊遲到) → 算出席
+      //   - 有記錄但此人無記錄（undefined）→ 預設出席，算出席
+      //   - 有記錄且為 leave → 不算
+      // 無點名紀錄時：不計入
       if (hasRec) {
         const v = rec[m.id];
-        if (v === 'absent' || v === 'present' || v === undefined) cnt++;
+        if (v !== 'leave') cnt++; // undefined / 'absent' / 'present' 皆視為出席
       }
     });
     sessionAttendCounts[s.id] = hasRec ? cnt : null; // null = 未點名
@@ -2589,6 +2589,7 @@ function renderStats() {
   });
 
   // 月平均出席人數：有點名場次的出席人數加總 / 有點名場次數
+  // 若有類別篩選，只計算該類別場次
   const recordedSessions = sortedSessions.filter(s => sessionHasRecord[s.id]);
   const avgAttend = recordedSessions.length > 0
     ? Math.round(recordedSessions.reduce((sum, s) => sum + (sessionAttendCounts[s.id] || 0), 0) / recordedSessions.length)
@@ -2780,24 +2781,27 @@ function toggleSessionDetail(sid) {
   const session = DB.sessions.find(s => s.id === sid);
   if (!session) { panel.innerHTML = '<div style="padding:20px; color:var(--text3);">找不到活動資料</div>'; return; }
 
-  const courseTypeFilter = document.getElementById('stats-course-type') ? document.getElementById('stats-course-type').value : 'ALL';
-  const members = courseTypeFilter === 'ALL'
-    ? DB.members
-    : DB.members.filter(m => (m.courseType || '神鼓陣') === courseTypeFilter);
+  // 使用該場活動自己的 courseType 篩選應到成員（與點名時邏輯一致）
+  const sessionCt = session.courseType || '神鼓陣';
+  const members = DB.members.filter(m => (m.courseType || '神鼓陣') === sessionCt);
 
   const rec = DB.records[sid] || {};
   const d = new Date(session.date);
   const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
 
+  const noRecord = !DB.records[sid] || Object.keys(DB.records[sid]).length === 0;
+
   let presentCount = 0, leaveCount = 0;
   const rows = members.map((m, idx) => {
     const v = rec[m.id] !== undefined ? rec[m.id] : 'absent';
-    const isPresent = (v === 'absent' || v === 'present');
-    if (isPresent) presentCount++; else leaveCount++;
+    // absent(出席) / present(舊遲到) / undefined(預設出席) → 出席；leave → 請假
+    const isPresent = (v !== 'leave');
+    if (!noRecord) {
+      // 只有在有點名紀錄時才計入統計
+      if (isPresent) presentCount++; else leaveCount++;
+    }
     return { m, isPresent, idx };
   });
-
-  const noRecord = !DB.records[sid] || Object.keys(DB.records[sid]).length === 0;
 
   panel.innerHTML = `
     <div class="sdp-header">
