@@ -2990,26 +2990,21 @@ window.firebaseDB = db;
 
 
 <script>
-window.ADMIN_EMAILS = [
-  "你的管理者@gmail.com"
-];
-
-window.isAdminUser = true;
+window.ADMIN_EMAILS=["你的管理者@gmail.com"];
+window.isAdminUser=true;
 
 function applyRolePermissions(user){
-
   if(!user) return;
 
   window.isAdminUser = window.ADMIN_EMAILS.includes(user.email);
 
-  // 非管理者隱藏新增按鈕
-  if(!window.isAdminUser){
+  setTimeout(function(){
 
-    setTimeout(()=>{
+    if(!window.isAdminUser){
 
-      document.querySelectorAll('button').forEach(btn=>{
+      document.querySelectorAll('button').forEach(function(btn){
 
-        const text = (btn.innerText || '').trim();
+        const text=(btn.innerText||'').trim();
 
         if(
           text.includes('新增') ||
@@ -3017,14 +3012,14 @@ function applyRolePermissions(user){
           text.includes('複製') ||
           text.includes('刪除')
         ){
-          btn.style.display = 'none';
+          btn.style.display='none';
         }
 
       });
 
-    }, 500);
+    }
 
-  }
+  },300);
 }
 </script>
 
