@@ -253,25 +253,26 @@
       padding: 0 6px; line-height: 1; flex-shrink: 0;
       letter-spacing: 2px;
     }
-    /* 浮動選單 — fixed 定位避免被父層 overflow 截斷 */
-    .member-popover {
-      position: fixed;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.18);
-      z-index: 9999; display: none; overflow: hidden; min-width: 110px;
-    }
-    .member-popover.show { display: block; }
-    .member-popover-btn {
-      display: block; width: 100%; padding: 11px 18px;
-      background: none; border: none; cursor: pointer;
-      font-size: 14px; font-family: inherit;
-      text-align: left; transition: background 0.15s;
-    }
-    .member-popover-btn:first-child { color: var(--text); border-bottom: 1px solid var(--border); }
-    .member-popover-btn:first-child:active { background: var(--surface2); }
-    .member-popover-btn:last-child { color: var(--red); }
-    .member-popover-btn:last-child:active { background: var(--red-light); }
   }
+
+  /* 浮動選單 — fixed 定位，在 media query 外確保全螢幕尺寸都有效 */
+  .member-popover {
+    position: fixed;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.18);
+    z-index: 9999; display: none; overflow: hidden; min-width: 110px;
+  }
+  .member-popover.show { display: block; }
+  .member-popover-btn {
+    display: block; width: 100%; padding: 11px 18px;
+    background: none; border: none; cursor: pointer;
+    font-size: 14px; font-family: inherit;
+    text-align: left; transition: background 0.15s;
+  }
+  .member-popover-btn:first-child { color: var(--text); border-bottom: 1px solid var(--border); }
+  .member-popover-btn:first-child:active { background: var(--surface2); }
+  .member-popover-btn:last-child { color: var(--red); }
+  .member-popover-btn:last-child:active { background: var(--red-light); }
 
   /* ── SESSIONS ── */
   .session-item {
@@ -922,21 +923,21 @@
 
   <div id="att-content" style="display:none;">
     <div class="card" id="att-summary-card" style="display:flex; gap:0; padding:0; overflow:hidden; margin-bottom:16px;">
-      <div style="flex:1; padding:16px; text-align:center; border-right:1px solid var(--border);">
+      <div style="flex:1; padding:16px 8px; text-align:center; border-right:1px solid var(--border);">
         <div style="font-size:22px; font-weight:700; color:var(--text2);" id="att-sum-total">0</div>
         <div style="font-size:12px; color:var(--text2); margin-top:4px;">總名單</div>
       </div>
-      <div style="flex:1; padding:16px; text-align:center; border-right:1px solid var(--border);">
+      <div style="flex:1; padding:16px 8px; text-align:center; border-right:1px solid var(--border);">
         <div style="font-size:22px; font-weight:700; color:var(--accent);" id="att-sum-absent">0</div>
         <div style="font-size:12px; color:var(--text2); margin-top:4px;">出席</div>
       </div>
-      <div style="flex:1; padding:16px; text-align:center; border-right:1px solid var(--border);">
+      <div style="flex:1; padding:16px 8px; text-align:center; border-right:1px solid var(--border);">
         <div style="font-size:22px; font-weight:700; color:#ea580c;" id="att-sum-leave">0</div>
         <div style="font-size:12px; color:var(--text2); margin-top:4px;">請假</div>
       </div>
-      <div style="flex:1; padding:16px; text-align:center;">
+      <div style="flex:1; padding:16px 8px; text-align:center;">
         <div style="font-size:22px; font-weight:700; color:var(--accent);" id="att-sum-rate">0%</div>
-        <div style="font-size:12px; color:var(--text2); margin-top:4px;">平均出席率</div>
+        <div style="font-size:11px; color:var(--text2); margin-top:4px; white-space:nowrap;">平均出席率</div>
       </div>
     </div>
     <div class="card" style="padding:0; overflow:hidden;">
@@ -2478,14 +2479,10 @@ function pickSessionColor(el) {
   document.getElementById('s-color').value = el.dataset.color;
 }
 
-// 通用：依按鈕位置計算 fixed popover 座標（按鈕正下方、靠右對齊、不超出螢幕）
+// 通用：依按鈕位置計算 fixed popover 座標
 function positionPopover(btn, el) {
   const rect = btn.getBoundingClientRect();
-  el.style.visibility = 'hidden';
-  el.style.display = 'block';
-  const pw = el.offsetWidth;
-  el.style.display = 'none';
-  el.style.visibility = '';
+  const pw = 120; // 預估寬度，min-width 110px
   let left = rect.right - pw;
   if (left < 8) left = 8;
   if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
