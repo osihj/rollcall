@@ -841,12 +841,13 @@
   }
 
   /* Stats col widths */
-  .col-stats-seq  { width: 54px; min-width: 54px; text-align: center; white-space: nowrap; }
-  .col-stats-name { min-width: 94px; white-space: nowrap; }
-  .col-stats-id   { min-width: 94px; white-space: nowrap; font-family: 'Roboto','Noto Sans TC',sans-serif; }
-  .col-stats-course { min-width: 94px; white-space: nowrap; }
-  .col-stats-role { min-width: 78px; white-space: nowrap; }
-  .col-stats-rate { min-width: 90px; text-align: center; white-space: nowrap; }
+  .col-stats-seq  { width: 44px; min-width: 44px; text-align: center; white-space: nowrap; }
+  .col-stats-name { min-width: 86px; white-space: nowrap; }
+  .col-stats-id   { min-width: 78px; white-space: nowrap; font-family: 'Roboto','Noto Sans TC',sans-serif; }
+  .col-stats-hall { min-width: 52px; white-space: nowrap; }
+  .col-stats-course { min-width: 82px; white-space: nowrap; }
+  .col-stats-role { min-width: 70px; white-space: nowrap; }
+  .col-stats-rate { min-width: 76px; text-align: center; white-space: nowrap; }
   .stats-name-cell {
     display: inline-flex;
     align-items: center;
@@ -875,12 +876,13 @@
   }
 
   /* ── STATS TABLE 行距調整 ── */
-  #stats-table td { padding: 11px 10px; }
-  #stats-table th { padding: 12px 10px; }
-  #stats-table .col-stats-seq { padding-left: 8px; padding-right: 8px; }
-  #stats-table .td-attend { padding: 11px 4px !important; }
+  #stats-table td { padding: 10px 6px; }
+  #stats-table th { padding: 10px 6px; text-align: center; vertical-align: middle; }
+  #stats-table .col-stats-seq { padding-left: 5px; padding-right: 5px; }
+  #stats-table .td-attend { padding: 10px 3px !important; }
   #stats-table .col-stats-name,
   #stats-table .col-stats-id,
+  #stats-table .col-stats-hall,
   #stats-table .col-stats-course,
   #stats-table .col-stats-role {
     text-align: center;
@@ -892,14 +894,15 @@
     }
     #stats-table th,
     #stats-table td {
-      padding: 11px 8px;
+      padding: 10px 5px;
     }
-    #stats-table .col-stats-seq  { width: 54px; min-width: 54px; }
-    #stats-table .col-stats-name { min-width: 92px; }
-    #stats-table .col-stats-id   { min-width: 92px; }
-    #stats-table .col-stats-course { min-width: 92px; }
-    #stats-table .col-stats-role { min-width: 76px; }
-    #stats-table .col-session-date { min-width: 64px; }
+    #stats-table .col-stats-seq  { width: 44px; min-width: 44px; }
+    #stats-table .col-stats-name { min-width: 84px; }
+    #stats-table .col-stats-id   { min-width: 74px; }
+    #stats-table .col-stats-hall { min-width: 48px; }
+    #stats-table .col-stats-course { min-width: 78px; }
+    #stats-table .col-stats-role { min-width: 66px; }
+    #stats-table .col-session-date { min-width: 58px; }
   }
 </style>
 </head>
@@ -1161,6 +1164,7 @@
             <th class="col-seq" onclick="sortStats('seq')" style="text-align:center;">序 <span class="sort-indicator" id="sort-seq">⇅</span></th>
             <th class="col-name" onclick="sortStats('name')">姓名 <span class="sort-indicator" id="sort-name">⇅</span></th>
             <th class="col-id" onclick="sortStats('id')" style="cursor:pointer;">研修代號 <span class="sort-indicator" id="sort-id">⇅</span></th>
+            <th class="col-id" onclick="sortStats('hall')" style="cursor:pointer;">館別 <span class="sort-indicator" id="sort-hall">⇅</span></th>
             <th class="col-type" onclick="sortStats('course')" style="cursor:pointer;">名單類別 <span class="sort-indicator" id="sort-course">⇅</span></th>
             <th class="col-role" onclick="sortStats('role')" style="cursor:pointer;">組員類別 <span class="sort-indicator" id="sort-role">⇅</span></th>
             <!-- 活動日期欄位由 JS 動態插入 -->
@@ -2518,7 +2522,7 @@ function renderStats() {
   buildStatsMonthBtns();
 
   // 更新排序指示
-  ['seq','name','id','course','role','rate'].forEach(k => {
+  ['seq','name','id','hall','course','role','rate'].forEach(k => {
     const el = document.getElementById('sort-' + k);
     if (el) el.textContent = statsSort.key === k ? (statsSort.dir === 1 ? '↑' : '↓') : '⇅';
   });
@@ -2540,12 +2544,13 @@ function renderStats() {
     summaryEl.style.gridTemplateColumns = '';
     const infoEl2 = document.getElementById('stats-sessions-info');
     if (infoEl2) infoEl2.style.display = 'none';
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text3); padding:32px;">指定期間內尚無歷史點名數據</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text3); padding:32px;">指定期間內尚無歷史點名數據</td></tr>';
     // 重置 thead
     thead.innerHTML = `<tr>
       <th class="col-stats-seq" onclick="sortStats('seq')" style="text-align:center;">序 <span class="sort-indicator" id="sort-seq">⇅</span></th>
       <th class="col-stats-name" onclick="sortStats('name')">姓名 <span class="sort-indicator" id="sort-name">⇅</span></th>
       <th class="col-stats-id" onclick="sortStats('id')" style="cursor:pointer;">研修代號 <span class="sort-indicator" id="sort-id">⇅</span></th>
+      <th class="col-stats-hall" onclick="sortStats('hall')" style="cursor:pointer;">館別 <span class="sort-indicator" id="sort-hall">⇅</span></th>
       <th class="col-stats-course" onclick="sortStats('course')" style="cursor:pointer;">名單類別 <span class="sort-indicator" id="sort-course">⇅</span></th>
       <th class="col-stats-role" onclick="sortStats('role')" style="cursor:pointer;">組員類別 <span class="sort-indicator" id="sort-role">⇅</span></th>
       <th class="col-stats-rate" onclick="sortStats('rate')" style="text-align:center; cursor:pointer;">出席率 <span class="sort-indicator" id="sort-rate">⇅</span></th>
@@ -2649,6 +2654,7 @@ function renderStats() {
     if      (key === 'seq')  { av = a.sequence; bv = b.sequence; }
     else if (key === 'name') { return dir * a.m.name.localeCompare(b.m.name, 'zh-Hant'); }
     else if (key === 'id')   { return dir * (a.m.memberId||'').localeCompare(b.m.memberId||'', 'zh-Hant'); }
+    else if (key === 'hall') { return dir * (a.m.hall||'').localeCompare(b.m.hall||'', 'zh-Hant'); }
     else if (key === 'course') { return dir * (a.m.courseType||'神鼓陣').localeCompare(b.m.courseType||'神鼓陣', 'zh-Hant'); }
     else if (key === 'role') {
       const roleOrder = { '輔導': 0, '窗口': 1, '組員': 2 };
@@ -2703,6 +2709,7 @@ function renderStats() {
     <th class="col-stats-seq" onclick="sortStats('seq')" style="text-align:center;">序 <span class="sort-indicator" id="sort-seq">${statsSort.key==='seq'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
     <th class="col-stats-name" onclick="sortStats('name')">姓名 <span class="sort-indicator" id="sort-name">${statsSort.key==='name'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
     <th class="col-stats-id" onclick="sortStats('id')" style="cursor:pointer;">研修代號 <span class="sort-indicator" id="sort-id">${statsSort.key==='id'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+    <th class="col-stats-hall" onclick="sortStats('hall')" style="cursor:pointer;">館別 <span class="sort-indicator" id="sort-hall">${statsSort.key==='hall'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
     <th class="col-stats-course" onclick="sortStats('course')" style="cursor:pointer;">名單類別 <span class="sort-indicator" id="sort-course">${statsSort.key==='course'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
     <th class="col-stats-role" onclick="sortStats('role')" style="cursor:pointer;">組員類別 <span class="sort-indicator" id="sort-role">${statsSort.key==='role'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>`;
 
@@ -2741,10 +2748,11 @@ function renderStats() {
       </td>
       <td class="col-stats-name stats-cell-center"><span class="stats-name-cell"><strong>${esc(r.m.name)}</strong><span class="gender-tag">(${esc(r.m.gender || '女')})</span></span></td>
       <td class="col-stats-id stats-cell-center" style="color:var(--text3); font-size:13px; font-family:'Roboto','Noto Sans TC',sans-serif;">${r.m.memberId ? esc(r.m.memberId) : '<span style="color:var(--border)">—</span>'}</td>
+      <td class="col-stats-hall stats-cell-center" style="color:var(--text3); font-size:13px;">${r.m.hall ? esc(r.m.hall) : '<span style="color:var(--border)">—</span>'}</td>
       <td class="col-stats-course stats-cell-center"><span class="course-badge">${esc(r.m.courseType || '神鼓陣')}</span></td>
       <td class="col-stats-role stats-cell-center"><span class="${roleClass[r.m.role] || 'role-badge role-badge-member'}">${esc(r.m.role || '組員')}</span></td>
       ${sessionCells}
-      <td class="col-stats-rate ${rateBgClass}" style="text-align:center; padding:10px 8px !important;">
+      <td class="col-stats-rate ${rateBgClass}" style="text-align:center; padding:10px 5px !important;">
         <span class="rate-cell-val ${rateClass}">${rateText}</span>
         <span class="rate-cell-sub">${subText}</span>
       </td>
