@@ -2967,8 +2967,6 @@ onAuthStateChanged(auth, (user) => {
 
   const isAdmin = user.email === ADMIN_EMAIL;
 
-  applyRolePermissions(user);
-
   if (!isAdmin) {
 
     ["nav-members","nav-attendance","nav-lottery","nav-stats"].forEach(id => {
@@ -2994,7 +2992,7 @@ window.firebaseDB = db;
 <script>
 window.isAdminUser = false;
 window.ADMIN_EMAILS = [
-  "hsinglinstar@gmail.com"
+  "你的管理者@gmail.com"
 ];
 
 function applyRolePermissions(user){
@@ -3007,13 +3005,6 @@ function applyRolePermissions(user){
     if(addBtn){
       addBtn.style.display = 'none';
     }
-
-  if(!window.isAdminUser){
-    document.querySelectorAll('.session-header-actions, .session-more-btn').forEach(el=>{
-      el.style.display='none';
-    });
-  }
-
   }
 }
 
@@ -3041,8 +3032,8 @@ window.addEventListener('DOMContentLoaded', function(){
     window.editSession = guard(window.editSession, '非管理者無法編輯活動');
   }
 
-  if(typeof window.copySession === 'function'){
-    window.copySession = guard(window.copySession, '非管理者無法複製活動');
+  if(typeof window.duplicateSession === 'function'){
+    window.duplicateSession = guard(window.duplicateSession, '非管理者無法複製活動');
   }
 
   if(typeof window.deleteSession === 'function'){
