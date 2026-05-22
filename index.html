@@ -1146,9 +1146,9 @@
     </div>
 
     <!-- 名單類別篩選 -->
-    <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-      <span style="font-size:13px; font-weight:500; color:var(--text2); white-space:nowrap;">名單類別：</span>
-      <div class="filter-tabs" id="lottery-course-filters" style="margin-bottom:0; padding-bottom:0;"></div>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+      <label for="lottery-course-select" style="font-size:13px; font-weight:500; color:var(--text2); white-space:nowrap; margin:0;">名單類別：</label>
+      <select id="lottery-course-select" onchange="setLotteryCourseFilter(this.value)" style="flex:1; min-width:140px; max-width:260px;"></select>
     </div>
 
     <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -2780,15 +2780,15 @@ function renderLotteryPage() {
     }
   });
 
-  // 渲染名單類別篩選 tabs
-  const filtersEl = document.getElementById('lottery-course-filters');
+  // 渲染名單類別下拉選單
+  const selectEl = document.getElementById('lottery-course-select');
   const types = DB.courseTypes;
-  let fhtml = `<button class="filter-tab ${lotteryCourseFilter==='ALL'?'active':''}" onclick="setLotteryCourseFilter('ALL')">全部</button>`;
+  let opts = `<option value="ALL"${lotteryCourseFilter==='ALL'?' selected':''}>全部名單類別</option>`;
   types.forEach(t => {
     const cnt = lotteryMembers.filter(x => x.courseType === t).length;
-    if (cnt > 0) fhtml += `<button class="filter-tab ${lotteryCourseFilter===t?'active':''}" onclick="setLotteryCourseFilter('${esc(t)}')">${esc(t)} (${cnt})</button>`;
+    if (cnt > 0) opts += `<option value="${esc(t)}"${lotteryCourseFilter===t?' selected':''}>${esc(t)}（${cnt} 人）</option>`;
   });
-  filtersEl.innerHTML = fhtml;
+  selectEl.innerHTML = opts;
 
   renderLotteryGrid();
 }
@@ -2799,14 +2799,15 @@ function setLotteryCourseFilter(type) {
   lotteryMembers.forEach(m => {
     m.active = (type === 'ALL') ? true : (m.courseType === type);
   });
-  // 重新渲染 tabs（更新 active 狀態）
+  // 同步 select 選中狀態 & 更新人數
+  const selectEl = document.getElementById('lottery-course-select');
   const types = DB.courseTypes;
-  let fhtml = `<button class="filter-tab ${lotteryCourseFilter==='ALL'?'active':''}" onclick="setLotteryCourseFilter('ALL')">全部</button>`;
+  let opts = `<option value="ALL"${lotteryCourseFilter==='ALL'?' selected':''}>全部名單類別</option>`;
   types.forEach(t => {
     const cnt = lotteryMembers.filter(x => x.courseType === t).length;
-    if (cnt > 0) fhtml += `<button class="filter-tab ${lotteryCourseFilter===t?'active':''}" onclick="setLotteryCourseFilter('${esc(t)}')">${esc(t)} (${cnt})</button>`;
+    if (cnt > 0) opts += `<option value="${esc(t)}"${lotteryCourseFilter===t?' selected':''}>${esc(t)}（${cnt} 人）</option>`;
   });
-  document.getElementById('lottery-course-filters').innerHTML = fhtml;
+  selectEl.innerHTML = opts;
   renderLotteryGrid();
 }
 
