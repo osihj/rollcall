@@ -1666,6 +1666,15 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
   // 正規化輔助：去除空白、統一全半形
   const normalize = s => (s || '').trim().replace(/　/g, ' ').replace(/\s+/g, '');
 
+  // ★ 修復：用 baseTs + 遞增 counter 確保同一批次每筆 rowId 絕對唯一
+  const baseTs = Date.now();
+  let _idCounter = 0;
+
+  // ★ 修復：在解析後先建立「本批次已處理的代號/姓名」集合，
+  //         避免同一批次貼入重複行時互相蓋掉
+  const batchSeenIds   = new Map(); // normId  → rowId（本批次新建的）
+  const batchSeenNames = new Map(); // normName → rowId（本批次新建的）
+
   parsed.forEach(({ name, memberId }) => {
     if (!name || name.length < 2) return;
     const normName = normalize(name);
@@ -1676,11 +1685,20 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
     // 【優先】以研修代號查重：代號相同 = 確定同一人（跨類別唯一識別）
     if (normId) {
       existingMember = DB.members.find(m => (m.memberId || '').trim() === normId);
+      // 也在本批次新建的裡面查（同一次貼入多行相同代號）
+      if (!existingMember && batchSeenIds.has(normId)) {
+        const rid = batchSeenIds.get(normId);
+        existingMember = DB.members.find(m => m.id === rid);
+      }
     }
 
     // 【次要】代號查無此人時，用姓名查重（正規化比對，容錯空白/全半形）
     if (!existingMember) {
       existingMember = DB.members.find(m => normalize(m.name) === normName);
+      if (!existingMember && batchSeenNames.has(normName)) {
+        const rid = batchSeenNames.get(normName);
+        existingMember = DB.members.find(m => m.id === rid);
+      }
     }
 
     if (existingMember) {
@@ -1694,7 +1712,8 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
       else skipCount++;
     } else {
       // 【狀況 B】全新組員：建立母體資料（含批次館別）並綁定
-      const rowId = 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      // ★ 修復：用 baseTs + 遞增 counter，避免同批迴圈 Date.now() 相同造成碰撞
+      const rowId = 'm_' + baseTs + '_' + (++_idCounter) + '_' + Math.random().toString(36).substr(2, 4);
       DB.members.push({
         id: rowId, name, gender: '女',
         memberId: memberId || '',
@@ -1703,6 +1722,9 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
         role: defaultRole, note: ''
       });
       bindMemberToCourseType(rowId, memberId || '', courseType, defaultRole);
+      // 登記本批次已處理，防止後續重複行再建一筆
+      if (normId)   batchSeenIds.set(normId, rowId);
+      if (normName) batchSeenNames.set(normName, rowId);
       newCount++;
     }
   });
@@ -1848,6 +1870,18 @@ function updateCourseDropdowns() {
     statsEl.innerHTML = '<option value="ALL">全部名單類別</option>' +
       types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
     if (prev && [...statsEl.options].some(o => o.value === prev)) statsEl.value = prev;
+  }
+  // ★ 修復 Bug3：抽籤分組頁的名單類別下拉也要同步更新
+  const lotteryEl = document.getElementById('lottery-course-select');
+  if (lotteryEl) {
+    const prevLottery = lotteryEl.value;
+    let opts = '<option value="ALL"' + (prevLottery==='ALL' ? ' selected' : '') + '>全部名單類別</option>';
+    types.forEach(t => {
+      const cnt = (typeof lotteryMembers !== 'undefined') ? lotteryMembers.filter(x => x.courseType === t).length : 0;
+      const cntStr = cnt > 0 ? '（' + cnt + ' 人）' : '';
+      opts += '<option value="' + esc(t) + '"' + (prevLottery===t ? ' selected' : '') + '>' + esc(t) + cntStr + '</option>';
+    });
+    lotteryEl.innerHTML = opts;
   }
 }
 
