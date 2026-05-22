@@ -1530,27 +1530,25 @@ function smartImportPipeline(parsed, courseType, defaultRole) {
 
     let existingMember = null;
 
-    // 【優先】以研修代號查重：代號相同 = 確定同一人
+    // 【優先】以研修代號查重：代號相同 = 確定同一人（跨類別唯一識別）
     if (memberId) {
       existingMember = DB.members.find(m => m.memberId && m.memberId === memberId);
     }
 
-    // 【次要】無研修代號時：只在「已綁定到當前類別的同名無代號組員」裡查重
-    // 關鍵修正：不能跨類別用姓名判斷同一人，避免同名不同人被誤合併
-    if (!existingMember && !memberId) {
-      const sameNameNoId = DB.members.filter(m => m.name === name && !m.memberId);
-      existingMember = sameNameNoId.find(m =>
-        DB.memberMappings.some(mp => mp.rowId === m.id && mp.courseType === courseType)
-      );
+    // 【次要】無研修代號，或代號查無此人時，用姓名查重
+    // 規則：同名 = 同一人（姓名在此系統視為唯一識別的備用方案）
+    // 找第一個同名且無代號的組員（若有代號則已在上面被找到）
+    if (!existingMember) {
+      existingMember = DB.members.find(m => m.name === name && !m.memberId);
     }
 
     if (existingMember) {
-      // 【狀況 A】確認是同一人：嘗試新增關聯（關聯已存在則 skip）
+      // 【狀況 A】是舊組員：只新增關聯，已有關聯則跳過，不建立重複檔案
       const added = bindMemberToCourseType(existingMember.id, memberId || existingMember.memberId || '', courseType);
       if (added) bindCount++;
       else skipCount++;
     } else {
-      // 【狀況 B】全新組員（或同名但不同類別）：建立母體並綁定
+      // 【狀況 B】確認是全新組員：建立母體資料並綁定
       const rowId = 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
       DB.members.push({
         id: rowId, name, gender: '女',
