@@ -1658,7 +1658,7 @@ function updateMappingsMemberId(rowId, newMemberId) {
   });
 }
 
-// 智慧匯入核心邏輯：以研修代號為唯一識別，多對多綁定
+// 智慧匯入核心邏輯：以姓名為主要識別、研修代號為輔助資訊，多對多綁定
 // 回傳 { newCount, bindCount, skipCount }
 function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
   let newCount = 0, bindCount = 0, skipCount = 0;
@@ -1676,10 +1676,9 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
   const baseTs = Date.now();
   let _idCounter = 0;
 
-  // ★ 修復：在解析後先建立「本批次已處理的代號/姓名」集合，
-  //         避免同一批次貼入重複行時互相蓋掉
-  const batchSeenIds   = new Map(); // normId  → rowId（本批次新建的）
+  // 研修代號可能多人共用，因此同批次去重以姓名為主，避免同代號不同人被合併。
   const batchSeenNames = new Map(); // normName → rowId（本批次新建的）
+  const batchSeenExact = new Map(); // normId|normName → rowId（本批次新建的）
 
   parsed.forEach(({ name, memberId }) => {
     if (!name || name.length < 2) return;
@@ -1688,27 +1687,29 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
 
     let existingMember = null;
 
-    // 【優先策略】以研修代號查重：代號相同 = 確定同一人（跨類別唯一識別）
-    if (normId) {
+    // 【優先策略】姓名相同 = 同一人（研修代號可能多人共用，不能單獨作為唯一鍵）
+    if (normName) {
       // 1. 在已存資料中查
-      existingMember = DB.members.find(m => (m.memberId || '').trim() === normId);
-      
-      // 2. 在本批次新建的裡面查（同一次貼入多行相同代號）
-      if (!existingMember && batchSeenIds.has(normId)) {
-        const rid = batchSeenIds.get(normId);
+      existingMember = DB.members.find(m => normalize(m.name) === normName);
+
+      // 2. 在本批次新建的裡面查
+      if (!existingMember && batchSeenNames.has(normName)) {
+        const rid = batchSeenNames.get(normName);
         existingMember = DB.members.find(m => m.id === rid);
       }
     }
 
-    // 【次要策略】代號查無此人時，用姓名查重（正規化比對，容錯空白/全半形）
-    // ★ 改進：只在代號查無時才使用姓名查重（降低誤判率）
-    if (!existingMember && normName) {
+    // 【次要策略】姓名未命中時，只用「代號+姓名」完整組合查重，不用代號單獨合併。
+    if (!existingMember && normId && normName) {
+      const exactKey = normId + '|' + normName;
       // 1. 在已存資料中查
-      existingMember = DB.members.find(m => normalize(m.name) === normName);
-      
+      existingMember = DB.members.find(m =>
+        (m.memberId || '').trim() === normId && normalize(m.name) === normName
+      );
+
       // 2. 在本批次新建的裡面查
-      if (!existingMember && batchSeenNames.has(normName)) {
-        const rid = batchSeenNames.get(normName);
+      if (!existingMember && batchSeenExact.has(exactKey)) {
+        const rid = batchSeenExact.get(exactKey);
         existingMember = DB.members.find(m => m.id === rid);
       }
     }
@@ -1725,6 +1726,10 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
       // 若有批次館別且舊組員館別為空，補填
       if (added && defaultHall && !existingMember.hall) {
         existingMember.hall = defaultHall;
+      }
+      if (memberId && !existingMember.memberId) {
+        existingMember.memberId = memberId;
+        updateMappingsMemberId(existingMember.id, memberId);
       }
       
       if (added) {
@@ -1751,8 +1756,8 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
       bindMemberToCourseType(rowId, memberId || '', courseType, defaultRole);
       
       // 登記本批次已處理，防止後續重複行再建一筆
-      if (normId)   batchSeenIds.set(normId, rowId);
       if (normName) batchSeenNames.set(normName, rowId);
+      if (normId && normName) batchSeenExact.set(normId + '|' + normName, rowId);
       
       newCount++;
     }
