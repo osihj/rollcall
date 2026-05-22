@@ -1332,7 +1332,7 @@
       <button class="close-btn" onclick="closeModal('modal-coursetype')">✕</button>
     </div>
     <div class="form-group" style="display:flex; gap:8px; margin-bottom:16px;">
-      <input type="text" id="new-ct-name" placeholder="輸入新類別，如：週二晚間班">
+      <input type="text" id="new-ct-name" placeholder="輸入新類別，如：週二班">
       <button class="btn btn-primary" onclick="addCourseType()">新增</button>
     </div>
     <label style="font-size:13px; font-weight:500; color:var(--text2); display:block; margin-bottom:8px;">目前類別列表</label>
@@ -1793,6 +1793,12 @@ let currentGroups   = [];
 let lotGroupCount   = 2;
 let lotteryCourseFilter = 'ALL';  // 名單類別篩選
 
+function lotteryMemberHasCourse(member, courseType) {
+  return Array.isArray(member.allCourseTypes)
+    ? member.allCourseTypes.includes(courseType)
+    : member.courseType === courseType;
+}
+
 const TAIWAN_HOLIDAYS = {
   '01-01':'元旦','02-28':'和平紀念日','04-04':'兒童節',
   '04-05':'清明節','05-01':'勞動節','10-10':'國慶日'
@@ -1906,7 +1912,7 @@ function updateCourseDropdowns() {
     const prevLottery = lotteryEl.value;
     let opts = '<option value="ALL"' + (prevLottery==='ALL' ? ' selected' : '') + '>全部名單類別</option>';
     types.forEach(t => {
-      const cnt = (typeof lotteryMembers !== 'undefined') ? lotteryMembers.filter(x => x.courseType === t).length : 0;
+      const cnt = (typeof lotteryMembers !== 'undefined') ? lotteryMembers.filter(x => lotteryMemberHasCourse(x, t)).length : 0;
       const cntStr = cnt > 0 ? '（' + cnt + ' 人）' : '';
       opts += '<option value="' + esc(t) + '"' + (prevLottery===t ? ' selected' : '') + '>' + esc(t) + cntStr + '</option>';
     });
@@ -2309,43 +2315,7 @@ async function importMembersSmart() {
   const hall       = document.getElementById('import-hall').value || '';
   if (!text) { showToast('請輸入匯入名單內容'); return; }
 
-  // 逐行解析（改進版）：支援「代號緊接姓名」與「代號空格姓名」等多種格式
-  // 格式範例：「1031徐星林」「3057 陳秀珠」「3. 1031 彭月秋」「彭月秋」「彭月秋 1031」
-  const lines = text.split(/[\n,，、;；]+/).map(s => s.trim()).filter(Boolean);
-  const parsed = [];
-  
-  lines.forEach(line => {
-    let memberId = '', name = '';
-
-    // 清除行首的序號（可選）：「1. 」「2） 」「3. 1031 彭月秋」「5.1031 李大明」等
-    // ★ 修復：只比對 1~2 位數字的序號（1–99），避免將 4 位研修代號（如 1031）誤判為序號
-    let cleanLine = line.replace(/^\d{1,2}\s*[\.。\）\)]\s+/, '').trim();
-    // 補充：「1~2位序號+點+研修代號」（如「5.1031 李大明」）也清除序號部分
-    cleanLine = cleanLine.replace(/^\d{1,2}\.(\d{3,5})/, '$1').trim();
-    // 補充：「1~2位數字+標點+緊接中文」（如「1.徐星林」，序號無空格）也一併清除
-    cleanLine = cleanLine.replace(/^\d{1,2}[\.。\）\)](?=[\u4e00-\u9fff])/, '').trim();
-
-    // 策略 A：代號在前（3–5位數）+ 可選空白 + 中文姓名（2–6字）
-    // 改進：使用更嚴格的正規表達式，避免誤匹配
-    const mIdFirst = cleanLine.match(/^(\d{3,5})\s*([\u4e00-\u9fff·‧]{2,6})(?:\s|$)/);
-    if (mIdFirst) {
-      memberId = mIdFirst[1];
-      name     = mIdFirst[2];
-    } else {
-      // 策略 B：中文姓名在前（2–6字），後方可選代號（3–5位數）
-      // 改進：確保至少匹配到2字姓名
-      const mNameFirst = cleanLine.match(/^([\u4e00-\u9fff·‧]{2,6})(?:\s*[\uff08\(]*(\d{3,5})?[\uff09\)]*)?/);
-      if (mNameFirst) {
-        name     = mNameFirst[1];
-        memberId = mNameFirst[2] || '';
-      }
-    }
-
-    // 驗證：姓名至少2字，否則不記錄
-    if (name && name.length >= 2) {
-      parsed.push({ name, memberId });
-    }
-  });
+  const parsed = parseImportedMembers(text);
 
   if (!parsed.length) { showToast('未解析到任何姓名（請確認格式）'); return; }
 
@@ -2366,6 +2336,52 @@ async function importMembersSmart() {
   if (bindCount > 0) msgs.push(`${bindCount} 位舊組員已綁定至「${courseType}」`);
   if (skipCount > 0) msgs.push(`${skipCount} 位已略過（重複）`);
   showToast('✅ ' + msgs.join('，'));
+}
+
+function parseImportedMembers(text) {
+  const normalized = text
+    .replace(/\r/g, '\n')
+    .replace(/[：:]\s*/g, ' ')
+    .replace(/[（(]\s*(\d{3,5})\s*[）)]/g, ' $1 ')
+    .replace(/([^\n])\s+(\d{1,2})\s*[\.。)\）、,，]\s*(?=\d{3,5}|[\u4e00-\u9fff])/g, '$1\n$2. ')
+    .replace(/([^\n])\s+(\d{3,5}\s*[\u4e00-\u9fff])/g, '$1\n$2');
+
+  const chunks = normalized.split(/[\n,，;；]+/).map(s => s.trim()).filter(Boolean);
+  const parsed = [];
+
+  chunks.forEach(chunk => {
+    let line = chunk
+      .replace(/^\d{1,2}\s*(?:[\.。)\）、,，:：-]|\s+)\s*(?=\d{3,5}|[\u4e00-\u9fff])/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!line || /^\d{1,2}$/.test(line)) return;
+
+    let memberId = '', name = '';
+    const idFirst = line.match(/^(\d{3,5})\s*([^\d\s()（）,，;；、:：]+)/);
+    if (idFirst) {
+      memberId = idFirst[1];
+      name = idFirst[2];
+    } else {
+      const nameFirst = line.match(/^([^\d\s()（）,，;；、:：]+)\s*(?:[（(]?\s*(\d{3,5})\s*[）)]?)?/);
+      if (nameFirst) {
+        name = nameFirst[1];
+        memberId = nameFirst[2] || '';
+      }
+    }
+
+    name = normalizeImportedName(name);
+    if (name.length >= 2) parsed.push({ name, memberId });
+  });
+
+  return parsed;
+}
+
+function normalizeImportedName(name) {
+  return (name || '')
+    .replace(/[　\s]/g, '')
+    .replace(/^(?:姓名|名單|組員)/, '')
+    .replace(/(?:男|女|先生|小姐|師兄|師姐|窗口|輔導|組員|內湖|南港|古亭|大安|樹林|桃園|中壢|環北|新竹|竹北|苗栗|台中|虎尾|嘉義|台南|高雄|屏東|宜蘭).*$/, '')
+    .trim();
 }
 
 /* ══════════════════════════════════════════
@@ -2914,8 +2930,9 @@ function renderLotteryPage() {
   const types = DB.courseTypes;
   let opts = `<option value="ALL"${lotteryCourseFilter==='ALL'?' selected':''}>全部名單類別</option>`;
   types.forEach(t => {
-    const cnt = lotteryMembers.filter(x => x.courseType === t).length;
-    if (cnt > 0) opts += `<option value="${esc(t)}"${lotteryCourseFilter===t?' selected':''}>${esc(t)}（${cnt} 人）</option>`;
+    const cnt = lotteryMembers.filter(x => lotteryMemberHasCourse(x, t)).length;
+    const cntStr = cnt > 0 ? `（${cnt} 人）` : '';
+    opts += `<option value="${esc(t)}"${lotteryCourseFilter===t?' selected':''}>${esc(t)}${cntStr}</option>`;
   });
   selectEl.innerHTML = opts;
 
@@ -2926,15 +2943,16 @@ function setLotteryCourseFilter(type) {
   lotteryCourseFilter = type;
   // 切換類別時，將該類別全選、其他全取消
   lotteryMembers.forEach(m => {
-    m.active = (type === 'ALL') ? true : (m.courseType === type);
+    m.active = (type === 'ALL') ? true : lotteryMemberHasCourse(m, type);
   });
   // 同步 select 選中狀態 & 更新人數
   const selectEl = document.getElementById('lottery-course-select');
   const types = DB.courseTypes;
   let opts = `<option value="ALL"${lotteryCourseFilter==='ALL'?' selected':''}>全部名單類別</option>`;
   types.forEach(t => {
-    const cnt = lotteryMembers.filter(x => x.courseType === t).length;
-    if (cnt > 0) opts += `<option value="${esc(t)}"${lotteryCourseFilter===t?' selected':''}>${esc(t)}（${cnt} 人）</option>`;
+    const cnt = lotteryMembers.filter(x => lotteryMemberHasCourse(x, t)).length;
+    const cntStr = cnt > 0 ? `（${cnt} 人）` : '';
+    opts += `<option value="${esc(t)}"${lotteryCourseFilter===t?' selected':''}>${esc(t)}${cntStr}</option>`;
   });
   selectEl.innerHTML = opts;
   renderLotteryGrid();
@@ -2952,7 +2970,7 @@ function renderLotteryGrid() {
   // 只顯示篩選類別的成員
   const visible = lotteryCourseFilter === 'ALL'
     ? lotteryMembers
-    : lotteryMembers.filter(x => x.courseType === lotteryCourseFilter);
+    : lotteryMembers.filter(x => lotteryMemberHasCourse(x, lotteryCourseFilter));
 
   grid.innerHTML = visible.map((m) => {
     const idx = lotteryMembers.indexOf(m);
