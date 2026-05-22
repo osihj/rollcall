@@ -1328,15 +1328,16 @@
 <div class="modal-overlay" id="modal-coursetype">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">新增名單類別</div>
+      <div class="modal-title">管理名單類別</div>
       <button class="close-btn" onclick="closeModal('modal-coursetype')">✕</button>
     </div>
-    <div class="form-group" style="display:flex; gap:8px; margin-bottom:20px;">
+    <div class="form-group" style="display:flex; gap:8px; margin-bottom:16px;">
       <input type="text" id="new-ct-name" placeholder="輸入新類別，如：週二晚間班">
       <button class="btn btn-primary" onclick="addCourseType()">新增</button>
     </div>
-    <label>目前現有類別列表 (點擊可刪除自訂類別)</label>
-    <div id="coursetype-list-container" style="max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); padding:8px;"></div>
+    <label style="font-size:13px; font-weight:500; color:var(--text2); display:block; margin-bottom:8px;">目前類別列表</label>
+    <div style="font-size:12px; color:var(--text3); margin-bottom:8px;">⚠️ 刪除類別後，該類別下的組員<strong>本人不會被刪除</strong>，僅移除與該類別的綁定關係。</div>
+    <div id="coursetype-list-container" style="max-height:240px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;"></div>
   </div>
 </div>
 
@@ -1853,11 +1854,19 @@ function updateCourseDropdowns() {
 function openCourseTypeModal() { renderCourseTypeList(); openModal('modal-coursetype'); }
 
 function renderCourseTypeList() {
-  document.getElementById('coursetype-list-container').innerHTML = DB.courseTypes.map(t => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid var(--border); font-size:14px;">
-      <span>${esc(t)}${t==='神鼓陣' ? ' <span style="color:var(--text3);font-size:12px;">(預設)</span>' : ''}</span>
-      ${t !== '神鼓陣' ? `<button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:11px;" onclick="deleteCourseType('${esc(t)}')">刪除</button>` : ''}
-    </div>`).join('');
+  document.getElementById('coursetype-list-container').innerHTML = DB.courseTypes.map((t, i) => {
+    const cnt = getMemberCountByCourseType(t);
+    const isDefault = t === '神鼓陣';
+    return `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; ${i < DB.courseTypes.length - 1 ? 'border-bottom:1px solid var(--border);' : ''} font-size:14px;">
+      <div>
+        <span style="font-weight:600;">${esc(t)}</span>
+        ${isDefault ? '<span style="color:var(--text3);font-size:11px;margin-left:6px;">（預設）</span>' : ''}
+        <span style="color:var(--text3);font-size:12px;margin-left:6px;">${cnt} 人</span>
+      </div>
+      ${!isDefault ? `<button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;" onclick="deleteCourseType('${esc(t)}')">刪除</button>` : '<span style="font-size:12px;color:var(--text3);">不可刪除</span>'}
+    </div>`;
+  }).join('');
 }
 
 async function addCourseType() {
@@ -1873,25 +1882,26 @@ async function addCourseType() {
 
 function deleteCourseType(name) {
   if (name === '神鼓陣') return;
-  showConfirm(`確定要刪除「${name}」類別嗎？該類別下的組員將被歸類至神鼓陣。`, async () => {
-    // 舊相容欄位
-    DB.members.forEach(m => { if (m.courseType === name) m.courseType = '神鼓陣'; });
-    // 多對多：將該類別的關聯改成神鼓陣
-    DB.memberMappings.forEach(mp => {
-      if (mp.courseType === name) mp.courseType = '神鼓陣';
-    });
-    // 去重（避免已有神鼓陣關聯的同一人出現兩筆）
-    const seen = new Set();
-    DB.memberMappings = DB.memberMappings.filter(mp => {
-      const key = mp.rowId + '|' + mp.courseType;
-      if (seen.has(key)) return false;
-      seen.add(key); return true;
-    });
-    DB.courseTypes = DB.courseTypes.filter(t => t !== name);
-    await saveDB(); renderCourseTypeList(); updateCourseDropdowns();
-    if (activeMemberFilter === name) activeMemberFilter = 'ALL';
-    renderMembers(); showToast('類別已刪除');
-  }, '刪除類別');
+  const cnt = getMemberCountByCourseType(name);
+  showConfirm(
+    `確定要刪除「${name}」類別嗎？\n\n此類別共有 ${cnt} 位組員的綁定將被移除。組員本人不會被刪除，若他們同時屬於其他類別，其他綁定照常保留。`,
+    async () => {
+      // 只移除該類別的 memberMappings 綁定，不動組員本體
+      DB.memberMappings = DB.memberMappings.filter(mp => mp.courseType !== name);
+      // 舊相容欄位：若組員 courseType 是被刪類別，改為其第一個剩餘綁定或神鼓陣
+      DB.members.forEach(m => {
+        if (m.courseType === name) {
+          const remaining = getCourseTypesByMember(m.id);
+          m.courseType = remaining[0] || '神鼓陣';
+        }
+      });
+      DB.courseTypes = DB.courseTypes.filter(t => t !== name);
+      await saveDB(); renderCourseTypeList(); updateCourseDropdowns();
+      if (activeMemberFilter === name) activeMemberFilter = 'ALL';
+      renderMembers(); showToast(`「${name}」已刪除，組員資料保留`);
+    },
+    '刪除名單類別'
+  );
 }
 
 /* ══════════════════════════════════════════
@@ -2012,7 +2022,9 @@ function renderMembers() {
       </div>
       <div style="width:140px; flex-shrink:0; display:flex; gap:4px; justify-content:flex-end; margin-left:auto;" class="member-desktop-only">
         <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">刪除</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">
+          ${activeMemberFilter !== 'ALL' && getCourseTypesByMember(m.id).length > 1 ? '從此移除' : '刪除'}
+        </button>
       </div>
       <!-- 手機版：單行 + 三點浮動選單 -->
       <div class="member-mobile-only">
@@ -2026,7 +2038,9 @@ function renderMembers() {
         <button class="member-more-btn" onclick="toggleMemberPopover(event,'popover-${m.id}')" aria-label="更多操作">⋯</button>
         <div class="member-popover" id="popover-${m.id}">
           <button class="member-popover-btn" onclick="closeAllPopovers();editMember('${m.id}')">編輯</button>
-          <button class="member-popover-btn" onclick="closeAllPopovers();deleteMember('${m.id}')">刪除</button>
+          <button class="member-popover-btn" onclick="closeAllPopovers();deleteMember('${m.id}')">
+            ${activeMemberFilter !== 'ALL' && getCourseTypesByMember(m.id).length > 1 ? '從此類別移除' : '刪除'}
+          </button>
         </div>
       </div>
     </div>`}).join('');
@@ -2193,11 +2207,36 @@ async function saveMember() {
 function deleteMember(id) {
   const m = DB.members.find(x => x.id === id);
   if (!m) return;
-  showConfirm(`確認要刪除組員「${m.name}」嗎？相關名單綁定也將一併移除。`, async () => {
-    DB.members = DB.members.filter(x => x.id !== id);
-    removeAllMappingsForMember(id);
-    await saveDB(); switchMemberTab('list'); showToast('組員已刪除');
-  }, '刪除組員');
+
+  const allCts = getCourseTypesByMember(id);
+
+  // 若目前有篩選特定類別，且組員屬於多個類別 → 只解除該類別的綁定
+  if (activeMemberFilter !== 'ALL' && allCts.length > 1) {
+    const ct = activeMemberFilter;
+    showConfirm(
+      `「${m.name}」同時屬於多個名單類別。\n\n確定只從「${ct}」移除？（組員本人與其他名單的綁定將保留）`,
+      async () => {
+        unbindMemberFromCourseType(id, ct);
+        await saveDB();
+        renderMembers();
+        showToast(`已將「${m.name}」從「${ct}」移除`);
+      },
+      `從「${ct}」移除`
+    );
+    return;
+  }
+
+  // 單一類別，或目前顯示「全部」→ 刪除整個組員
+  const ctList = allCts.length > 1 ? `（目前綁定：${allCts.join('、')}）` : '';
+  showConfirm(
+    `確認要永久刪除組員「${m.name}」嗎？${ctList}\n所有名單綁定及點名紀錄都將一併移除，且無法復原。`,
+    async () => {
+      DB.members = DB.members.filter(x => x.id !== id);
+      removeAllMappingsForMember(id);
+      await saveDB(); switchMemberTab('list'); showToast('組員已刪除');
+    },
+    '永久刪除組員'
+  );
 }
 
 async function importMembersSmart() {
