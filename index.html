@@ -125,4 +125,2487 @@
     box-shadow: var(--shadow-sm);
   }
   .stat-num {
-    font-size: 28px; font-weight:
+    font-size: 28px; font-weight: 700;
+    font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+    line-height: 1; color: var(--text);
+  }
+  .stat-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-top: 8px; letter-spacing: 0.05em; }
+  .stat-card.green .stat-num { color: var(--accent); }
+  .stat-card.orange .stat-num { color: var(--accent2); }
+  .stat-card.red .stat-num { color: var(--red); }
+
+  /* ── FILTER TABS ── */
+  .filter-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: none; }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .filter-tab {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2); font-size: 13px; cursor: pointer;
+    white-space: nowrap; transition: all 0.2s;
+  }
+  .filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    font-size: 14px; font-weight: 500;
+    border: 1px solid var(--border); cursor: pointer;
+    background: var(--surface); color: var(--text);
+    transition: all 0.2s ease; white-space: nowrap;
+    touch-action: manipulation;
+  }
+  .btn:hover { background: var(--surface2); border-color: #d1cdc5; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #203d27; border-color: #203d27; }
+  .btn-primary:active { transform: scale(0.97); box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); }
+  .btn-secondary { background: var(--bg); color: var(--text2); }
+  .btn-danger { background: var(--surface); color: var(--red); border-color: var(--border); }
+  .btn-danger:hover { background: var(--red-light); border-color: var(--red); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-block { width: 100%; }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 16px; }
+  .form-row { display: flex; gap: 12px; }
+  .form-row .form-group { flex: 1; }
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+  input, select, textarea {
+    width: 100%; padding: 11px 14px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 14px; font-family: inherit; font-weight: 400;
+    background: var(--surface); color: var(--text);
+    transition: all 0.2s ease;
+  }
+  select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235c5852' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+    background-repeat: no-repeat; background-position: right 12px center; background-size: 14px;
+    padding-right: 36px; appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+
+  .radio-group { display: flex; gap: 16px; padding: 10px 0; }
+  .radio-label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); cursor: pointer; }
+  .radio-label input { width: auto; margin: 0; }
+
+  /* ── MEMBER LIST ── */
+  .member-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 12px; border-bottom: 1px solid var(--border);
+  }
+  .member-item:last-child { border-bottom: none; }
+  .num-badge {
+    width: 28px; height: 28px; border-radius: 4px;
+    background: var(--surface2); color: var(--text2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 13px; flex-shrink: 0;
+  }
+  .member-info { flex: 1.4; min-width: 0; }
+  .member-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
+  .member-meta { font-size: 13px; color: var(--text3); margin-top: 2px; font-family: 'Roboto', 'Noto Sans TC', sans-serif; }
+  .course-badge {
+    font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px;
+    background: var(--accent-light); color: var(--accent); border: 1px solid rgba(44,82,52,0.15);
+    white-space: nowrap;
+  }
+  .role-badge {
+    font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px;
+    background: var(--accent2-light); color: var(--accent2); border: 1px solid rgba(184,98,29,0.15);
+    white-space: nowrap;
+  }
+  .gender-tag { font-size: 12px; color: var(--text3); font-weight: normal; }
+
+  /* 手機版組員列表：兩行佈局 */
+  .member-mobile-only  { display: none; }
+  .member-desktop-only { display: flex; }
+  @media (max-width: 520px) {
+    .member-mobile-only  { display: flex; flex: 1; min-width: 0; flex-direction: row; align-items: center; gap: 0; }
+    .member-desktop-only { display: none !important; }
+    .member-list-header  { display: none; }
+    .member-item {
+      flex-wrap: nowrap; gap: 10px;
+      padding: 14px 12px; align-items: center;
+      position: relative;
+    }
+    .member-item .num-badge { flex-shrink: 0; }
+    /* 第一行：姓名 + 性別代號 + badges */
+    .member-item-main {
+      display: flex; align-items: center; gap: 6px;
+      flex: 1; min-width: 0; flex-wrap: wrap;
+    }
+    .member-item-name {
+      font-weight: 700; font-size: 15px; white-space: nowrap; flex-shrink: 0;
+    }
+    .member-item-meta {
+      font-size: 13px; color: var(--text3);
+      font-family: "Roboto","Noto Sans TC",sans-serif;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .member-item-badges {
+      display: flex; gap: 4px; flex-shrink: 0;
+    }
+    /* 三點選單按鈕 */
+    .member-more-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text3);
+      padding: 0 6px; line-height: 1; flex-shrink: 0;
+      letter-spacing: 2px;
+    }
+  }
+
+  /* 浮動選單 ─ fixed 定位，在 media query 外確保全螢幕尺寸都有效 */
+  .member-popover {
+    position: fixed;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.18);
+    z-index: 9999; display: none; overflow: hidden; min-width: 110px;
+  }
+  .member-popover.show { display: block; }
+  .member-popover-btn {
+    display: block; width: 100%; padding: 11px 18px;
+    background: none; border: none; cursor: pointer;
+    font-size: 14px; font-family: inherit;
+    text-align: left; transition: background 0.15s;
+  }
+  .member-popover-btn:first-child { color: var(--text); border-bottom: 1px solid var(--border); }
+  .member-popover-btn:first-child:active { background: var(--surface2); }
+  .member-popover-btn:last-child { color: var(--red); }
+  .member-popover-btn:last-child:active { background: var(--red-light); }
+
+  /* ── SESSIONS ── */
+  .session-item {
+    background: var(--surface);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    scroll-margin-top: 80px;
+    transition: box-shadow 0.3s ease;
+    /* 左邊框顏色由 JS 動態設定 */
+    border-left-width: 4px;
+  }
+  .session-item:hover { box-shadow: 0 4px 16px rgba(44,42,39,0.08); }
+  .session-item.highlight-active {
+    background: var(--surface2) !important;
+    box-shadow: 0 0 12px rgba(44, 82, 52, 0.15) !important;
+  }
+
+  /* 頭部：永遠顯示 */
+  .session-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .session-header:hover { background: var(--surface2); }
+
+  /* 左側日曆縮圖 */
+  .session-date-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; text-align: center; flex-shrink: 0;
+    width: 54px; overflow: hidden;
+  }
+  .session-month {
+    font-size: 10px; font-weight: 600; color: var(--text2);
+    background: var(--surface2);
+    padding: 3px 0; display: block; letter-spacing: 0.04em;
+  }
+  .session-day {
+    font-size: 22px; font-weight: 700; line-height: 1;
+    font-family: 'Roboto', sans-serif;
+    padding: 6px 0 8px; display: block;
+    background: var(--surface);
+  }
+
+  /* 右側頭部內容 */
+  .session-info { flex: 1; min-width: 0; }
+  .session-name {
+    font-weight: 700; font-size: 15px; color: var(--text);
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: nowrap; margin-bottom: 4px;
+  }
+  .session-name-text {
+    /* 名稱縮短但 badge 始終緊跟在旁 */
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 0 1 auto; min-width: 0;
+  }
+  .session-name .course-badge {
+    flex-shrink: 0;   /* badge 不壓縮 */
+  }
+  .session-meta-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .session-sub {
+    font-size: 15px; color: var(--text2);
+    font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  /* 桌機：按鈕在右側同一行 */
+  .session-header-actions {
+    display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+    margin-left: auto;
+  }
+  .session-header-actions .btn-sm { font-size: 12px; padding: 5px 12px; }
+
+  /* 摺疊箭頭 */
+  .session-toggle-icon {
+    font-size: 12px; color: var(--text3);
+    transition: transform 0.25s ease;
+    flex-shrink: 0; margin-left: 4px;
+  }
+  .session-item.open .session-toggle-icon { transform: rotate(180deg); }
+
+  /* 手機：三點選單取代按鈕列 */
+  .session-toggle-mobile { display: none; }
+  .session-more-btn {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; color: var(--text3);
+    padding: 0 6px; line-height: 1; flex-shrink: 0;
+    letter-spacing: 2px; touch-action: manipulation;
+  }
+  .session-popover {
+    position: fixed;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(44,42,39,0.18);
+    z-index: 9999; display: none; overflow: hidden; min-width: 110px;
+  }
+  .session-popover.show { display: block; }
+  .session-popover-btn {
+    display: block; width: 100%; padding: 11px 18px;
+    background: none; border: none; cursor: pointer;
+    font-size: 14px; font-family: inherit; text-align: left;
+    transition: background 0.15s;
+  }
+  .session-popover-btn.edit { color: var(--text); border-bottom: 1px solid var(--border); }
+  .session-popover-btn.copy { color: var(--text); border-bottom: 1px solid var(--border); }
+  .session-popover-btn.del  { color: var(--red); }
+  .session-popover-btn:active { background: var(--surface2); }
+  @media (max-width: 520px) {
+    .session-header {
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      position: relative;
+    }
+    .session-header > .session-date-box { flex-shrink: 0; }
+    .session-header > .session-info { flex: 1; min-width: 0; }
+    .session-header-actions { display: none !important; }
+    .session-more-btn { display: block; }
+    .session-toggle-mobile {
+      display: block; font-size: 12px; color: var(--text3);
+      transition: transform 0.25s ease; flex-shrink: 0;
+    }
+    .session-item.open .session-toggle-mobile { transform: rotate(180deg); }
+  }
+
+  /* 摺疊區域 */
+  .session-collapse {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 14px 16px;
+    background: var(--surface);
+  }
+  .session-item.open .session-collapse { display: block; }
+
+  .session-collapse-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 13px; color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .session-collapse-row:last-child { margin-bottom: 0; }
+  .session-collapse-label {
+    font-size: 12px; font-weight: 600; color: var(--text3);
+    white-space: nowrap; min-width: 64px; padding-top: 1px;
+    letter-spacing: 0.04em;
+  }
+
+  .color-opt {
+    width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+    border: 2.5px solid transparent; transition: transform .12s, border-color .12s; flex-shrink: 0;
+  }
+  .color-opt.selected { border-color: var(--color-text-primary); transform: scale(1.15); }
+  .color-opt:hover { transform: scale(1.1); }
+  .session-actions .course-badge { cursor: default; font-size: 12px; padding: 3px 10px; }
+  .session-actions .btn-sm { font-size: 12px; padding: 5px 12px; }
+
+  /* course-badge 圓角與原本一致 */
+  .course-badge { border-radius: 10px !important; }
+
+  /* ── CALENDAR ── */
+  .calendar-month-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    border-top: 1px solid var(--border); border-left: 1px solid var(--border);
+    background: var(--surface); border-radius: var(--radius); overflow: hidden;
+  }
+  .calendar-weekday {
+    background: var(--surface2); padding: 8px 4px; text-align: center;
+    font-size: 12px; font-weight: 700; color: var(--text2);
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .calendar-weekday.weekend-head { color: var(--red); background: #fdfaf9; }
+  .calendar-day-cell {
+    min-height: 72px; padding: 5px 4px;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--surface); transition: background 0.2s;
+  }
+  .calendar-day-cell.has-events { cursor: pointer; }
+  .calendar-day-cell.has-events:hover { background: var(--accent-light); }
+  .calendar-day-cell.sat-cell, .calendar-day-cell.sun-cell { background: #fffcfb; }
+  .calendar-day-cell.sat-cell .calendar-day-num, .calendar-day-cell.sun-cell .calendar-day-num { color: var(--red); font-weight: 700; }
+  .calendar-day-cell.holiday-cell .calendar-day-num { color: var(--red) !important; font-weight: 700; }
+  .holiday-label { font-size: 9px; color: var(--red); font-weight: 500; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; text-align: center; }
+  .calendar-day-cell.other-month { background: #fafaf9 !important; }
+  .calendar-day-cell.other-month .calendar-day-num { color: var(--text3) !important; font-weight: normal; }
+  .calendar-day-cell.today .calendar-day-num {
+    background: var(--accent); color: #fff !important;
+    border-radius: 50%; width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+  }
+  .calendar-day-num {
+    font-size: 13px; font-weight: 500; font-family: 'Roboto', sans-serif;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; flex-shrink: 0;
+  }
+  .calendar-events-container { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
+  .calendar-event-tag {
+    background: #a8c9b0; color: #1a3a22;
+    border-radius: 3px; padding: 1px 4px; font-size: 10px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer; width: 100%; text-align: center;
+  }
+  /* 手機：活動改為綠色圓點，日期數字優先顯示 */
+  @media (max-width: 520px) {
+    .calendar-weekday { font-size: 11px; padding: 6px 2px; }
+    .calendar-day-cell { min-height: 52px; padding: 4px 2px; }
+    .calendar-day-num { font-size: 12px; width: 22px; height: 22px; }
+    .calendar-day-cell.today .calendar-day-num { width: 22px; height: 22px; font-size: 12px; }
+    .holiday-label { font-size: 8px; }
+    .calendar-events-container { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
+    .calendar-event-tag {
+      width: 7px; height: 7px; min-width: 7px; border-radius: 50%;
+      padding: 0; font-size: 0;
+      border: 1.5px solid rgba(255,255,255,0.8);
+    }
+  }
+
+  /* ── QR & CHECKIN ── */
+  .qr-section { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; padding: 20px; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); }
+  .checkin-code { font-family: 'Roboto', sans-serif; font-size: 32px; font-weight: 700; letter-spacing: 4px; color: var(--text); padding: 8px 20px; display: inline-block; margin: 8px 0; }
+  .progress-bar-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; height: 8px; margin: 14px 0; overflow: hidden; }
+  .progress-bar-fill { background: var(--accent); height: 100%; transition: width 0.4s ease; }
+
+  /* ── ATTENDANCE ROWS ── */
+  .att-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+  }
+
+  .att-row:last-child { border-bottom: none; }
+
+  .att-name { font-weight: 700; font-size: 15px; }
+
+  .att-id {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+  }
+
+  .att-btns {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+    align-items: center;
+  }
+
+  /* 單一循環狀態按鈕 */
+  .att-cycle-btn {
+    min-width: 96px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1.5px solid #eadcb0;
+    background: #f6edd2;
+    color: #9a8353;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .att-cycle-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(0.96);
+  }
+
+  /* 出席（預設，奶油黃） */
+  .att-cycle-btn.absent {
+    background: #f6edd2;
+    color: #9a8353;
+    border-color: #eadcb0;
+    box-shadow: 0 2px 8px rgba(228, 210, 160, 0.24);
+  }
+
+  /* 遲到（綠） */
+  .att-cycle-btn.present {
+    background: #dcefdc;
+    color: #5e7f63;
+    border-color: #bfd8c1;
+    box-shadow: 0 2px 8px rgba(170, 200, 174, 0.25);
+  }
+
+  /* 請假（紅） */
+  .att-cycle-btn.leave {
+    background: #f5dddd;
+    color: #9a6666;
+    border-color: #e6c2c2;
+    box-shadow: 0 2px 8px rgba(220, 180, 180, 0.22);
+  }
+
+  .att-cycle-btn.att-saved {
+    opacity: 0.45;
+  }
+
+  /* ── STATISTICS TABLE ── */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); }
+  th { background: var(--surface2); padding: 14px 12px; text-align: left; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  th:hover { background: var(--border); }
+  td { padding: 14px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; transition: background 0.15s; }
+  .col-seq { width: 35px; min-width: 35px; text-align: center; white-space: nowrap; font-family: 'Roboto', sans-serif; }
+  .col-name { width: 70px; min-width: 70px; white-space: nowrap; }
+  .col-gender { width: 50px; min-width: 50px; text-align: center; white-space: nowrap; }
+  .col-id { width: 85px; min-width: 85px; white-space: nowrap; font-family: 'Roboto', 'Noto Sans TC', sans-serif; }
+  .col-type { min-width: 80px; white-space: nowrap; }
+  .col-role { min-width: 70px; white-space: nowrap; }
+  .col-num { min-width: 55px; text-align: center; white-space: nowrap; font-family: 'Roboto', sans-serif; }
+  .col-rate { min-width: 70px; text-align: center; white-space: nowrap; }
+  tr.clickable-row { cursor: pointer; }
+  tr.clickable-row:hover td { background: #faf9f6; }
+  tr.clickable-row.row-selected td { background: var(--surface2) !important; color: var(--text) !important; }
+  tr.low-rate td { background: var(--red-light); }
+  .pct { font-family: 'Roboto', sans-serif; font-weight: 700; }
+  .pct.high { color: var(--accent); }
+  .pct.mid  { color: var(--accent2); }
+  .pct.low  { color: var(--red); }
+  .sort-indicator { font-size: 10px; margin-left: 3px; color: var(--text3); }
+  th:hover .sort-indicator { color: var(--accent); }
+
+  /* ── SESSION DATE CHIP ── */
+  .session-date-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 12px; border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2); color: var(--text2);
+    font-size: 13px; font-family: 'Roboto','Noto Sans TC',sans-serif;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .session-date-chip:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .session-date-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .session-date-chip.active .chip-sub { opacity: 0.85; }
+  .chip-sub { font-size: 11px; opacity: 0.65; }
+
+  /* ── SESSION DETAIL PANEL ── */
+  .sdp-header {
+    padding: 14px 20px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .sdp-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .sdp-meta { font-size: 12px; color: var(--text3); }
+  .sdp-stats { display: flex; gap: 12px; font-size: 13px; }
+  .sdp-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+  .sdp-badge.present { background: #dcefdc; color: #3d6b42; border: 1px solid #bfd8c1; }
+  .sdp-badge.leave   { background: #f5dddd; color: #9a4444; border: 1px solid #e6c2c2; }
+  .sdp-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 20px; border-bottom: 1px solid var(--border); font-size: 14px;
+  }
+  .sdp-row:last-child { border-bottom: none; }
+  .sdp-row-name { flex: 1; font-weight: 500; color: var(--text); }
+  .sdp-row-meta { font-size: 12px; color: var(--text3); }
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(44,42,39,0.4); backdrop-filter: blur(2px); z-index: 200; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; padding: 24px 24px 40px; width: 100%; max-width: 760px; margin: 0 auto; max-height: 85vh; overflow-y: auto; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .close-btn { background: none; border: none; cursor: pointer; width: 32px; height: 32px; font-size: 18px; color: var(--text3); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: #fff; padding: 12px 28px; border-radius: var(--radius);
+    font-size: 13px; z-index: 999; opacity: 0; transition: opacity 0.25s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  .empty-state { text-align: center; padding: 32px 20px; color: var(--text3); font-size: 14px; }
+  .empty-dot { display: inline-block; width: 6px; height: 6px; background: var(--border); border-radius: 50%; margin-bottom: 8px; }
+
+  /* ── LOTTERY PAGE ── */
+  .lottery-controls {
+    display: flex; align-items: stretch; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .stepper-box {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 16px; flex: 1; min-width: 160px;
+  }
+  .stepper-box span { font-size: 13px; font-weight: 500; color: var(--text2); flex: 1; }
+  .stepper-btn {
+    width: 36px; height: 36px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 18px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .stepper-btn:active { transform: scale(0.9); }
+  .stepper-val {
+    font-size: 20px; font-weight: 700; font-family: 'Roboto', sans-serif;
+    min-width: 28px; text-align: center; color: var(--text);
+  }
+
+  .lottery-member-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 104px)); gap: 10px;
+    justify-content: start; margin-top: 10px;
+  }
+  .lottery-cell {
+    width: 104px; height: 104px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; transition: all 0.2s ease;
+    user-select: none; -webkit-user-select: none;
+  }
+  .lottery-cell.unselected {
+    background: #fafaf9; border-color: var(--border); opacity: 0.55;
+  }
+  .lottery-cell.unselected .lot-cell-star { display: none; }
+  .lottery-cell.selected {
+    background: var(--accent-light); border-color: var(--accent);
+    box-shadow: var(--shadow-sm);
+  }
+  .lottery-cell.selected .lot-cell-name { color: var(--accent); font-weight: 700; }
+  
+  .lot-cell-name {
+    font-size: 14px; font-weight: 500; text-align: center;
+    width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    margin-bottom: 4px; color: var(--text);
+  }
+  .lot-cell-id {
+    font-size: 11px; color: var(--text3); font-family: 'Roboto', sans-serif;
+    text-align: center; width: 100%; overflow: hidden; white-space: nowrap;
+  }
+  .lot-cell-star {
+    position: absolute; top: 4px; right: 4px;
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text3); cursor: pointer; z-index: 2;
+    transition: transform 0.15s;
+  }
+  .lot-cell-star:hover { transform: scale(1.2); }
+  .lottery-cell.is-star .lot-cell-star { color: var(--yellow) !important; font-weight: 700; }
+
+  .lottery-stat-row {
+    display: flex; gap: 12px; margin-bottom: 14px; background: var(--surface2);
+    padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border);
+  }
+  .lottery-stat { font-size: 13px; font-weight: 500; color: var(--text2); }
+  .lottery-stat span { font-weight: 700; font-family: 'Roboto', sans-serif; margin-left: 2px; }
+  .lottery-stat.sel span { color: var(--accent); }
+  .lottery-stat.star span { color: var(--yellow); }
+
+  /* 分組結果卡片 */
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+  .result-group-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm); }
+  .result-group-title { font-size: 14px; font-weight: 700; color: var(--text); border-bottom: 1.5px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .result-group-count { font-size: 12px; font-weight: 500; color: var(--text3); font-family: 'Roboto', sans-serif; }
+  .result-member-list { display: flex; flex-direction: column; gap: 2px; }
+  .result-member-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 4px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border);
+  }
+  .result-member-row:last-child { border-bottom: none; }
+  .result-member-row.is-leader { color: var(--yellow); }
+
+  .order-path-wrap { background: var(--yellow-light); border: 1px solid #fde68a; border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .order-path { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 420px; margin: 0 auto; }
+  .order-item { background: var(--surface); border: 1.5px solid #fde68a; border-radius: 10px; padding: 8px 14px; text-align: center; }
+  .order-item-rank { font-size: 10px; color: var(--yellow); font-weight: 700; margin-bottom: 2px; }
+  .order-item-group { font-size: 18px; font-weight: 700; }
+  .order-item.span2 { grid-column: span 1; max-width: none; margin: 0; }
+
+  .copy-result-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 16px; font-size: 13px; cursor: pointer; font-weight: 500; }
+  .copy-result-btn:hover { background: var(--border); }
+
+  /* ── MEMBER MANAGEMENT HEADER ── */
+  .member-list-header {
+    display: flex; align-items: center; background: var(--surface2);
+    border-bottom: 1px solid var(--border); padding: 10px 12px;
+    font-size: 13px; font-weight: 700; color: var(--text2); user-select: none;
+  }
+  .member-list-header > div { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .member-list-header > div.sorted { color: var(--accent); }
+  .mlh-num { width: 35px; cursor: default !important; }
+  .mlh-name { flex: 1; }
+  .mlh-id { flex: 1; }
+  .mlh-course { flex: 1.2; }
+  .mlh-role { flex: 1; }
+  .mlh-actions { width: 80px; cursor: default !important; }
+  .mlh-icon { font-size: 10px; color: var(--text3); font-weight: normal; }
+  .member-list-header > div.sorted .mlh-icon { color: var(--accent); }
+
+  #member-list .member-item { padding: 11px 12px; gap: 8px; }
+
+  /* ── ROLE BADGE COLORS ── */
+  .role-badge-leader { background: #fdf2f8; color: #9d174d; border: 1px solid rgba(157,23,77,0.18); }
+  .role-badge-window { background: #eff6ff; color: #1d4ed8; border: 1px solid rgba(29,78,216,0.18); }
+  .role-badge-member { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+
+  /* ── STATS MONTH BUTTONS ── */
+  .stats-month-btn {
+    padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text2); font-size: 13px; font-weight: 500;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s; font-family: inherit;
+  }
+  .stats-month-btn:hover { background: var(--surface2); border-color: #d1cdc5; }
+  .stats-month-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  /* ── STATS TABLE: session date header ── */
+  .col-session-date {
+    min-width: 60px; text-align: center; white-space: nowrap;
+    background: var(--surface2); font-size: 12px !important; font-weight: 700 !important;
+    cursor: default !important; vertical-align: middle; padding: 10px 6px !important;
+  }
+  .col-session-date:hover { background: var(--surface2) !important; }
+  .session-date-th-date { font-size: 13px; font-weight: 700; color: var(--text); display: block; line-height: 1.3; }
+  .session-date-th-count { font-size: 11px; font-weight: 500; color: var(--text3); display: block; margin-top: 2px; }
+
+  /* ── STATS CARD COMPACT ── */
+  .stat-card-compact { padding: 16px 12px; }
+  .stat-card-compact .stat-num { font-size: 26px; }
+  .stat-card-title { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 8px; letter-spacing: 0.03em; line-height: 1.3; word-break: keep-all; }
+  
+  @media (max-width: 400px) {
+    .stat-card-compact { padding: 12px 8px; }
+    .stat-card-compact .stat-num { font-size: 22px; }
+    .stat-card-title { font-size: 10px; }
+    .stat-label { font-size: 11px; margin-top: 4px; }
+  }
+
+  /* ── STATS TABLE 行距調整 ── */
+  #stats-table td { padding: 10px 6px; }
+  #stats-table th { padding: 10px 6px; text-align: center; vertical-align: middle; }
+  #stats-table .col-stats-seq { padding-left: 5px; padding-right: 5px; }
+  #stats-table .td-attend { padding: 10px 3px !important; }
+  #stats-table .col-stats-name, #stats-table .col-stats-id, #stats-table .col-stats-hall, #stats-table .col-stats-course, #stats-table .col-stats-role {
+    text-align: center; vertical-align: middle;
+  }
+
+  @media (max-width: 520px) {
+    #stats-table { table-layout: auto; }
+    #stats-table th, #stats-table td { padding: 10px 5px; }
+    #stats-table .col-stats-seq { width: 44px; min-width: 44px; }
+    #stats-table .col-stats-name { min-width: 84px; }
+    #stats-table .col-stats-id { min-width: 74px; }
+    #stats-table .col-stats-hall { min-width: 48px; }
+    #stats-table .col-stats-course { min-width: 78px; }
+    #stats-table .col-stats-role { min-width: 66px; }
+    #stats-table .col-session-date { min-width: 58px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen" style="position:fixed;inset:0;background:#f8f7f4;display:flex;justify-content:center;align-items:center;z-index:99999;">
+  <div style="background:#fff;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.05);width:90%;max-width:400px;text-align:center;">
+    <h2 style="margin-bottom:24px;font-weight:700;letter-spacing:1px;color:var(--text)">活動管理系統</h2>
+    <div id="firebaseui-auth-container"></div>
+    <div id="login-loading" style="color:var(--text2);font-size:14px;margin-top:10px;">系統載入中，請稍候...</div>
+  </div>
+</div>
+
+<div id="app-container" style="display:none;">
+
+  <header style="position:fixed; top:0; left:0; right:0; height:62px; background:var(--surface); border-bottom:1.5px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:101; max-width:760px; margin:0 auto;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-weight:700; font-size:16px; color:var(--text); letter-spacing:0.05em;" id="header-page-title">活動行事曆</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span id="user-name" style="font-size:13px; color:var(--text2); font-weight:500;">使用者</span>
+      <button onclick="handleLogout()" class="btn btn-sm btn-secondary" style="padding:5px 10px; font-size:12px;"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
+  </header>
+
+  <div id="page-calendar" class="page active">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <button class="btn btn-sm btn-secondary" onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i> 前一個月</button>
+      <div style="font-size:16px; font-weight:700; color:var(--text); letter-spacing:0.05em;" id="calendar-month-title">2026 年 5 月</div>
+      <button class="btn btn-sm btn-secondary" onclick="changeMonth(1)">下一個月 <i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+    <div class="card" style="padding:0; overflow:hidden; margin-bottom:16px;">
+      <div id="calendar-grid" class="calendar-month-grid"></div>
+    </div>
+
+    <div id="calendar-selected-chips-wrap" class="card" style="padding:14px 16px; margin-bottom:16px; display:none;">
+      <div style="font-size:12px; font-weight:600; color:var(--text3); margin-bottom:8px; id='calendar-chips-date-label'">2026/05/22 的活動</div>
+      <div id="calendar-selected-chips" style="display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px;"></div>
+    </div>
+
+    <div class="card" style="padding:0; background:none; border:none; box-shadow:none;">
+      <div class="card-title" style="margin-bottom:14px; padding-left:4px;"><div class="title-text-wrapper">本月活動清單</div></div>
+      <div id="calendar-month-sessions-list"></div>
+    </div>
+
+    <div id="session-detail-panel" class="card" style="padding:0; overflow:hidden; display:none; scroll-margin-top:80px;"></div>
+  </div>
+
+  <div id="page-members" class="page">
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <button class="btn btn-sm btn-primary" onclick="openMemberModal()">＋ 手動新增成員</button>
+      <button class="btn btn-sm btn-secondary" onclick="switchMemberTab('import')">批次智慧匯入</button>
+      <button class="btn btn-sm btn-secondary" style="margin-left:auto;" onclick="exportMembersToExcel()">匯出 Excel</button>
+    </div>
+
+    <div id="member-sub-import" style="display:none;" class="card">
+      <div class="card-title"><div class="title-text-wrapper">智慧文字解析匯入</div></div>
+      <div style="font-size:13px; color:var(--text2); margin-bottom:14px;">
+        貼上包含姓名與研修代號的文字（支援由數字、點、頓號等分隔的多行文本），系統將自動去重、過濾並解析出姓名與代號。
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>名單類別</label>
+          <select id="import-course-type"></select>
+        </div>
+        <div class="form-group">
+          <label>預設組員類別</label>
+          <select id="import-role-type">
+            <option value="組員">組員</option>
+            <option value="窗口">窗口</option>
+            <option value="輔導">輔導</option>
+          </select>
+        </div>
+      </div>
+      <textarea id="import-text" placeholder="例：1. 陳小明, 2. 李美華、3. 王大同" rows="4"></textarea>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px; flex-wrap:wrap; gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="importMembersSmart()">解析並快速匯入</button>
+        <button class="btn btn-secondary btn-sm" onclick="switchMemberTab('list')">查看組員名單 →</button>
+      </div>
+    </div>
+
+    <div id="member-sub-list">
+      <div class="filter-tabs" id="member-course-filters"></div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div class="member-list-header">
+          <div class="mlh-num">#</div>
+          <div class="mlh-name" onclick="setMemberSort('name')">
+            姓名 <span class="mlh-icon" id="chip-name-icon">⇅</span>
+          </div>
+          <div class="mlh-id" onclick="setMemberSort('id')">
+            研修代號 <span class="mlh-icon" id="chip-id-icon">⇅</span>
+          </div>
+          <div class="mlh-course" onclick="setMemberSort('course')">
+            名單類別 <span class="mlh-icon" id="chip-course-icon">⇅</span>
+          </div>
+          <div class="mlh-role" onclick="setMemberSort('role')">
+            組員類別 <span class="mlh-icon" id="chip-role-icon">⇅</span>
+          </div>
+          <div class="mlh-actions"></div>
+        </div>
+        <div id="member-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-sessions" class="page">
+    <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div></div>
+      <button id="btn-add-session" class="btn btn-primary btn-sm" onclick="openSessionModal()">＋ 新增活動</button>
+    </div>
+
+    <div class="card" style="padding: 16px 20px; margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-weight:700; font-size:16px;" id="session-month-title">2026 年 5 月</div>
+          <div style="font-size:12px; color:var(--text3); margin-top:2px;">此月份共排定 <span id="session-month-count" style="font-weight:700; color:var(--accent);">0</span> 場活動</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-sm btn-secondary" onclick="changeSessionMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="btn btn-sm btn-secondary" onclick="changeSessionMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sessions-list"></div>
+  </div>
+
+  <div id="page-attendance" class="page">
+    <div class="card" style="padding:16px 20px; margin-bottom:16px;">
+      <label style="margin-bottom:8px; font-weight:600;">選擇要點名的活動</label>
+      <select id="att-session-select" onchange="loadAttendanceSession()"></select>
+    </div>
+
+    <div id="att-main-area" style="display:none;">
+      <div class="card" style="padding:20px; margin-bottom:16px; background:var(--surface);">
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; text-align:center;">
+          <div><div id="att-sum-total" style="font-size:20px; font-weight:700; font-family:'Roboto'; color:var(--text);">0</div><div style="font-size:11px; color:var(--text3); margin-top:2px;">應到人數</div></div>
+          <div><div id="att-sum-absent" style="font-size:20px; font-weight:700; font-family:'Roboto'; color:var(--accent);">0</div><div style="font-size:11px; color:var(--text3); margin-top:2px;">出席</div></div>
+          <div><div id="att-sum-leave" style="font-size:20px; font-weight:700; font-family:'Roboto'; color:var(--red);">0</div><div style="font-size:11px; color:var(--text3); margin-top:2px;">請假</div></div>
+          <div><div id="att-sum-rate" style="font-size:20px; font-weight:700; font-family:'Roboto'; color:var(--accent2);">0%</div><div style="font-size:11px; color:var(--text3); margin-top:2px;">出席率</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px 16px; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <input type="text" id="att-search" placeholder="搜尋姓名…" oninput="filterAttList()" style="flex:1; min-width:120px; padding:8px 12px; font-size:14px; border:1.5px solid var(--border); border-radius:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="markAllPresent()">全選</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearAllAttendance()">取消</button>
+        </div>
+        <div id="att-list"></div>
+      </div>
+      <button class="btn btn-primary btn-block" id="btn-save-attendance" onclick="saveAttendance()" style="margin-top:16px;">儲存點名紀錄</button>
+    </div>
+  </div>
+
+  <div id="page-lottery" class="page">
+    <div class="card">
+      <div class="card-title"><div class="title-text-wrapper">選擇參與分組的成員</div></div>
+      <div style="font-size:13px; color:var(--text2); margin-bottom:12px;">
+        點選成員切換是否參與。點 ★ 標記為組長（分組時優先分配到不同組）。出席名單可從點名功能同步。
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+        <span style="font-size:13px; font-weight:500; color:var(--text2); white-space:nowrap;">名單類別：</span>
+        <div class="filter-tabs" id="lottery-course-filters" style="margin-bottom:0; padding-bottom:0;"></div>
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+        <button class="btn btn-sm btn-secondary" onclick="lotterySyncFromAttendance()">從今日出席名單同步</button>
+        <button class="btn btn-sm btn-secondary" onclick="lotteryToggleAll(true)">全選</button>
+        <button class="btn btn-sm btn-secondary" onclick="lotteryToggleAll(false)">全取消</button>
+      </div>
+      <div class="lottery-stat-row" id="lottery-stat-row">
+        <div class="lottery-stat all">總名單 <span id="lot-stat-all">0</span></div>
+        <div class="lottery-stat sel">已選 <span id="lot-stat-sel">0</span></div>
+        <div class="lottery-stat star">★ 組長 <span id="lot-stat-star">0</span></div>
+      </div>
+      <div class="lottery-member-grid" id="lottery-member-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="title-text-wrapper">分組設定</div></div>
+      <div class="lottery-controls">
+        <div class="stepper-box">
+          <span>組數</span>
+          <button class="stepper-btn" onclick="changeLotGroupCount(-1)">－</button>
+          <div class="stepper-val" id="lot-group-count">2</div>
+          <button class="stepper-btn" onclick="changeLotGroupCount(1)">＋</button>
+        </div>
+        <button id="btn-shuffle" class="btn btn-primary" onclick="generateLotteryGroups()" style="flex:1.2; min-width:160px; font-weight:700;"><i class="fa-solid fa-dice"></i> 開始隨機公正分組</button>
+      </div>
+      <div id="lottery-result-area"></div>
+    </div>
+  </div>
+
+  <div id="page-stats" class="page">
+    <div class="card" style="padding:16px 20px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div style="font-weight:700; font-size:15px; color:var(--text);">統計範圍篩選</div>
+        <div style="font-size:12px; color:var(--text3);" id="stats-range-label"></div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <button class="btn btn-sm btn-secondary" onclick="changeStatsYear(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+        <span style="font-weight:700; font-size:15px; font-family:'Roboto';" id="stats-year-title">2026 年</span>
+        <button class="btn btn-sm btn-secondary" onclick="changeStatsYear(1)"><i class="fa-solid fa-chevron-right"></i></button>
+        <button class="btn btn-sm btn-secondary" id="stats-btn-yearall" onclick="setStatsMonth(0)" style="margin-left:auto;">全年總計</button>
+      </div>
+      <div id="stats-month-chips" style="display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px;"></div>
+    </div>
+
+    <div class="stats-grid" id="stats-summary-grid" style="grid-template-columns:1fr 1fr; margin-bottom:16px;"></div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:0 4px;">
+      <div style="font-size:13px; color:var(--text2); font-weight:500;">
+        提示：點擊欄位標頭可進行排序
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="exportStatsToExcel()"><i class="fa-solid fa-file-excel" style="color:#1f7246; margin-right:4px;"></i> 匯出報表</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="stats-table">
+        <thead>
+          <tr id="stats-table-header"></tr>
+        </thead>
+        <tbody id="stats-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <nav>
+    <div class="nav-inner">
+      <button id="nav-calendar" class="nav-btn active" onclick="switchPage('calendar')"><i class="fa-solid fa-calendar-days"></i>行事曆</button>
+      <button id="nav-members" class="nav-btn" onclick="switchPage('members')"><i class="fa-solid fa-users"></i>名單</button>
+      <button id="nav-sessions" class="nav-btn" onclick="switchPage('sessions')"><i class="fa-solid fa-folder-open"></i>活動</button>
+      <button id="nav-attendance" class="nav-btn" onclick="switchPage('attendance')"><i class="fa-solid fa-clipboard-user"></i>點名</button>
+      <button id="nav-lottery" class="nav-btn" onclick="switchPage('lottery')"><i class="fa-solid fa-dice"></i>分組</button>
+      <button id="nav-stats" class="nav-btn" onclick="switchPage('stats')"><i class="fa-solid fa-chart-bar"></i>統計</button>
+    </div>
+  </nav>
+
+</div> <div class="modal-overlay" id="modal-session">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-session-title">活動資料填寫</div>
+      <button class="close-btn" onclick="closeModal('modal-session')">✕</button>
+    </div>
+    <input type="hidden" id="edit-session-id">
+    
+    <div class="form-group">
+      <label>活動名稱 *</label>
+      <input type="text" id="s-name" placeholder="例如：週五常態練習組">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>活動日期 *</label>
+        <input type="date" id="s-date">
+      </div>
+      <div class="form-group">
+        <label>名單類別 *</label>
+        <select id="s-course-type"></select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>開始時間 *</label>
+        <select id="s-time-start"></select>
+      </div>
+      <div class="form-group">
+        <label>結束時間 *</label>
+        <select id="s-time-end"></select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>標記顏色</label>
+      <div style="display:flex; gap:12px; padding:6px 0;" id="color-picker-wrap"></div>
+      <input type="hidden" id="s-color" value="green">
+    </div>
+
+    <div class="form-group">
+      <label>備註事項</label>
+      <textarea id="s-note" placeholder="可填寫本次活動需帶物品或注意事項..."></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="saveSessionData()" style="margin-top:10px; font-weight:700;">確認儲存活動</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-member">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-member-title">組員資料填寫</div>
+      <button class="close-btn" onclick="closeModal('modal-member')">✕</button>
+    </div>
+    <input type="hidden" id="edit-member-id">
+
+    <div class="form-row" style="align-items:flex-end;">
+      <div class="form-group" style="flex:1 1 0;">
+        <label>姓名 *</label>
+        <input type="text" id="m-name">
+      </div>
+      <div class="form-group" style="flex:1 1 0;">
+        <label>性別 *</label>
+        <div class="radio-group" style="padding:0; gap:12px; height:45px; align-items:center;">
+          <label class="radio-label"><input type="radio" name="m-gender" value="女" checked> 女</label>
+          <label class="radio-label"><input type="radio" name="m-gender" value="男"> 男</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" style="flex:1 1 0;">
+        <label>研修代號</label>
+        <input type="text" id="m-id" inputmode="numeric" enterkeyhint="done">
+      </div>
+      <div class="form-group" style="flex:1 1 0;">
+        <label>館別</label>
+        <select id="m-hall">
+          <option value="">— 未設定 —</option>
+          <option value="內湖">內湖</option>
+          <option value="南港">南港</option>
+          <option value="古亭">古亭</option>
+          <option value="大安">大安</option>
+          <option value="樹林">樹林</option>
+          <option value="桃園">桃園</option>
+          <option value="中壢">中壢</option>
+          <option value="環北">環北</option>
+          <option value="新竹">新竹</option>
+          <option value="竹北">竹北</option>
+          <option value="苗栗">苗栗</option>
+          <option value="台中">台中</option>
+          <option value="虎尾">虎尾</option>
+          <option value="嘉義">嘉義</option>
+          <option value="台南">台南</option>
+          <option value="高雄">高雄</option>
+          <option value="屏東">屏東</option>
+          <option value="宜蘭">宜蘭</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>名單類別 *</label>
+        <select id="m-course-type"></select>
+      </div>
+      <div class="form-group">
+        <label>組員類別 *</label>
+        <select id="m-role">
+          <option value="組員">組員</option>
+          <option value="窗口">窗口</option>
+          <option value="輔導">輔導</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>個人備註</label>
+      <textarea id="m-note" placeholder="例如：特定假別需求或其他註記..."></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="saveMemberData()" style="margin-top:10px; font-weight:700;">確認儲存資料</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-confirm" style="align-items:center; background:rgba(44,42,39,0.5);">
+  <div class="modal" style="width:85%; max-width:380px; border-radius:12px; padding:24px; transform:none; max-height:none;">
+    <h3 style="margin-bottom:12px; font-size:16px; font-weight:700;" id="confirm-title">確認操作</h3>
+    <p style="font-size:14px; color:var(--text2); margin-bottom:24px; line-height:1.5;" id="confirm-msg">您確定要執行此操作嗎？</p>
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-sm btn-secondary" onclick="closeModal('modal-confirm')">取消</button>
+      <button class="btn btn-sm btn-danger" id="confirm-ok-btn">確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">提示訊息</div>
+
+<script>
+/* ══════════════════════════════════════════ 資料層 ══════════════════════════════════════════ */
+const STORAGE_KEY = 'attendance_smart_v4';
+let DB = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { members: [], sessions: [], records: {}, courseTypes: ['神鼓陣'] };
+if (!DB.courseTypes || DB.courseTypes.length === 0) DB.courseTypes = ['神鼓陣'];
+DB.courseTypes = DB.courseTypes.filter(t => t !== '常態班');
+if (!DB.courseTypes.includes('神鼓陣')) DB.courseTypes.unshift('神鼓陣');
+
+DB.sessions.forEach(s => { if (!s.courseType) s.courseType = '神鼓陣'; });
+
+function saveDB() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function showConfirm(msg, onOk, title = '確認操作') {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  const okBtn = document.getElementById('confirm-ok-btn');
+  okBtn.onclick = function() {
+    onOk();
+    closeModal('modal-confirm');
+  };
+  openModal('modal-confirm');
+}
+
+/* ══════════════════════════════════════════ 權限與防禦層 ══════════════════════════════════════════ */
+// 需求 4：提醒字樣「非管理者無法...」全數變更為「無權限」
+window.isAdminUser = false;
+window.ADMIN_EMAILS = [ "你的管理者@gmail.com" ];
+
+function applyRolePermissions(user) {
+  if (!user) return;
+  window.isAdminUser = window.ADMIN_EMAILS.includes(user.email);
+  if (!window.isAdminUser) {
+    const addBtn = document.getElementById('btn-add-session');
+    if (addBtn) addBtn.style.display = 'none';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  const guard = function(fn, msg) {
+    return function(...args) {
+      if (!window.isAdminUser) {
+        if (typeof showToast === 'function') showToast(msg); else alert(msg);
+        return;
+      }
+      return fn.apply(this, args);
+    }
+  };
+
+  if (typeof window.openSessionModal === 'function') window.openSessionModal = guard(window.openSessionModal, '無權限');
+  if (typeof window.editSession === 'function') window.editSession = guard(window.editSession, '無權限');
+  if (typeof window.duplicateSession === 'function') window.duplicateSession = guard(window.duplicateSession, '無權限');
+  if (typeof window.deleteSession === 'function') window.deleteSession = guard(window.deleteSession, '無權限');
+  if (typeof window.openMemberModal === 'function') window.openMemberModal = guard(window.openMemberModal, '無權限');
+  if (typeof window.importMembersSmart === 'function') window.importMembersSmart = guard(window.importMembersSmart, '無權限');
+
+  // 需求 1：針對 hsinglinstar@gmail.com 的特殊限制核心防線
+  const originalEditMember = window.editMember;
+  window.editMember = function(id) {
+    const m = DB.members.find(x => x.id === id);
+    if (m && (m.name === 'hsinglinstar@gmail.com' || m.memberId === 'hsinglinstar@gmail.com' || (m.note && m.note.includes('hsinglinstar@gmail.com')))) {
+      showToast('無權限');
+      return;
+    }
+    if (originalEditMember) originalEditMember(id);
+  };
+
+  const originalDeleteMember = window.deleteMember;
+  window.deleteMember = function(id) {
+    const m = DB.members.find(x => x.id === id);
+    if (m && (m.name === 'hsinglinstar@gmail.com' || m.memberId === 'hsinglinstar@gmail.com' || (m.note && m.note.includes('hsinglinstar@gmail.com')))) {
+      showToast('無權限');
+      return;
+    }
+    if (originalDeleteMember) originalDeleteMember(id);
+  };
+});
+
+/* ══════════════════════════════════════════ 核心頁面控制 ══════════════════════════════════════════ */
+let currentPage = 'calendar';
+function switchPage(pageId) {
+  currentPage = pageId;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  
+  const targetPage = document.getElementById('page-' + pageId);
+  const targetBtn = document.getElementById('nav-' + pageId);
+  if (targetPage) targetPage.classList.add('active');
+  if (targetBtn) targetBtn.classList.add('active');
+
+  const titles = { calendar: '活動行事曆', members: '名單管理', sessions: '活動管理', attendance: '活動點名', lottery: '抽籤分組', stats: '數據統計' };
+  document.getElementById('header-page-title').textContent = titles[pageId] || '管理系統';
+
+  closeAllPopovers();
+  window.scrollTo({ top: 0 });
+
+  if (pageId === 'calendar') { renderCalendar(); }
+  else if (pageId === 'members') { switchMemberTab('list'); }
+  else if (pageId === 'sessions') { renderSessions(); }
+  else if (pageId === 'attendance') { initAttendancePage(); }
+  else if (pageId === 'lottery') { initLotteryPage(); }
+  else if (pageId === 'stats') { initStatsPage(); }
+}
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('open');
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2500);
+}
+
+function closeAllPopovers() {
+  document.querySelectorAll('.member-popover.show, .session-popover.show').forEach(p => p.classList.remove('show'));
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.matches('.member-more-btn') && !e.target.matches('.session-more-btn')) {
+    closeAllPopovers();
+  }
+});
+
+/* ══════════════════════════════════════════ 名單管理邏輯 ══════════════════════════════════════════ */
+let activeMemberFilter = 'ALL';
+let memberSort = { key: 'role', dir: 1 };
+
+function switchMemberTab(tab) {
+  if (tab === 'import') {
+    if (!window.isAdminUser) { showToast('無權限'); return; }
+    document.getElementById('member-sub-list').style.display = 'none';
+    document.getElementById('member-sub-import').style.display = 'block';
+    const sel = document.getElementById('import-course-type');
+    sel.innerHTML = DB.courseTypes.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  } else {
+    document.getElementById('member-sub-import').style.display = 'none';
+    document.getElementById('member-sub-list').style.display = 'block';
+    renderMembers();
+  }
+}
+
+function setMemberSort(key) {
+  if (memberSort.key === key) {
+    memberSort.dir = memberSort.dir === 1 ? -1 : 1;
+  } else {
+    memberSort.key = key;
+    memberSort.dir = 1;
+  }
+  renderMembers();
+}
+
+function setMemberFilter(type) {
+  activeMemberFilter = type;
+  renderMembers();
+}
+
+function updateSortChips() {
+  const map = { name: 'mlh-name', id: 'mlh-id', course: 'mlh-course', role: 'mlh-role' };
+  document.querySelectorAll('.member-list-header > div').forEach(el => el.classList.remove('sorted'));
+  if (map[memberSort.key]) {
+    const el = document.querySelector('.' + map[memberSort.key]);
+    if (el) el.classList.add('sorted');
+  }
+  ['name','id','course','role'].forEach(k => {
+    const icon = document.getElementById('chip-' + k + '-icon');
+    if (icon) icon.textContent = memberSort.key === k ? (memberSort.dir === 1 ? '↑' : '↓') : '⇅';
+  });
+}
+
+function renderMembers() {
+  const filterWrap = document.getElementById('member-course-filters');
+  if (!filterWrap) return;
+  
+  let html = `<button class="filter-tab ${activeMemberFilter==='ALL'?'active':''}" onclick="setMemberFilter('ALL')">全部 (${DB.members.length})</button>`;
+  DB.courseTypes.forEach(t => {
+    const cnt = DB.members.filter(m => m.courseType === t).length;
+    html += `<button class="filter-tab ${activeMemberFilter===t?'active':''}" onclick="setMemberFilter('${esc(t)}')">${esc(t)} (${cnt})</button>`;
+  });
+  filterWrap.innerHTML = html;
+  updateSortChips();
+
+  const list = document.getElementById('member-list');
+  let filtered = activeMemberFilter === 'ALL' ? [...DB.members] : DB.members.filter(m => m.courseType === activeMemberFilter);
+  
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-dot"></div><br>此類別暫無組員資料</div>';
+    return;
+  }
+
+  const roleOrder = { '輔導': 0, '窗口': 1, '組員': 2 };
+  filtered.sort((a, b) => {
+    if (memberSort.key === 'name') return memberSort.dir * a.name.localeCompare(b.name, 'zh-TW');
+    if (memberSort.key === 'id') return memberSort.dir * (a.memberId || '').localeCompare(b.memberId || '');
+    if (memberSort.key === 'course') return memberSort.dir * (a.courseType || '').localeCompare(b.courseType || '', 'zh-TW');
+    if (memberSort.key === 'role') {
+      const av = roleOrder[a.role] ?? 9, bv = roleOrder[b.role] ?? 9;
+      return av === bv ? memberSort.dir * a.name.localeCompare(b.name, 'zh-TW') : memberSort.dir * (av - bv);
+    }
+    return 0;
+  });
+
+  const roleClass = { '輔導': 'role-badge role-badge-leader', '窗口': 'role-badge role-badge-window', '組員': 'role-badge role-badge-member' };
+  
+  list.innerHTML = filtered.map((m, idx) => {
+    // 需求 1：針對 hsinglinstar@gmail.com 的防線，決定是否隱藏或鎖死操作
+    const isRestricted = m.name === 'hsinglinstar@gmail.com' || m.memberId === 'hsinglinstar@gmail.com' || (m.note && m.note.includes('hsinglinstar@gmail.com'));
+    const opHtml = isRestricted ? '' : `
+      <button class="btn btn-sm btn-secondary member-desktop-only" onclick="editMember('${m.id}')">編輯</button>
+      <button class="btn btn-sm btn-danger member-desktop-only" onclick="deleteMember('${m.id}')">刪除</button>
+    `;
+    const popoverHtml = isRestricted ? '' : `
+      <button class="member-more-btn" onclick="toggleMemberPopover(event,'popover-${m.id}')" aria-label="更多操作">⋯</button>
+      <div class="member-popover" id="popover-${m.id}">
+        <button class="member-popover-btn" onclick="closeAllPopovers();editMember('${m.id}')">編輯</button>
+        <button class="member-popover-btn" onclick="closeAllPopovers();deleteMember('${m.id}')">刪除</button>
+      </div>
+    `;
+
+    return `
+    <div class="member-item">
+      <div class="num-badge member-desktop-only">${idx + 1}</div>
+      <div class="member-info member-desktop-only">
+        <div class="member-name">${esc(m.name)} <span class="gender-tag">${esc(m.gender || '女')}</span></div>
+      </div>
+      <div class="member-info member-desktop-only" style="font-family:'Roboto'; font-weight:500;">${esc(m.memberId || '—')}</div>
+      <div class="member-info member-desktop-only"><span class="course-badge">${esc(m.courseType || '神鼓陣')}</span></div>
+      <div class="member-info member-desktop-only"><span class="${roleClass[m.role] || 'role-badge role-badge-member'}">${esc(m.role || '組員')}</span></div>
+      <div style="width:130px; justify-content:flex-end; gap:6px;" class="member-desktop-only">${opHtml}</div>
+      
+      <div class="member-mobile-only">
+        <div class="member-item-main">
+          <span class="member-item-name">${esc(m.name)}</span>
+          <span class="member-item-meta">(${esc(m.gender || '女')})${m.memberId ? ' ' + esc(m.memberId) : ''}${m.hall ? ' ' + esc(m.hall) : ''}</span>
+          <div class="member-item-badges">
+            <span class="course-badge">${esc(m.courseType || '神鼓陣')}</span>
+            <span class="${roleClass[m.role] || 'role-badge role-badge-member'}">${esc(m.role || '組員')}</span>
+          </div>
+        </div>
+        ${popoverHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMemberPopover(e, id) {
+  e.stopPropagation();
+  const show = document.getElementById(id).classList.contains('show');
+  closeAllPopovers();
+  if (!show) {
+    const p = document.getElementById(id);
+    p.classList.add('show');
+    const rect = e.target.getBoundingClientRect();
+    p.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+    p.style.left = (rect.left + window.scrollX - 80) + 'px';
+  }
+}
+
+function openMemberModal() {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  document.getElementById('edit-member-id').value = '';
+  document.getElementById('modal-member-title').textContent = '手動新增組員';
+  document.getElementById('m-name').value = '';
+  document.querySelector('input[name="m-gender"][value="女"]').checked = true;
+  document.getElementById('m-id').value = '';
+  document.getElementById('m-hall').value = '';
+  document.getElementById('m-role').value = '組員';
+  document.getElementById('m-note').value = '';
+  
+  const sel = document.getElementById('m-course-type');
+  sel.innerHTML = DB.courseTypes.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if (DB.courseTypes.length > 0) sel.value = DB.courseTypes[0];
+  openModal('modal-member');
+}
+
+function editMember(id) {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  const m = DB.members.find(x => x.id === id);
+  if (!m) return;
+  // 需求 1 防禦
+  if (m.name === 'hsinglinstar@gmail.com' || m.memberId === 'hsinglinstar@gmail.com' || (m.note && m.note.includes('hsinglinstar@gmail.com'))) {
+    showToast('無權限');
+    return;
+  }
+  document.getElementById('edit-member-id').value = id;
+  document.getElementById('modal-member-title').textContent = '編輯組員資料';
+  document.getElementById('m-name').value = m.name;
+  document.querySelector(`input[name="m-gender"][value="${m.gender === '男' ? '男' : '女'}"]`).checked = true;
+  document.getElementById('m-id').value = m.memberId || '';
+  document.getElementById('m-hall').value = m.hall || '';
+  document.getElementById('m-role').value = m.role || '組員';
+  document.getElementById('m-note').value = m.note || '';
+  
+  const sel = document.getElementById('m-course-type');
+  sel.innerHTML = DB.courseTypes.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  sel.value = m.courseType || '神鼓陣';
+  openModal('modal-member');
+}
+
+function saveMemberData() {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  const id = document.getElementById('edit-member-id').value;
+  const name = document.getElementById('m-name').value.trim();
+  const gender = document.querySelector('input[name="m-gender"]:checked').value;
+  const memberId = document.getElementById('m-id').value.trim();
+  const hall = document.getElementById('m-hall').value;
+  const courseType = document.getElementById('m-course-type').value;
+  const role = document.getElementById('m-role').value;
+  const note = document.getElementById('m-note').value.trim();
+
+  if (!name) { showToast('請填寫姓名'); return; }
+  
+  if (id) {
+    const m = DB.members.find(x => x.id === id);
+    if (m) {
+      // 需求 1 防禦
+      if (m.name === 'hsinglinstar@gmail.com' || m.memberId === 'hsinglinstar@gmail.com' || (m.note && m.note.includes('hsinglinstar@gmail.com'))) {
+        showToast('無權限');
+        return;
+      }
+      m.name = name; m.gender = gender; m.memberId = memberId; m.hall = hall; m.courseType = courseType; m.role = role; m.note = note;
+    }
+  } else {
+    DB.members.push({
+      id: 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+      name, gender, memberId, hall, courseType, role, note
+    });
+  }
+  saveDB();
+  closeModal('modal-member');
+  renderMembers();
+  showToast('資料已安全儲存');
+}
+
+function deleteMember(id) {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  const m = DB.members.find(x => x.id === id);
+  if (!m) return;
+  // 需求 1 防禦
+  if (m.name === 'hsinglinstar@gmail.com' || m.memberId === 'hsinglinstar@gmail.com' || (m.note && m.note.includes('hsinglinstar@gmail.com'))) {
+    showToast('無權限');
+    return;
+  }
+  showConfirm(`確定要永久刪除成員「${esc(m.name)}」嗎？此操作不可逆。`, () => {
+    DB.members = DB.members.filter(x => x.id !== id);
+    saveDB();
+    renderMembers();
+    showToast('成員資料已移除');
+  });
+}
+
+function importMembersSmart() {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  const txt = document.getElementById('import-text').value.trim();
+  const courseType = document.getElementById('import-course-type').value;
+  const role = document.getElementById('import-role-type').value;
+  if (!txt) { showToast('請輸入要解析的文字內容'); return; }
+
+  const lines = txt.split('\n');
+  let parsed = [];
+  lines.forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    let name = '', memberId = '';
+    if (line.includes(',') || line.includes('，')) {
+      const tokens = line.split(/[,，]/);
+      name = tokens[0].replace(/^\d+[.、\s]*/, '').trim();
+      if (tokens[1]) memberId = tokens[1].trim();
+    } else {
+      const noSeq = line.replace(/^\d+[.、\s]+/, '').trim();
+      const parts = noSeq.split(/\s+/);
+      const chinesePart = parts.find(p => /^[\u4e00-\u9fff·‧]{2,5}$/.test(p)) || '';
+      const numPart = parts.find(p => /^\d{3,5}$/.test(p)) || '';
+      name = chinesePart;
+      memberId = numPart;
+    }
+    if (name.length >= 2) parsed.push({ name, memberId });
+  });
+
+  let count = 0;
+  parsed.forEach(({ name, memberId }) => {
+    if (DB.members.some(m => m.name === name)) return;
+    DB.members.push({
+      id: 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+      name, gender: '女', memberId, hall: '', courseType, role, note: ''
+    });
+    count++;
+  });
+  saveDB();
+  document.getElementById('import-text').value = '';
+  switchMemberTab('list');
+  showToast(`已智慧解析並成功匯入 ${count} 位組員`);
+}
+
+function exportMembersToExcel() {
+  if (!DB.members.length) { showToast('暫無組員資料可供匯出'); return; }
+  let data = DB.members.map((m, i) => ({
+    '項次': i + 1, '姓名': m.name, '性別': m.gender || '女', '研修代號': m.memberId || '',
+    '館別': m.hall || '', '名單類別': m.courseType || '神鼓陣', '組員類別': m.role || '組員', '備註': m.note || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "組員名單");
+  XLSX.writeFile(wb, `組員名單匯出_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+/* ══════════════════════════════════════════ 活動管理與行事曆 ══════════════════════════════════════════ */
+let currentSessionYear = 2026;
+let currentSessionMonth = 5;
+
+function populateTimeDropdowns() {
+  const startSel = document.getElementById('s-time-start');
+  const endSel = document.getElementById('s-time-end');
+  if (!startSel || !endSel) return;
+  startSel.innerHTML = ''; endSel.innerHTML = '';
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const hh = String(h).padStart(2,'0'), mm = String(m).padStart(2,'0');
+      const t = `${hh}:${mm}`;
+      const os = new Option(t, t);
+      const oe = new Option(t, t);
+      if (t === '19:00') os.selected = true;
+      if (t === '21:00') oe.selected = true;
+      startSel.add(os); endSel.add(oe);
+    }
+  }
+}
+
+function changeMonth(dir) {
+  currentSessionMonth += dir;
+  if (currentSessionMonth > 12) { currentSessionMonth = 1; currentSessionYear++; }
+  if (currentSessionMonth < 1) { currentSessionMonth = 12; currentSessionYear--; }
+  renderCalendar();
+}
+
+function changeSessionMonth(dir) {
+  currentSessionMonth += dir;
+  if (currentSessionMonth > 12) { currentSessionMonth = 1; currentSessionYear++; }
+  if (currentSessionMonth < 1) { currentSessionMonth = 12; currentSessionYear--; }
+  renderSessions();
+}
+
+function renderCalendar() {
+  document.getElementById('calendar-month-title').textContent = `${currentSessionYear} 年 ${currentSessionMonth} 月`;
+  const mSessions = DB.sessions.filter(s => {
+    const d = new Date(s.date);
+    return d.getFullYear() === currentSessionYear && (d.getMonth() + 1) === currentSessionMonth;
+  });
+  
+  renderGoogleCalendarGrid(mSessions);
+  renderMonthSessionsListView(mSessions);
+}
+
+function renderMonthSessionsListView(sessions) {
+  const list = document.getElementById('calendar-month-sessions-list');
+  if (!list) return;
+  if (!sessions.length) {
+    list.innerHTML = '<div class="empty-state" style="background:#fff; border:1px solid var(--border); border-radius:6px;"><div class="empty-dot"></div><br>本月尚未排定任何活動</div>';
+    return;
+  }
+  
+  sessions.sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+  
+  const colorMap = { green: '#2c5234', orange: '#b8621d', blue: '#1a73e8', purple: '#8e44ad', red: '#96352b' };
+  
+  list.innerHTML = sessions.map(s => {
+    const d = new Date(s.date);
+    const mStr = String(d.getMonth() + 1).padStart(2,'0');
+    const dStr = String(d.getDate()).padStart(2,'0');
+    const c = colorMap[s.color || 'green'] || '#2c5234';
+    
+    return `
+    <div class="session-item" id="cal-list-item-${s.id}" style="border-left-color:${c};">
+      <div class="session-header" onclick="toggleCalendarSessionCollapse('${s.id}')">
+        <div class="session-date-box">
+          <span class="session-month">${mStr}月</span>
+          <span class="session-day">${dStr}</span>
+        </div>
+        <div class="session-info">
+          <div class="session-name">
+            <span class="session-name-text">${esc(s.name)}</span>
+            <span class="course-badge" style="background:${c}12; color:${c}; border-color:${c}25;">${esc(s.courseType || '神鼓陣')}</span>
+          </div>
+          <div class="session-meta-row">
+            <span class="session-sub"><i class="fa-regular fa-clock" style="margin-right:4px; font-size:13px; opacity:0.7;"></i>${s.startTime} - ${s.endTime}</span>
+          </div>
+        </div>
+        <i class="fa-solid fa-chevron-down session-toggle-icon"></i>
+      </div>
+      <div class="session-collapse" id="cal-collapse-${s.id}">
+        <div class="session-collapse-row">
+          <div class="session-collapse-label">活動備註</div>
+          <div style="flex:1; word-break:break-all;">${s.note ? esc(s.note).replace(/\n/g,'<br>') : '<span style="color:var(--text3)">無備註事項</span>'}</div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:12px; gap:8px;">
+          <button class="btn btn-sm btn-secondary" onclick="switchPage('attendance'); setTimeout(()=> { const sel = document.getElementById('att-session-select'); if(sel){sel.value='${s.id}'; loadAttendanceSession();} },50)"><i class="fa-solid fa-clipboard-user" style="margin-right:2px;"></i> 前往點名</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCalendarSessionCollapse(sid) {
+  const item = document.getElementById(`cal-list-item-${sid}`);
+  if (!item) return;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('#calendar-month-sessions-list .session-item').forEach(el => el.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+function renderGoogleCalendarGrid(sessions) {
+  const grid = document.getElementById('calendar-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  ['日','一','二','三','四','五','六'].forEach((w, i) => {
+    const h = document.createElement('div');
+    h.className = 'calendar-weekday' + (i===0||i===6?' weekend-head':'');
+    h.textContent = w;
+    grid.appendChild(h);
+  });
+
+  const firstDay = new Date(currentSessionYear, currentSessionMonth - 1, 1);
+  const startDay = firstDay.getDay();
+  const totalDays = new Date(currentSessionYear, currentSessionMonth, 0).getDate();
+  const prevTotal = new Date(currentSessionYear, currentSessionMonth - 1, 0).getDate();
+  const today = new Date();
+
+  // 填補上個月日期
+  for (let i = startDay - 1; i >= 0; i--) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day-cell other-month';
+    cell.innerHTML = `<span class="calendar-day-num">${prevTotal - i}</span>`;
+    grid.appendChild(cell);
+  }
+
+  // 填入當月日期
+  const colorMap = { green: '#2c5234', orange: '#b8621d', blue: '#1a73e8', purple: '#8e44ad', red: '#96352b' };
+  
+  for (let day = 1; day <= totalDays; day++) {
+    const cell = document.createElement('div');
+    const dayOfWeek = (startDay + day - 1) % 7;
+    let cName = 'calendar-day-cell';
+    if (dayOfWeek === 6) cName += ' sat-cell';
+    if (dayOfWeek === 0) cName += ' sun-cell';
+    if (today.getFullYear() === currentSessionYear && today.getMonth() === (currentSessionMonth - 1) && today.getDate() === day) {
+      cName += ' today';
+    }
+    cell.className = cName;
+
+    const dateStr = `${currentSessionYear}-${String(currentSessionMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayEvents = sessions.filter(s => s.date === dateStr);
+    
+    let html = `<span class="calendar-day-num">${day}</span>`;
+    if (dayEvents.length > 0) {
+      cell.classList.add('has-events');
+      cell.onclick = () => scrollToCalendarSession(dayEvents[0].id);
+      html += `<div class="calendar-events-container">`;
+      dayEvents.forEach(e => {
+        const c = colorMap[e.color || 'green'] || '#2c5234';
+        html += `<span class="calendar-event-tag" style="background:${c}; color:#fff;" title="${esc(e.name)}">${esc(e.name)}</span>`;
+      });
+      html += `</div>`;
+    }
+    cell.innerHTML = html;
+    grid.appendChild(cell);
+  }
+
+  // 填補下個月日期
+  const usedCells = startDay + totalDays;
+  const nextCells = usedCells % 7 === 0 ? 0 : 7 - (usedCells % 7);
+  for (let i = 1; i <= nextCells; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day-cell other-month';
+    cell.innerHTML = `<span class="calendar-day-num">${i}</span>`;
+    grid.appendChild(cell);
+  }
+}
+
+function scrollToCalendarSession(sid) {
+  toggleCalendarSessionCollapse(sid);
+  const target = document.getElementById(`cal-list-item-${sid}`);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    target.classList.add('highlight-active');
+    setTimeout(() => { target.classList.remove('highlight-active'); }, 1500);
+  }
+}
+
+function renderSessions() {
+  document.getElementById('session-month-title').textContent = `${currentSessionYear} 年 ${currentSessionMonth} 月`;
+  const list = document.getElementById('sessions-list');
+  if (!list) return;
+
+  const mSessions = DB.sessions.filter(s => {
+    const d = new Date(s.date);
+    return d.getFullYear() === currentSessionYear && (d.getMonth() + 1) === currentSessionMonth;
+  });
+  
+  document.getElementById('session-month-count').textContent = mSessions.length;
+  if (!mSessions.length) {
+    list.innerHTML = '<div class="empty-state" style="background:#fff; border:1px solid var(--border); border-radius:6px;"><div class="empty-dot"></div><br>此月份尚無任何排定活動</div>';
+    return;
+  }
+
+  mSessions.sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+  const colorMap = { green: '#2c5234', orange: '#b8621d', blue: '#1a73e8', purple: '#8e44ad', red: '#96352b' };
+
+  list.innerHTML = mSessions.map(s => {
+    const d = new Date(s.date);
+    const mStr = String(d.getMonth()+1).padStart(2,'0');
+    const dStr = String(d.getDate()).padStart(2,'0');
+    const c = colorMap[s.color || 'green'] || '#2c5234';
+
+    return `
+    <div class="session-item" id="session-item-${s.id}" style="border-left-color:${c};">
+      <div class="session-header" onclick="toggleSessionCollapse('${s.id}')">
+        <div class="session-date-box">
+          <span class="session-month">${mStr}月</span>
+          <span class="session-day">${dStr}</span>
+        </div>
+        <div class="session-info">
+          <div class="session-name">
+            <span class="session-name-text">${esc(s.name)}</span>
+            <span class="course-badge" style="background:${c}12; color:${c}; border-color:${c}25;">${esc(s.courseType || '神鼓陣')}</span>
+          </div>
+          <div class="session-meta-row">
+            <span class="session-sub"><i class="fa-regular fa-clock" style="margin-right:4px;"></i>${s.startTime} - ${s.endTime}</span>
+          </div>
+        </div>
+        <div class="session-header-actions">
+          <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();editSession('${s.id}')">編輯</button>
+          <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();duplicateSession('${s.id}')">複製</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteSession('${s.id}')">刪除</button>
+        </div>
+        <button class="session-more-btn" onclick="toggleSessionPopover(event,'spopover-${s.id}')">⋯</button>
+        <div class="session-popover" id="spopover-${s.id}">
+          <button class="session-popover-btn edit" onclick="closeAllPopovers();editSession('${s.id}')">編輯活動</button>
+          <button class="session-popover-btn copy" onclick="closeAllPopovers();duplicateSession('${s.id}')">完整複製</button>
+          <button class="session-popover-btn del" onclick="closeAllPopovers();deleteSession('${s.id}')">刪除活動</button>
+        </div>
+      </div>
+      <div class="session-collapse" id="collapse-${s.id}">
+        <div class="session-collapse-row">
+          <div class="session-collapse-label">活動備註</div>
+          <div style="flex:1; word-break:break-all;">${s.note ? esc(s.note).replace(/\n/g,'<br>') : '<span style="color:var(--text3)">無詳細備註事項</span>'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSessionCollapse(sid) {
+  const item = document.getElementById(`session-item-${sid}`);
+  if (!item) return;
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('#sessions-list .session-item').forEach(el => el.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+function toggleSessionPopover(e, id) {
+  e.stopPropagation();
+  const show = document.getElementById(id).classList.contains('show');
+  closeAllPopovers();
+  if (!show) {
+    const p = document.getElementById(id);
+    p.classList.add('show');
+    const rect = e.target.getBoundingClientRect();
+    p.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+    p.style.left = (rect.left + window.scrollX - 80) + 'px';
+  }
+}
+
+function openSessionModal() {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  document.getElementById('edit-session-id').value = '';
+  document.getElementById('modal-session-title').textContent = '排定全新活動';
+  document.getElementById('s-name').value = '';
+  document.getElementById('s-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('s-note').value = '';
+  
+  const cs = document.getElementById('s-course-type');
+  cs.innerHTML = DB.courseTypes.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  
+  populateTimeDropdowns();
+  renderColorPicker('green');
+  openModal('modal-session');
+}
+
+function renderColorPicker(sel) {
+  const colors = ['green', 'orange', 'blue', 'purple', 'red'];
+  const colorMap = { green: '#2c5234', orange: '#b8621d', blue: '#1a73e8', purple: '#8e44ad', red: '#96352b' };
+  const wrap = document.getElementById('color-picker-wrap');
+  wrap.innerHTML = colors.map(c => `
+    <div class="color-opt ${sel===c?'selected':''}" style="background:${colorMap[c]};" onclick="selectColorOpt('${c}')"></div>
+  `).join('');
+  document.getElementById('s-color').value = sel;
+}
+function selectColorOpt(c) {
+  document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('selected'));
+  renderColorPicker(c);
+}
+
+function saveSessionData() {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  const id = document.getElementById('edit-session-id').value;
+  const name = document.getElementById('s-name').value.trim();
+  const date = document.getElementById('s-date').value;
+  const courseType = document.getElementById('s-course-type').value;
+  const startTime = document.getElementById('s-time-start').value;
+  const endTime = document.getElementById('s-time-end').value;
+  const color = document.getElementById('s-color').value;
+  const note = document.getElementById('s-note').value.trim();
+
+  if (!name || !date) { showToast('請填寫完整名稱與日期'); return; }
+
+  if (id) {
+    const s = DB.sessions.find(x => x.id === id);
+    if (s) {
+      s.name = name; s.date = date; s.courseType = courseType;
+      s.startTime = startTime; s.endTime = endTime; s.color = color; s.note = note;
+    }
+  } else {
+    DB.sessions.push({
+      id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+      name, date, courseType, startTime, endTime, color, note
+    });
+  }
+  saveDB();
+  closeModal('modal-session');
+  renderSessions();
+  showToast('活動已順利儲存');
+}
+
+function editSession(id) {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  const s = DB.sessions.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('edit-session-id').value = id;
+  document.getElementById('modal-session-title').textContent = '修改活動設定';
+  document.getElementById('s-name').value = s.name;
+  document.getElementById('s-date').value = s.date;
+  document.getElementById('s-note').value = s.note || '';
+  
+  const cs = document.getElementById('s-course-type');
+  cs.innerHTML = DB.courseTypes.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  cs.value = s.courseType || '神鼓陣';
+
+  populateTimeDropdowns();
+  document.getElementById('s-time-start').value = s.startTime || '19:00';
+  document.getElementById('s-time-end').value = s.endTime || '21:00';
+  renderColorPicker(s.color || 'green');
+  openModal('modal-session');
+}
+
+function duplicateSession(id) {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  const s = DB.sessions.find(x => x.id === id);
+  if (!s) return;
+  DB.sessions.push({
+    id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+    name: s.name + ' - 複製', date: s.date, courseType: s.courseType || '神鼓陣',
+    startTime: s.startTime, endTime: s.endTime, color: s.color || 'green', note: s.note || ''
+  });
+  saveDB();
+  renderSessions();
+  showToast('已複製出全新活動');
+}
+
+function deleteSession(id) {
+  if (!window.isAdminUser) { showToast('無權限'); return; }
+  const s = DB.sessions.find(x => x.id === id);
+  if (!s) return;
+  showConfirm(`確定要刪除「${esc(s.name)}」嗎？點名數據與歷史紀錄也將同步關聯清除。`, () => {
+    DB.sessions = DB.sessions.filter(x => x.id !== id);
+    if (DB.records[id]) delete DB.records[id];
+    saveDB();
+    renderSessions();
+    showToast('活動已移除');
+  });
+}
+
+/* ══════════════════════════════════════════ 活動點名模組 ══════════════════════════════════════════ */
+function initAttendancePage() {
+  const sel = document.getElementById('att-session-select');
+  if (!sel) return;
+  
+  // 依日期排序活動
+  const sortedSessions = [...DB.sessions].sort((a,b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime));
+  
+  if (!sortedSessions.length) {
+    sel.innerHTML = '<option value="">— 當前無排定活動 —</option>';
+    document.getElementById('att-main-area').style.display = 'none';
+    return;
+  }
+  
+  sel.innerHTML = sortedSessions.map(s => `
+    <option value="${s.id}">[${s.date}] ${esc(s.name)} (${esc(s.courseType || '神鼓陣')})</option>
+  `).join('');
+  
+  loadAttendanceSession();
+}
+
+function loadAttendanceSession() {
+  const sid = document.getElementById('att-session-select').value;
+  const area = document.getElementById('att-main-area');
+  if (!sid || !area) {
+    if (area) area.style.display = 'none';
+    return;
+  }
+  area.style.display = 'block';
+  
+  const session = DB.sessions.find(s => s.id === sid);
+  const sessionCourseType = session.courseType || '神鼓陣';
+  const rec = DB.records[sid] || {};
+  const list = document.getElementById('att-list');
+
+  const filteredMembers = DB.members.filter(m => (m.courseType || '神鼓陣') === sessionCourseType);
+  if (!filteredMembers.length) {
+    list.innerHTML = `<div class="empty-state">「${esc(sessionCourseType)}」名單類別尚無組員，請先至組員新增</div>`;
+    updateAttSummary(sid, filteredMembers);
+    return;
+  }
+
+  list.innerHTML = filteredMembers.map((m, idx) => {
+    const status = rec[m.id] !== undefined ? rec[m.id] : 'absent';
+    const displayStatus = status === 'present' ? 'absent' : status; 
+    const labels = { absent: '出席', leave: '請假' };
+    
+    return `
+    <div class="att-row" id="att-row-${m.id}">
+      <div class="num-badge">${idx + 1}</div>
+      <div style="flex:1; min-width:0;">
+        <div class="att-name" style="font-size:16px;">${esc(m.name)}</div>
+      </div>
+      <div class="att-btns">
+        <button class="att-cycle-btn ${displayStatus}" onclick="cycleAttStatus('${sid}','${m.id}',this)">${labels[displayStatus] || labels.absent}</button>
+      </div>
+    </div>`;
+  }).join('');
+  
+  updateAttSummary(sid, filteredMembers);
+  setAttSavedState(true);
+}
+
+function cycleAttStatus(sid, mid, btn) {
+  setAttSavedState(false);
+  const cycle = ['absent', 'leave'];
+  let cur = 'absent';
+  if (btn.classList.contains('leave')) cur = 'leave';
+  
+  const nextIdx = (cycle.indexOf(cur) + 1) % cycle.length;
+  const nextStatus = cycle[nextIdx];
+  
+  btn.className = `att-cycle-btn ${nextStatus}`;
+  const labels = { absent: '出席', leave: '請假' };
+  btn.textContent = labels[nextStatus];
+
+  const sidSelect = document.getElementById('att-session-select').value;
+  const session = DB.sessions.find(s => s.id === sidSelect);
+  const sessionCourseType = session.courseType || '神鼓陣';
+  const filteredMembers = DB.members.filter(m => (m.courseType || '神鼓陣') === sessionCourseType);
+  
+  // 即時計算暫時數據
+  const tempRec = {};
+  document.querySelectorAll('#att-list .att-row').forEach(row => {
+    const mId = row.id.replace('att-row-','');
+    const b = row.querySelector('.att-cycle-btn');
+    let s = 'absent';
+    if (b.classList.contains('leave')) s = 'leave';
+    tempRec[mId] = s;
+  });
+  
+  let presentCount = 0, leave = 0;
+  filteredMembers.forEach(m => {
+    const v = tempRec[m.id] || 'absent';
+    if (v === 'absent') presentCount++; else if (v === 'leave') leave++;
+  });
+  
+  const total = filteredMembers.length;
+  document.getElementById('att-sum-total').textContent = total;
+  document.getElementById('att-sum-absent').textContent = presentCount;
+  document.getElementById('att-sum-leave').textContent = leave;
+  document.getElementById('att-sum-rate').textContent = total > 0 ? Math.round(presentCount / total * 100) + '%' : '0%';
+}
+
+function setAttSavedState(saved) {
+  const btn = document.getElementById('btn-save-attendance');
+  if (!btn) return;
+  if (saved) {
+    btn.textContent = '點名紀錄已儲存';
+    btn.className = 'btn btn-secondary btn-block';
+    document.querySelectorAll('.att-cycle-btn').forEach(b => b.classList.add('att-saved'));
+  } else {
+    btn.textContent = '儲存點名紀錄';
+    btn.className = 'btn btn-primary btn-block';
+    document.querySelectorAll('.att-cycle-btn').forEach(b => b.classList.remove('att-saved'));
+  }
+}
+
+function updateAttSummary(sid, filteredMembers) {
+  const rec = DB.records[sid] || {};
+  const members = filteredMembers || DB.members;
+  let presentCount = 0, leave = 0;
+  
+  members.forEach(m => {
+    const v = rec[m.id] !== undefined ? rec[m.id] : 'absent';
+    if (v === 'absent' || v === 'present') presentCount++;
+    else if (v === 'leave') leave++;
+  });
+
+  const total = members.length;
+  document.getElementById('att-sum-total').textContent = total;
+  document.getElementById('att-sum-absent').textContent = presentCount;
+  document.getElementById('att-sum-leave').textContent = leave;
+  document.getElementById('att-sum-rate').textContent = total > 0 ? Math.round(presentCount / total * 100) + '%' : '0%';
+}
+
+function saveAttendance() {
+  const sid = document.getElementById('att-session-select').value;
+  if (!sid) return;
+  if (!DB.records[sid]) DB.records[sid] = {};
+  
+  document.querySelectorAll('#att-list .att-row').forEach(row => {
+    const mId = row.id.replace('att-row-','');
+    const b = row.querySelector('.att-cycle-btn');
+    let s = 'absent';
+    if (b.classList.contains('leave')) s = 'leave';
+    DB.records[sid][mId] = s;
+  });
+  
+  saveDB();
+  setAttSavedState(true);
+  showToast('點名紀錄已成功同步上雲端庫');
+}
+
+function markAllPresent() {
+  setAttSavedState(false);
+  document.querySelectorAll('.att-cycle-btn').forEach(b => {
+    b.className = 'att-cycle-btn absent';
+    b.textContent = '出席';
+  });
+  // 觸發重新計算
+  const sid = document.getElementById('att-session-select').value;
+  const s = DB.sessions.find(x => x.id === sid);
+  const mems = DB.members.filter(m => (m.courseType || '神鼓陣') === (s.courseType || '神鼓陣'));
+  document.getElementById('att-sum-total').textContent = mems.length;
+  document.getElementById('att-sum-absent').textContent = mems.length;
+  document.getElementById('att-sum-leave').textContent = 0;
+  document.getElementById('att-sum-rate').textContent = '100%';
+}
+
+function clearAllAttendance() {
+  setAttSavedState(false);
+  document.querySelectorAll('.att-cycle-btn').forEach(b => {
+    b.className = 'att-cycle-btn leave';
+    b.textContent = '請假';
+  });
+  const sid = document.getElementById('att-session-select').value;
+  const s = DB.sessions.find(x => x.id === sid);
+  const mems = DB.members.filter(m => (m.courseType || '神鼓陣') === (s.courseType || '神鼓陣'));
+  document.getElementById('att-sum-total').textContent = mems.length;
+  document.getElementById('att-sum-absent').textContent = 0;
+  document.getElementById('att-sum-leave').textContent = mems.length;
+  document.getElementById('att-sum-rate').textContent = '0%';
+}
+
+function filterAttList() {
+  const q = document.getElementById('att-search').value.trim().toLowerCase();
+  document.querySelectorAll('#att-list .att-row').forEach(row => {
+    const name = row.querySelector('.att-name').textContent.toLowerCase();
+    row.style.display = name.includes(q) ? 'flex' : 'none';
+  });
+}
+
+/* ══════════════════════════════════════════ 抽籤隨機公正分組 ══════════════════════════════════════════ */
+let lotteryParticipants = [];
+let lotteryGroupCount = 2;
+let activeLotteryFilter = 'ALL';
+
+function initLotteryPage() {
+  activeLotteryFilter = 'ALL';
+  renderLotteryFilters();
+  syncLotteryParticipants();
+}
+
+function renderLotteryFilters() {
+  const fWrap = document.getElementById('lottery-course-filters');
+  if (!fWrap) return;
+  let html = `<button class="filter-tab ${activeLotteryFilter==='ALL'?'active':''}" onclick="setLotteryFilter('ALL')">全部</button>`;
+  DB.courseTypes.forEach(t => {
+    html += `<button class="filter-tab ${activeLotteryFilter===t?'active':''}" onclick="setLotteryFilter('${esc(t)}')">${esc(t)}</button>`;
+  });
+  fWrap.innerHTML = html;
+}
+
+function setLotteryFilter(t) {
+  activeLotteryFilter = t;
+  renderLotteryFilters();
+  syncLotteryParticipants();
+}
+
+function syncLotteryParticipants() {
+  const filtered = activeLotteryFilter === 'ALL' ? DB.members : DB.members.filter(m => m.courseType === activeLotteryFilter);
+  
+  // 保留原有的星等標記狀態
+  const oldStars = new Set(lotteryParticipants.filter(p => p.isStar).map(p => p.id));
+  
+  lotteryParticipants = filtered.map(m => ({
+    id: m.id, name: m.name, memberId: m.memberId,
+    selected: true, isStar: oldStars.has(m.id)
+  }));
+  
+  renderLotteryGrid();
+}
+
+function renderLotteryGrid() {
+  const grid = document.getElementById('lottery-member-grid');
+  if (!grid) return;
+  
+  if (!lotteryParticipants.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-dot"></div><br>目前沒有任何成員可供分組</div>';
+    updateLotteryStats();
+    return;
+  }
+
+  grid.innerHTML = lotteryParticipants.map(p => `
+    <div class="lottery-cell ${p.selected?'selected':'unselected'} ${p.isStar?'is-star':''}" onclick="toggleLotParticipant('${p.id}')">
+      <div class="lot-cell-star" onclick="toggleLotStar(event,'${p.id}')">★</div>
+      <div class="lot-cell-name">${esc(p.name)}</div>
+      <div class="lot-cell-id">${esc(p.memberId || '—')}</div>
+    </div>
+  `).join('');
+  updateLotteryStats();
+}
+
+function toggleLotParticipant(id) {
+  const p = lotteryParticipants.find(x => x.id === id);
+  if (p) p.selected = !p.selected;
+  renderLotteryGrid();
+}
+
+function toggleLotStar(e, id) {
+  e.stopPropagation();
+  const p = lotteryParticipants.find(x => x.id === id);
+  if (p) {
+    if (!p.selected) p.selected = true;
+    p.isStar = !p.isStar;
+  }
+  renderLotteryGrid();
+}
+
+function lotteryToggleAll(sel) {
+  lotteryParticipants.forEach(p => p.selected = sel);
+  renderLotteryGrid();
+}
+
+function lotterySyncFromAttendance() {
+  // 自動尋找今日或最新的活動
+  const sorted = [...DB.sessions].sort((a,b) => b.date.localeCompare(a.date));
+  if (!sorted.length) { showToast('找不到活動點名紀錄'); return; }
+  const sid = sorted[0].id;
+  const rec = DB.records[sid];
+  if (!rec) { showToast(`最新的活動 [${sorted[0].date}] 尚未有儲存的點名紀錄`); return; }
+
+  lotteryParticipants.forEach(p => {
+    // 沒紀錄預設為 absent(出席)
+    const status = rec[p.id] !== undefined ? rec[p.id] : 'absent';
+    p.selected = (status === 'absent' || status === 'present');
+  });
+  renderLotteryGrid();
+  showToast(`已成功由 [${sorted[0].date}] 的出席名單同步完畢`);
+}
+
+function updateLotteryStats() {
+  document.getElementById('lot-stat-all').textContent = lotteryParticipants.length;
+  document.getElementById('lot-stat-sel').textContent = lotteryParticipants.filter(p => p.selected).length;
+  document.getElementById('lot-stat-star').textContent = lotteryParticipants.filter(p => p.selected && p.isStar).length;
+  document.getElementById('lot-group-count').textContent = lotteryGroupCount;
+}
+
+function changeLotGroupCount(val) {
+  lotteryGroupCount += val;
+  if (lotteryGroupCount < 2) lotteryGroupCount = 2;
+  if (lotteryGroupCount > 20) lotteryGroupCount = 20;
+  updateLotteryStats();
+}
+
+function generateLotteryGroups() {
+  const pool = lotteryParticipants.filter(p => p.selected);
+  if (pool.length < lotteryGroupCount) {
+    showToast(`分組失敗：當前勾選人數 (${pool.length}人) 少於總設定組數 (${lotteryGroupCount}組)`);
+    return;
+  }
+
+  // 隨機打亂演算法
+  const shuffle = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[arr[j]]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+
+  const stars = shuffle(pool.filter(p => p.isStar));
+  const normals = shuffle(pool.filter(p => !p.isStar));
+
+  // 建立組別結構
+  let groups = [];
+  for (let g = 0; g < lotteryGroupCount; g++) {
+    groups.push({ id: g + 1, members: [] });
+  }
+
+  // 1. 優先分發星等組長
+  let curGroup = 0;
+  stars.forEach(s => {
+    groups[curGroup].members.push({ ...s, isLeader: true });
+    curGroup = (curGroup + 1) % lotteryGroupCount;
+  });
+
+  // 2. 分發普通成員
+  normals.forEach(n => {
+    groups[curGroup].members.push({ ...n, isLeader: false });
+    curGroup = (curGroup + 1) % lotteryGroupCount;
+  });
+
+  // 渲染分組畫面
+  const area = document.getElementById('lottery-result-area');
+  
+  let html = `
+  <div style="margin-top:24px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-weight:700; font-size:15px; color:var(--text);"><i class="fa-solid fa-square-poll-horizontal"></i> 本次分組結果</div>
+    <button class="copy-result-btn" onclick="copyLotteryResultText()"><i class="fa-regular fa-copy"></i> 複製分組文字</button>
+  </div>
+  <div class="result-grid">`;
+
+  groups.forEach(g => {
+    html += `
+    <div class="result-group-card">
+      <div class="result-group-title">
+        第 ${g.id} 組
+        <span class="result-group-count">${g.members.length} 人</span>
+      </div>
+      <div class="result-member-list">
+        ${g.members.map(m => `
+          <div class="result-member-row ${m.isLeader?'is-leader':''}">
+            <span>${esc(m.name)}</span>
+            <span style="font-size:11px; color:var(--text3); font-weight:normal;">${m.isLeader?'★ 組長':''}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  area.innerHTML = html;
+  window.lastGeneratedGroups = groups; 
+}
+
+function copyLotteryResultText() {
+  if (!window.lastGeneratedGroups) return;
+  let txt = `【隨機分組抽籤結果】\n產生日期：${new Date().toLocaleString()}\n總組數：${window.lastGeneratedGroups.length} 組\n\n`;
+  window.lastGeneratedGroups.forEach(g => {
+    txt += `== 第 ${g.id} 組 (${g.members.length}人) ==\n`;
+    const mNames = g.members.map(m => m.name + (m.isLeader ? '(★組長)' : ''));
+    txt += mNames.join('、') + '\n\n';
+  });
+  navigator.clipboard.writeText(txt.trim()).then(() => {
+    showToast('分組文字已完整複製至您的剪貼簿');
+  }).catch(() => { showToast('複製失敗，請手動選取文字'); });
+}
+
+/* ══════════════════════════════════════════ 數據統計分析 ══════════════════════════════════════════ */
+let statsYear = 2026;
+let statsMonth = 5; // 0代表全年
+let statsSort = { key: 'rate', dir: -1 };
+
+function initStatsPage() {
+  statsYear = new Date().getFullYear();
+  statsMonth = new Date().getMonth() + 1;
+  renderStatsMonthChips();
+  renderStatsView();
+}
+
+function renderStatsMonthChips() {
+  const wrap = document.getElementById('stats-month-chips');
+  if (!wrap) return;
+  let html = '';
+  for (let m = 1; m <= 12; m++) {
+    html += `<button class="filter-tab ${statsMonth===m?'active':''}" onclick="setStatsMonth(${m})">${m}月</button>`;
+  }
+  wrap.innerHTML = html;
+  const allBtn = document.getElementById('stats-btn-yearall');
+  if (allBtn) {
+    if (statsMonth === 0) allBtn.classList.add('active'); else allBtn.classList.remove('active');
+  }
+}
+
+function setStatsMonth(m) {
+  statsMonth = m;
+  renderStatsMonthChips();
+  renderStatsView();
+}
+
+function changeStatsYear(dir) {
+  statsYear += dir;
+  document.getElementById('stats-year-title').textContent = `${statsYear} 年`;
+  renderStatsView();
+}
+
+function handleStatsSort(key) {
+  if (statsSort.key === key) statsSort.dir = statsSort.dir === 1 ? -1 : 1;
+  else { statsSort.key = key; statsSort.dir = -1; }
+  renderStatsView();
+}
+
+function renderStatsView() {
+  const headerRow = document.getElementById('stats-table-header');
+  const body = document.getElementById('stats-table-body');
+  const summaryEl = document.getElementById('stats-summary-grid');
+  const rangeLabel = document.getElementById('stats-range-label');
+  if (!headerRow || !body) return;
+
+  // 篩選出符合年份與月份的活動場次
+  const filteredSessions = DB.sessions.filter(s => {
+    const d = new Date(s.date);
+    if (d.getFullYear() !== statsYear) return false;
+    if (statsMonth !== 0 && (d.getMonth() + 1) !== statsMonth) return false;
+    return true;
+  }).sort((a,b) => a.date.localeCompare(b.date));
+
+  rangeLabel.textContent = `在此範圍內共舉辦了 ${filteredSessions.length} 場活動`;
+
+  // 動態建立表頭
+  let headHtml = `
+    <th class="col-seq">#</th>
+    <th class="col-name" onclick="handleStatsSort('name')">姓名<span class="sort-indicator">${statsSort.key==='name'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+    <th class="col-id" onclick="handleStatsSort('id')">研修代號<span class="sort-indicator">${statsSort.key==='id'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+    <th class="col-type" onclick="handleStatsSort('course')">類別<span class="sort-indicator">${statsSort.key==='course'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+    <th class="col-role" onclick="handleStatsSort('role')">身分<span class="sort-indicator">${statsSort.key==='role'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+  `;
+
+  filteredSessions.forEach((s, idx) => {
+    const d = new Date(s.date);
+    const dateMD = `${d.getMonth()+1}/${d.getDate()}`;
+    headHtml += `
+      <th class="col-session-date" title="${esc(s.name)} [${s.date}]">
+        <span class="session-date-th-date">${dateMD}</span>
+        <span class="session-date-th-count">#${idx+1}</span>
+      </th>`;
+  });
+
+  headHtml += `
+    <th class="col-num" onclick="handleStatsSort('count')">出席數<span class="sort-indicator">${statsSort.key==='count'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+    <th class="col-rate" onclick="handleStatsSort('rate')">出席率<span class="sort-indicator">${statsSort.key==='rate'?(statsSort.dir===1?'↑':'↓'):'⇅'}</span></th>
+  `;
+  headerRow.innerHTML = headHtml;
+
+  if (!DB.members.length) {
+    body.innerHTML = `<tr><td colspan="${5 + filteredSessions.length + 2}" class="empty-state"><div class="empty-dot"></div><br>目前庫中無任何成員數據</td></tr>`;
+    summaryEl.innerHTML = '';
+    return;
+  }
+
+  // 核心數據矩陣計算
+  let totalAttendSum = 0;
+  let memberRowsData = DB.members.map((m, seqIdx) => {
+    let attendCount = 0;
+    let relevantSessionsCount = 0;
+    
+    let cellsHtml = filteredSessions.map(s => {
+      // 判斷該活動是否屬於該成員的名單類別
+      const sessionCt = s.courseType || '神鼓陣';
+      const memberCt = m.courseType || '神鼓陣';
+      
+      if (sessionCt !== memberCt) {
+        return `<td style="background:#f5f4f0; color:#c0bbb4; text-align:center; font-size:12px;">—</td>`;
+      }
+      
+      relevantSessionsCount++;
+      const rec = DB.records[s.id] || {};
+      const status = rec[m.id] !== undefined ? rec[m.id] : 'absent';
+      
+      if (status === 'absent' || status === 'present') {
+        attendCount++;
+        totalAttendSum++;
+        return `<td class="td-attend" style="color:var(--accent); text-align:center; font-weight:700; background:#eef5ef;">●</td>`;
+      } else {
+        return `<td class="td-attend" style="color:var(--red); text-align:center; background:#faf3f2;">✕</td>`;
+      }
+    }).join('');
+
+    const rate = relevantSessionsCount > 0 ? Math.round((attendCount / relevantSessionsCount) * 100) : 0;
+    
+    return {
+      m, sequence: seqIdx + 1, attendCount, relevantSessionsCount, rate, cellsHtml
+    };
+  });
+
+  // 排序控制
+  const dir = statsSort.dir;
+  const key = statsSort.key;
+  memberRowsData.sort((a, b) => {
+    let av = 0, bv = 0;
+    if (key === 'name') return dir * a.m.name.localeCompare(b.m.name, 'zh-TW');
+    if (key === 'id') return dir * (a.m.memberId || '').localeCompare(b.m.memberId || '');
+    if (key === 'course') return dir * (a.m.courseType || '神鼓陣').localeCompare(b.m.courseType || '神鼓陣', 'zh-TW');
+    if (key === 'role') {
+      const rOrder = { '輔導': 0, '窗口': 1, '組員': 2 };
+      return (rOrder[a.m.role]??9) === (rOrder[b.m.role]??9) ? dir * a.m.name.localeCompare(b.m.name, 'zh-TW') : dir * ((rOrder[a.m.role]??9) - (rOrder[b.m.role]??9));
+    }
+    if (key === 'count') { av = a.attendCount; bv = b.attendCount; }
+    else if (key === 'rate') { av = a.rate; bv = b.rate; }
+    return av === bv ? dir * (a.sequence - b.sequence) : dir * (av - bv);
+  });
+
+  // 渲染表格內容
+  body.innerHTML = memberRowsData.map((row, index) => {
+    const m = row.m;
+    let rClass = '';
+    if (row.relevantSessionsCount > 0 && row.rate < 60) rClass = 'low-rate';
+    
+    let pctClass = 'pct high';
+    if (row.rate < 80) pctClass = 'pct mid';
+    if (row.rate < 60) pctClass = 'pct low';
+
+    return `
+    <tr class="${rClass}">
+      <td class="col-seq" style="font-family:'Roboto'; color:var(--text3);">${index + 1}</td>
+      <td class="col-name" style="font-weight:700;">${esc(m.name)}</td>
+      <td class="col-id">${esc(m.memberId || '—')}</td>
+      <td class="col-type"><span class="course-badge" style="font-size:11px; padding:1px 6px;">${esc(m.courseType || '神鼓陣')}</span></td>
+      <td class="col-role"><span style="font-size:12px; color:var(--text2);">${esc(m.role || '組員')}</span></td>
+      ${row.cellsHtml}
+      <td class="col-num" style="font-weight:600; font-family:'Roboto'; text-align:center;">${row.attendCount}<span style="font-size:11px; color:var(--text3); font-weight:normal;">/${row.relevantSessionsCount}</span></td>
+      <td class="col-rate"><span class="${pctClass}">${row.rate}%</span></td>
+    </tr>`;
+  }).join('');
+
+  // 建立大數據摘要卡片（整合為兩張大圖卡）
+  const monthLabel = statsMonth !== 0 ? `${statsYear}年${statsMonth}月` : `${statsYear}年度`;
+  const validRows = memberRowsData.filter(r => r.relevantSessionsCount > 0);
+  const avgRate = validRows.length > 0 ? Math.round(validRows.reduce((acc, r) => acc + r.rate, 0) / validRows.length) : 0;
+  const avgAttendCount = filteredSessions.length > 0 ? (totalAttendSum / filteredSessions.length).toFixed(1) : '0.0';
+
+  summaryEl.style.gridTemplateColumns = '1fr 1fr';
+  summaryEl.innerHTML = `
+    <div class="stat-card stat-card-compact green">
+      <div class="stat-card-title">${monthLabel} 場均出席數</div>
+      <div class="stat-num">${avgAttendCount} <span style="font-size:14px; font-weight:500; color:var(--text2)">人 / 場</span></div>
+    </div>
+    <div class="stat-card stat-card-compact orange">
+      <div class="stat-card-title">${monthLabel} 全員平均出席率</div>
+      <div class="stat-num">${avgRate} <span style="font-size:14px; font-weight:500; color:var(--text2)">%</span></div>
+    </div>
+  `;
+}
+
+function exportStatsToExcel() {
+  const table = document.getElementById('stats-table');
+  if (!table || !DB.members.length) { showToast('暫無數據可提供報表導出'); return; }
+  const wb = XLSX.utils.table_to_book(table, { raw: true });
+  const mLabel = statsMonth !== 0 ? `${statsMonth}月` : '全年總計';
+  XLSX.writeFile(wb, `出席率統計報表_${statsYear}年_${mLabel}_產出於${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+/* ══════════════════════════════════════════ 登入與基礎整合 ══════════════════════════════════════════ */
+function handleLogout() {
+  showConfirm('確定要登出當前帳號管理系統嗎？', () => {
+    localStorage.removeItem('user_session_mock');
+    window.location.reload();
+  }, '系統登出確認');
+}
+
+// 模擬 Firebase 的自動登入初始化
+(function initMockLogin() {
+  setTimeout(() => {
+    const mockUser = JSON.parse(localStorage.getItem('user_session_mock')) || {
+      email: '你的管理者@gmail.com', displayName: '總管理者'
+    };
+    localStorage.setItem('user_session_mock', JSON.stringify(mockUser));
+    
+    const loadingEl = document.getElementById('login-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+    
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+    document.getElementById('user-name').textContent = mockUser.displayName || mockUser.email;
+    
+    applyRolePermissions(mockUser);
+    switchPage('calendar');
+  }, 400);
+})();
+</script>
+
+</body>
+</html>
