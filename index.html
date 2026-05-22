@@ -1663,8 +1663,14 @@ function updateMappingsMemberId(rowId, newMemberId) {
 function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
   let newCount = 0, bindCount = 0, skipCount = 0;
 
-  // 正規化輔助：去除空白、統一全半形
-  const normalize = s => (s || '').trim().replace(/　/g, ' ').replace(/\s+/g, '');
+  // 正規化輔助：去除空白、統一全半形（改進版）
+  // 用於比對時的正規化：只移除邊界空白和全形空白，保留中文內容原狀
+  const normalize = s => {
+    if (!s) return '';
+    return s.trim()           // 去除前後空白
+           .replace(/　/g, '') // 去除全形空白
+           .replace(/\s+/g, ''); // 去除半形空白
+  };
 
   // ★ 修復：用 baseTs + 遞增 counter 確保同一批次每筆 rowId 絕對唯一
   const baseTs = Date.now();
@@ -1682,19 +1688,25 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
 
     let existingMember = null;
 
-    // 【優先】以研修代號查重：代號相同 = 確定同一人（跨類別唯一識別）
+    // 【優先策略】以研修代號查重：代號相同 = 確定同一人（跨類別唯一識別）
     if (normId) {
+      // 1. 在已存資料中查
       existingMember = DB.members.find(m => (m.memberId || '').trim() === normId);
-      // 也在本批次新建的裡面查（同一次貼入多行相同代號）
+      
+      // 2. 在本批次新建的裡面查（同一次貼入多行相同代號）
       if (!existingMember && batchSeenIds.has(normId)) {
         const rid = batchSeenIds.get(normId);
         existingMember = DB.members.find(m => m.id === rid);
       }
     }
 
-    // 【次要】代號查無此人時，用姓名查重（正規化比對，容錯空白/全半形）
-    if (!existingMember) {
+    // 【次要策略】代號查無此人時，用姓名查重（正規化比對，容錯空白/全半形）
+    // ★ 改進：只在代號查無時才使用姓名查重（降低誤判率）
+    if (!existingMember && normName) {
+      // 1. 在已存資料中查
       existingMember = DB.members.find(m => normalize(m.name) === normName);
+      
+      // 2. 在本批次新建的裡面查
       if (!existingMember && batchSeenNames.has(normName)) {
         const rid = batchSeenNames.get(normName);
         existingMember = DB.members.find(m => m.id === rid);
@@ -1703,28 +1715,45 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
 
     if (existingMember) {
       // 【狀況 A】舊組員：新增關聯綁定（含此類別的 role），已存在則略過
-      const added = bindMemberToCourseType(existingMember.id, memberId || existingMember.memberId || '', courseType, defaultRole);
+      const added = bindMemberToCourseType(
+        existingMember.id, 
+        memberId || existingMember.memberId || '', 
+        courseType, 
+        defaultRole
+      );
+      
       // 若有批次館別且舊組員館別為空，補填
       if (added && defaultHall && !existingMember.hall) {
         existingMember.hall = defaultHall;
       }
-      if (added) bindCount++;
-      else skipCount++;
+      
+      if (added) {
+        bindCount++;
+      } else {
+        skipCount++;
+      }
     } else {
       // 【狀況 B】全新組員：建立母體資料（含批次館別）並綁定
       // ★ 修復：用 baseTs + 遞增 counter，避免同批迴圈 Date.now() 相同造成碰撞
       const rowId = 'm_' + baseTs + '_' + (++_idCounter) + '_' + Math.random().toString(36).substr(2, 4);
+      
       DB.members.push({
-        id: rowId, name, gender: '女',
+        id: rowId, 
+        name, 
+        gender: '女',
         memberId: memberId || '',
         hall: defaultHall || '',
         courseType: courseType,
-        role: defaultRole, note: ''
+        role: defaultRole, 
+        note: ''
       });
+      
       bindMemberToCourseType(rowId, memberId || '', courseType, defaultRole);
+      
       // 登記本批次已處理，防止後續重複行再建一筆
       if (normId)   batchSeenIds.set(normId, rowId);
       if (normName) batchSeenNames.set(normName, rowId);
+      
       newCount++;
     }
   });
@@ -2280,33 +2309,42 @@ async function importMembersSmart() {
   const hall       = document.getElementById('import-hall').value || '';
   if (!text) { showToast('請輸入匯入名單內容'); return; }
 
-  // 逐行解析（修復版）：支援「代號緊接姓名」與「代號空格姓名」等多種格式
+  // 逐行解析（改進版）：支援「代號緊接姓名」與「代號空格姓名」等多種格式
   // 格式範例：「1031徐星林」「3057 陳秀珠」「3. 1031 彭月秋」「彭月秋」「彭月秋 1031」
   const lines = text.split(/[\n,，、;；]+/).map(s => s.trim()).filter(Boolean);
   const parsed = [];
+  
   lines.forEach(line => {
     let memberId = '', name = '';
 
-    // 策略 A：代號在前（3–5位數）+ 可選空白 + 中文姓名
-    const mIdFirst = line.match(/(?:^|(?<=\s))(\d{3,5})\s*([\u4e00-\u9fff·‧]{2,6})/);
+    // 清除行首的序號（可選）：「1. 」「1. 」「1） 」等
+    let cleanLine = line.replace(/^[\d\.\）\)]+[\s\.）\)]*/, '').trim();
+
+    // 策略 A：代號在前（3–5位數）+ 可選空白 + 中文姓名（2–6字）
+    // 改進：使用更嚴格的正規表達式，避免誤匹配
+    const mIdFirst = cleanLine.match(/^(\d{3,5})\s*([\u4e00-\u9fff·‧]{2,6})(?:\s|$)/);
     if (mIdFirst) {
       memberId = mIdFirst[1];
       name     = mIdFirst[2];
     } else {
-      // 策略 B：中文姓名在前，後方可選代號
-      const mNameFirst = line.match(/([\u4e00-\u9fff·‧]{2,6})[\s\uff08\(]*(\d{3,5})?/);
+      // 策略 B：中文姓名在前（2–6字），後方可選代號（3–5位數）
+      // 改進：確保至少匹配到2字姓名
+      const mNameFirst = cleanLine.match(/^([\u4e00-\u9fff·‧]{2,6})(?:\s*[\uff08\(]*(\d{3,5})?[\uff09\)]*)?/);
       if (mNameFirst) {
         name     = mNameFirst[1];
         memberId = mNameFirst[2] || '';
       }
     }
 
-    if (name && name.length >= 2) parsed.push({ name, memberId });
+    // 驗證：姓名至少2字，否則不記錄
+    if (name && name.length >= 2) {
+      parsed.push({ name, memberId });
+    }
   });
 
   if (!parsed.length) { showToast('未解析到任何姓名（請確認格式）'); return; }
 
-  // ── 智慧匯入 Pipeline（多對多架構）──
+  // 智慧匯入 Pipeline（多對多架構）
   const { newCount, bindCount, skipCount } = smartImportPipeline(parsed, courseType, role, hall);
 
   if (newCount === 0 && bindCount === 0) {
