@@ -1378,28 +1378,9 @@ async function saveDB() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch(e) {}
 
   // 主要：寫入 Firestore
-  // 等待 _firestoreDocRef 就緒（最多 6 秒，每 200ms 輪詢一次）
-  let docRef = window._firestoreDocRef;
+  const docRef = window._firestoreDocRef;
   if (!docRef) {
-    console.warn('[saveDB] 等待 Firestore 就緒...');
-    docRef = await new Promise((resolve) => {
-      let elapsed = 0;
-      const timer = setInterval(() => {
-        elapsed += 200;
-        if (window._firestoreDocRef) {
-          clearInterval(timer);
-          resolve(window._firestoreDocRef);
-        } else if (elapsed >= 6000) {
-          clearInterval(timer);
-          resolve(null);
-        }
-      }, 200);
-    });
-  }
-
-  if (!docRef) {
-    console.error('[saveDB] Firestore 仍未就緒，請確認已登入');
-    showToast('⚠️ 尚未連線至雲端，請重新整理後再試');
+    console.warn('[saveDB] Firestore 尚未就緒，僅儲存至本地快取');
     return;
   }
 
@@ -1746,27 +1727,24 @@ function renderCourseTypeList() {
     </div>`).join('');
 }
 
-function addCourseType() {
+async function addCourseType() {
   const input = document.getElementById('new-ct-name');
   const name  = input.value.trim();
   if (!name) { showToast('請輸入類別名稱'); return; }
   if (DB.courseTypes.includes(name)) { showToast('此類別已存在'); return; }
   DB.courseTypes.push(name);
-  saveDB(); input.value = '';
+  await saveDB(); input.value = '';
   renderCourseTypeList(); updateCourseDropdowns(); renderMembers();
   showToast('類別新增成功');
 }
 
 function deleteCourseType(name) {
   if (name === '神鼓陣') return;
-  showConfirm(`確定要刪除「${name}」類別嗎？該類別下的組員將被歸類至神鼓陣。`, () => {
-    // 舊相容欄位
+  showConfirm(`確定要刪除「${name}」類別嗎？該類別下的組員將被歸類至神鼓陣。`, async () => {
     DB.members.forEach(m => { if (m.courseType === name) m.courseType = '神鼓陣'; });
-    // 多對多：將該類別的關聯改成神鼓陣
     DB.memberMappings.forEach(mp => {
       if (mp.courseType === name) mp.courseType = '神鼓陣';
     });
-    // 去重（避免已有神鼓陣關聯的同一人出現兩筆）
     const seen = new Set();
     DB.memberMappings = DB.memberMappings.filter(mp => {
       const key = mp.rowId + '|' + mp.courseType;
@@ -1774,7 +1752,7 @@ function deleteCourseType(name) {
       seen.add(key); return true;
     });
     DB.courseTypes = DB.courseTypes.filter(t => t !== name);
-    saveDB(); renderCourseTypeList(); updateCourseDropdowns();
+    await saveDB(); renderCourseTypeList(); updateCourseDropdowns();
     if (activeMemberFilter === name) activeMemberFilter = 'ALL';
     renderMembers(); showToast('類別已刪除');
   }, '刪除類別');
@@ -1959,15 +1937,15 @@ function unbindAndRefresh(memberId, courseType) {
   if (!m) return;
   const allCts = getCourseTypesByMember(memberId);
   if (allCts.length <= 1) { showToast('至少須保留一個名單類別，無法解除'); return; }
-  showConfirm(`確定解除「${m.name}」與「${courseType}」的名單綁定嗎？`, () => {
+  showConfirm(`確定解除「${m.name}」與「${courseType}」的名單綁定嗎？`, async () => {
     unbindMemberFromCourseType(memberId, courseType);
-    saveDB();
+    await saveDB();
     showToast(`已解除「${courseType}」綁定`);
-    editMember(memberId); // 刷新彈窗
+    editMember(memberId);
   }, '解除名單綁定');
 }
 
-function saveMember() {
+async function saveMember() {
   const name = document.getElementById('m-name').value.trim();
   if (!name) { showToast('請填寫姓名'); return; }
   const id = document.getElementById('edit-member-id').value;
@@ -1993,17 +1971,17 @@ function saveMember() {
     DB.members.push({ id: rowId, ...data });
     bindMemberToCourseType(rowId, newMemberId, newCourseType);
   }
-  saveDB(); closeModal('modal-member'); switchMemberTab('list');
+  await saveDB(); closeModal('modal-member'); switchMemberTab('list');
   showToast('組員資料已儲存');
 }
 
 function deleteMember(id) {
   const m = DB.members.find(x => x.id === id);
   if (!m) return;
-  showConfirm(`確認要刪除組員「${m.name}」嗎？相關名單綁定也將一併移除。`, () => {
+  showConfirm(`確認要刪除組員「${m.name}」嗎？相關名單綁定也將一併移除。`, async () => {
     DB.members = DB.members.filter(x => x.id !== id);
-    removeAllMappingsForMember(id); // 同步刪除所有關聯
-    saveDB(); switchMemberTab('list'); showToast('組員已刪除');
+    removeAllMappingsForMember(id);
+    await saveDB(); switchMemberTab('list'); showToast('組員已刪除');
   }, '刪除組員');
 }
 
@@ -2294,7 +2272,7 @@ function editSession(id) {
   openModal('modal-session');
 }
 
-function saveSession() {
+async function saveSession() {
   const name = document.getElementById('s-name').value.trim();
   const date = document.getElementById('s-date').value;
   if (!name || !date) { showToast('請填寫完整資訊'); return; }
@@ -2311,7 +2289,7 @@ function saveSession() {
         helper: document.getElementById('s-helper').value.trim(),
         note:   document.getElementById('s-note').value.trim()
       };
-      saveDB(); closeModal('modal-session');
+      await saveDB(); closeModal('modal-session');
       currentSessionYear  = new Date(date).getFullYear();
       currentSessionMonth = new Date(date).getMonth() + 1;
       renderSessions();
@@ -2327,7 +2305,7 @@ function saveSession() {
       helper: document.getElementById('s-helper').value.trim(),
       note:   document.getElementById('s-note').value.trim()
     });
-    saveDB(); closeModal('modal-session');
+    await saveDB(); closeModal('modal-session');
     currentSessionYear  = new Date(date).getFullYear();
     currentSessionMonth = new Date(date).getMonth() + 1;
     renderSessions();
@@ -2335,14 +2313,14 @@ function saveSession() {
   }
 }
 
-function duplicateSession(id) {
+async function duplicateSession(id) {
   const target = DB.sessions.find(s => s.id === id);
   if (!target) return;
   const d = new Date(target.date);
   d.setDate(d.getDate() + 7);
   const nextDate = d.toISOString().split('T')[0];
   DB.sessions.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,3), name: target.name, date: nextDate, timeStart: target.timeStart, timeEnd: target.timeEnd, courseType: target.courseType || '神鼓陣' });
-  saveDB();
+  await saveDB();
   currentSessionYear  = d.getFullYear();
   currentSessionMonth = d.getMonth() + 1;
   renderSessions();
@@ -2352,10 +2330,10 @@ function duplicateSession(id) {
 function deleteSession(id) {
   const s = DB.sessions.find(x => x.id === id);
   if (!s) { showToast('找不到此活動'); return; }
-  showConfirm(`確認刪除「${s.name}」及其點名紀錄？`, () => {
+  showConfirm(`確認刪除「${s.name}」及其點名紀錄？`, async () => {
     DB.sessions = DB.sessions.filter(x => x.id !== id);
     delete DB.records[id];
-    saveDB(); renderSessions(); showToast('活動已刪除');
+    await saveDB(); renderSessions(); showToast('活動已刪除');
   }, '刪除活動');
 }
 
@@ -2564,8 +2542,8 @@ function markAllPresent() {
   showToast('已將全員標記為出席');
 }
 
-function saveAttendance() {
-  saveDB();
+async function saveAttendance() {
+  await saveDB();
   setAttSavedState(true);
   showToast('點名紀錄儲存成功');
 }
