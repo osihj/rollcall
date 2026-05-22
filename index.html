@@ -1375,6 +1375,7 @@ async function saveDB() {
     return;
   }
   try {
+    // 1. 寫入管理員私有文件（含組員、點名紀錄等完整資料）
     await window._firestoreSetDoc(docRef, {
       members:     DB.members,
       sessions:    DB.sessions,
@@ -1382,6 +1383,25 @@ async function saveDB() {
       courseTypes: DB.courseTypes,
       updatedAt:   Date.now()
     });
+
+    // 2. 同時寫入共用行事曆路徑，供自律打卡 App 讀取
+    const sharedRef = window._firestoreSharedRef;
+    if (sharedRef) {
+      await window._firestoreSetDoc(sharedRef, {
+        sessions: DB.sessions.map(s => ({
+          id:         s.id,
+          name:       s.name,
+          date:       s.date,
+          timeStart:  s.timeStart  || '',
+          timeEnd:    s.timeEnd    || '',
+          courseType: s.courseType || '神鼓陣',
+          color:      s.color      || '#2c5234',
+          helper:     s.helper     || '',
+          note:       s.note       || ''
+        })),
+        updatedAt: Date.now()
+      });
+    }
   } catch (err) {
     console.error('[saveDB] Firestore 寫入失敗:', err);
     showToast('⚠️ 雲端儲存失敗，請確認網路連線');
@@ -1763,7 +1783,7 @@ function deleteMember(id) {
   }, '刪除組員');
 }
 
-function importMembersSmart() {
+async function importMembersSmart() {
   const text       = document.getElementById('import-text').value.trim();
   const courseType = document.getElementById('import-course-type').value || '神鼓陣';
   const role       = document.getElementById('import-role-type').value || '組員';
@@ -1804,7 +1824,8 @@ function importMembersSmart() {
     count++;
   });
 
-  saveDB();
+  if (count === 0) { showToast('未解析到新組員（可能重複或格式不符）'); return; }
+  await saveDB();
   document.getElementById('import-text').value = '';
   switchMemberTab('list');
   showToast(`已智慧解析並成功匯入 ${count} 位組員`);
@@ -2996,6 +3017,8 @@ const ADMIN_EMAIL = "hsinglinstar@gmail.com";
 // 橋接 Firestore setDoc 給非 module 的 saveDB() 使用
 window._firestoreSetDoc = setDoc;
 window.firebaseDB = db;
+// 共用行事曆路徑：供自律打卡 App 讀取，不含組員隱私資料
+window._firestoreSharedRef = doc(db, "adminData", "sharedCalendar");
 
 // 即時監聽取消訂閱函式
 let _unsubscribeSnapshot = null;
@@ -3123,6 +3146,30 @@ window.addEventListener('DOMContentLoaded', function(){
 
   if(typeof window.deleteSession === 'function'){
     window.deleteSession = guard(window.deleteSession, '無權限');
+  }
+
+  if(typeof window.importMembersSmart === 'function'){
+    window.importMembersSmart = guard(window.importMembersSmart, '無權限：僅管理者可匯入組員');
+  }
+
+  if(typeof window.saveMember === 'function'){
+    window.saveMember = guard(window.saveMember, '無權限');
+  }
+
+  if(typeof window.deleteMember === 'function'){
+    window.deleteMember = guard(window.deleteMember, '無權限');
+  }
+
+  if(typeof window.addCourseType === 'function'){
+    window.addCourseType = guard(window.addCourseType, '無權限');
+  }
+
+  if(typeof window.deleteCourseType === 'function'){
+    window.deleteCourseType = guard(window.deleteCourseType, '無權限');
+  }
+
+  if(typeof window.saveAttendance === 'function'){
+    window.saveAttendance = guard(window.saveAttendance, '無權限');
   }
 
 });
