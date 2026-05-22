@@ -1420,21 +1420,32 @@ async function saveDB() {
     // 2. 同時寫入共用行事曆路徑，供自律打卡 App 讀取
     const sharedRef = window._firestoreSharedRef;
     if (sharedRef) {
+      const sharedSessions = DB.sessions.map(s => ({
+        id:         s.id,
+        name:       s.name,
+        date:       s.date,
+        timeStart:  s.timeStart  || '',
+        timeEnd:    s.timeEnd    || '',
+        courseType: s.courseType || '神鼓陣',
+        color:      s.color      || '#2c5234',
+        helper:     s.helper     || '',
+        note:       s.note       || ''
+      }));
+      
+      console.log('[saveDB] 📤 準備寫入共用行事曆:');
+      console.log('   - Sessions 數量:', sharedSessions.length);
+      console.log('   - 參考路徑:', 'adminData/sharedCalendar');
+      console.log('   - 前 3 個活動:', sharedSessions.slice(0, 3));
+      
       await window._firestoreSetDoc(sharedRef, {
-        sessions: DB.sessions.map(s => ({
-          id:         s.id,
-          name:       s.name,
-          date:       s.date,
-          timeStart:  s.timeStart  || '',
-          timeEnd:    s.timeEnd    || '',
-          courseType: s.courseType || '神鼓陣',
-          color:      s.color      || '#2c5234',
-          helper:     s.helper     || '',
-          note:       s.note       || ''
-        })),
-        updatedAt: Date.now()
+        sessions: sharedSessions,
+        updatedAt: Date.now(),
+        source: 'index10',
+        syncedAt: new Date().toISOString()
       });
-      console.log('[saveDB] ✅ 共用行事曆寫入成功');
+      console.log('[saveDB] ✅ 共用行事曆寫入成功，自律打卡 App 應已收到更新');
+    } else {
+      console.warn('[saveDB] ⚠️  無法獲取 sharedRef，共用行事曆未同步');
     }
   } catch (err) {
     console.error('[saveDB] ❌ Firestore 寫入失敗:', err);
