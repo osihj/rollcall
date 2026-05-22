@@ -1525,21 +1525,25 @@ function updateMappingsMemberId(rowId, newMemberId) {
 function smartImportPipeline(parsed, courseType, defaultRole) {
   let newCount = 0, bindCount = 0, skipCount = 0;
 
+  // 正規化輔助：去除空白、統一全半形
+  const normalize = s => (s || '').trim().replace(/　/g, ' ').replace(/\s+/g, '');
+
   parsed.forEach(({ name, memberId }) => {
     if (!name || name.length < 2) return;
+    const normName = normalize(name);
+    const normId   = (memberId || '').trim();
 
     let existingMember = null;
 
     // 【優先】以研修代號查重：代號相同 = 確定同一人（跨類別唯一識別）
-    if (memberId) {
-      existingMember = DB.members.find(m => m.memberId && m.memberId === memberId);
+    if (normId) {
+      existingMember = DB.members.find(m => (m.memberId || '').trim() === normId);
     }
 
-    // 【次要】無研修代號，或代號查無此人時，用姓名查重
-    // 規則：同名 = 同一人（姓名在此系統視為唯一識別的備用方案）
-    // 找第一個同名且無代號的組員（若有代號則已在上面被找到）
+    // 【次要】代號查無此人時，用姓名查重（正規化比對，容錯空白/全半形）
+    // 規則：同名 = 同一人，無論對方有無研修代號
     if (!existingMember) {
-      existingMember = DB.members.find(m => m.name === name && !m.memberId);
+      existingMember = DB.members.find(m => normalize(m.name) === normName);
     }
 
     if (existingMember) {
