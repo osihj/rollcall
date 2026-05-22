@@ -1378,9 +1378,28 @@ async function saveDB() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch(e) {}
 
   // 主要：寫入 Firestore
-  const docRef = window._firestoreDocRef;
+  // 等待 _firestoreDocRef 就緒（最多 6 秒，每 200ms 輪詢一次）
+  let docRef = window._firestoreDocRef;
   if (!docRef) {
-    console.warn('[saveDB] Firestore 尚未就緒，僅儲存至本地快取');
+    console.warn('[saveDB] 等待 Firestore 就緒...');
+    docRef = await new Promise((resolve) => {
+      let elapsed = 0;
+      const timer = setInterval(() => {
+        elapsed += 200;
+        if (window._firestoreDocRef) {
+          clearInterval(timer);
+          resolve(window._firestoreDocRef);
+        } else if (elapsed >= 6000) {
+          clearInterval(timer);
+          resolve(null);
+        }
+      }, 200);
+    });
+  }
+
+  if (!docRef) {
+    console.error('[saveDB] Firestore 仍未就緒，請確認已登入');
+    showToast('⚠️ 尚未連線至雲端，請重新整理後再試');
     return;
   }
 
