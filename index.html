@@ -1789,32 +1789,29 @@ async function importMembersSmart() {
   const role       = document.getElementById('import-role-type').value || '組員';
   if (!text) { showToast('請輸入匯入名單內容'); return; }
 
-  // 逐行解析：先嘗試辨識「數字 姓名」格式
+  // 逐行解析（修復版）：支援「代號緊接姓名」與「代號空格姓名」等多種格式
+  // 格式範例：「1031徐星林」「3057 陳秀珠」「3. 1031 彭月秋」「彭月秋」「彭月秋 1031」
   const lines = text.split(/[\n,，、;；]+/).map(s => s.trim()).filter(Boolean);
   const parsed = [];
   lines.forEach(line => {
-    // 匹配：可選序號 + 可選研修代號(3-5位數) + 姓名
-    // 例：「1031 彭月秋」「3. 1031 彭月秋」「彭月秋」
-    const m = line.match(/^(?:\d+[.、\s])?\s*(\d{3,5})\s+([\u4e00-\u9fff·‧]{2,5})/)
-           || line.match(/^(?:\d+[.、\s])?\s*([\u4e00-\u9fff·‧]{2,5})\s*(\d{3,5})?/);
-    if (!m) return;
     let memberId = '', name = '';
-    if (m[0].match(/^(?:\d+[.、\s])?\s*\d{3,5}\s+[\u4e00-\u9fff]/)) {
-      // 數字在前：研修代號 姓名
-      const parts = line.replace(/^\d+[.、\s]+/, '').trim().split(/\s+/);
-      memberId = parts[0];
-      name = parts[1] || '';
+
+    // 策略 A：代號在前（3–5位數）+ 可選空白 + 中文姓名（緊接或有空格均可）
+    // \s* 取代舊的 \s+，修復「1031徐星林」無空格格式無法解析的 Bug
+    const mIdFirst = line.match(/(?:^|(?<=\s))(\d{3,5})\s*([\u4e00-\u9fff·‧]{2,6})/);
+    if (mIdFirst) {
+      memberId = mIdFirst[1];
+      name     = mIdFirst[2];
     } else {
-      // 姓名在前或無代號
-      const noSeq = line.replace(/^\d+[.、\s]+/, '').trim();
-      const parts = noSeq.split(/\s+/);
-      // 第一個中文段為姓名，若有數字段則為研修代號
-      const chinesePart = parts.find(p => /^[\u4e00-\u9fff·‧]{2,5}$/.test(p)) || '';
-      const numPart     = parts.find(p => /^\d{3,5}$/.test(p)) || '';
-      name = chinesePart;
-      memberId = numPart;
+      // 策略 B：中文姓名在前，後方可選代號
+      const mNameFirst = line.match(/([\u4e00-\u9fff·‧]{2,6})[\s\uff08\(]*(\d{3,5})?/);
+      if (mNameFirst) {
+        name     = mNameFirst[1];
+        memberId = mNameFirst[2] || '';
+      }
     }
-    if (name.length >= 2) parsed.push({ name, memberId });
+
+    if (name && name.length >= 2) parsed.push({ name, memberId });
   });
 
   let count = 0;
