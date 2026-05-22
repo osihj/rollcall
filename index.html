@@ -1378,12 +1378,32 @@ async function saveDB() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch(e) {}
 
   // 主要：寫入 Firestore
-  const docRef = window._firestoreDocRef;
+  // 等待 _firestoreDocRef 就緒（最多 6 秒，每 200ms 輪詢一次）
+  let docRef = window._firestoreDocRef;
   if (!docRef) {
-    console.warn('[saveDB] Firestore 尚未就緒，僅儲存至本地快取');
+    console.warn('[saveDB] 等待 Firestore 就緒...');
+    docRef = await new Promise((resolve) => {
+      let elapsed = 0;
+      const timer = setInterval(() => {
+        elapsed += 200;
+        if (window._firestoreDocRef) {
+          clearInterval(timer);
+          resolve(window._firestoreDocRef);
+        } else if (elapsed >= 6000) {
+          clearInterval(timer);
+          resolve(null);
+        }
+      }, 200);
+    });
+  }
+
+  if (!docRef) {
+    console.error('[saveDB] Firestore 仍未就緒，請確認已登入');
+    showToast('⚠️ 尚未連線至雲端，請重新整理後再試');
     return;
   }
 
+  console.log('[saveDB] 開始寫入 Firestore，sessions 數量:', DB.sessions.length);
   window._isSaving = true;  // 🔒 開始寫入，暫停 snapshot 回寫
   try {
     // 1. 寫入管理員私有文件（含組員、點名紀錄等完整資料）
@@ -1395,6 +1415,7 @@ async function saveDB() {
       courseTypes:    DB.courseTypes,
       updatedAt:      Date.now()
     });
+    console.log('[saveDB] ✅ 主文件寫入成功');
 
     // 2. 同時寫入共用行事曆路徑，供自律打卡 App 讀取
     const sharedRef = window._firestoreSharedRef;
@@ -1413,9 +1434,10 @@ async function saveDB() {
         })),
         updatedAt: Date.now()
       });
+      console.log('[saveDB] ✅ 共用行事曆寫入成功');
     }
   } catch (err) {
-    console.error('[saveDB] Firestore 寫入失敗:', err);
+    console.error('[saveDB] ❌ Firestore 寫入失敗:', err);
     showToast('⚠️ 雲端儲存失敗，請確認網路連線');
   } finally {
     // 🔓 寫入完成，延遲 800ms 後才重新接受 snapshot（等 Firestore 廣播穩定）
@@ -1741,10 +1763,13 @@ async function addCourseType() {
 function deleteCourseType(name) {
   if (name === '神鼓陣') return;
   showConfirm(`確定要刪除「${name}」類別嗎？該類別下的組員將被歸類至神鼓陣。`, async () => {
+    // 舊相容欄位
     DB.members.forEach(m => { if (m.courseType === name) m.courseType = '神鼓陣'; });
+    // 多對多：將該類別的關聯改成神鼓陣
     DB.memberMappings.forEach(mp => {
       if (mp.courseType === name) mp.courseType = '神鼓陣';
     });
+    // 去重（避免已有神鼓陣關聯的同一人出現兩筆）
     const seen = new Set();
     DB.memberMappings = DB.memberMappings.filter(mp => {
       const key = mp.rowId + '|' + mp.courseType;
