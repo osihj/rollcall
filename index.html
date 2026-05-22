@@ -1370,6 +1370,9 @@ function getDocRef() {
 }
 
 // 儲存至 Firestore（同時更新本地快取）
+// _isSaving flag：寫入期間暫停 onSnapshot 回寫，避免競速條件覆蓋本地資料
+window._isSaving = false;
+
 async function saveDB() {
   // 本地快取（備援）
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch(e) {}
@@ -1380,6 +1383,8 @@ async function saveDB() {
     console.warn('[saveDB] Firestore 尚未就緒，僅儲存至本地快取');
     return;
   }
+
+  window._isSaving = true;  // 🔒 開始寫入，暫停 snapshot 回寫
   try {
     // 1. 寫入管理員私有文件（含組員、點名紀錄等完整資料）
     await window._firestoreSetDoc(docRef, {
@@ -1412,6 +1417,9 @@ async function saveDB() {
   } catch (err) {
     console.error('[saveDB] Firestore 寫入失敗:', err);
     showToast('⚠️ 雲端儲存失敗，請確認網路連線');
+  } finally {
+    // 🔓 寫入完成，延遲 800ms 後才重新接受 snapshot（等 Firestore 廣播穩定）
+    setTimeout(() => { window._isSaving = false; }, 800);
   }
 }
 
@@ -3241,6 +3249,11 @@ function startRealtimeSync(uid) {
 
   _unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
     if (snap.exists()) {
+      // 寫入期間的 snapshot 是自己觸發的，跳過以避免競速條件
+      if (window._isSaving) {
+        console.log('[onSnapshot] 寫入中，略過此次回寫');
+        return;
+      }
       // 雲端有資料 → 覆蓋本地，刷新 UI
       if (typeof applyRemoteData === 'function') {
         applyRemoteData(snap.data());
