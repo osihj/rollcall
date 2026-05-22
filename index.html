@@ -1510,6 +1510,19 @@ function applyRemoteData(data) {
   if (!DB.courseTypes.includes('神鼓陣')) DB.courseTypes.unshift('神鼓陣');
   DB.sessions.forEach(s => { if (!s.courseType) s.courseType = '神鼓陣'; });
 
+  // ── 補漏：掃描 memberMappings 與 members，將實際存在但未在 courseTypes 中的類別補回 ──
+  // 修正舊資料 courseTypes 只有['神鼓陣'] 但組員已綁定其他類別的問題
+  const allUsedTypes = new Set();
+  DB.memberMappings.forEach(mp => { if (mp.courseType) allUsedTypes.add(mp.courseType); });
+  DB.members.forEach(m => { if (m.courseType) allUsedTypes.add(m.courseType); });
+  DB.sessions.forEach(s => { if (s.courseType) allUsedTypes.add(s.courseType); });
+  allUsedTypes.forEach(ct => {
+    if (ct && ct !== '常態班' && !DB.courseTypes.includes(ct)) {
+      DB.courseTypes.push(ct);
+      console.log('[補漏 courseTypes] 已自動補回遺失類別:', ct);
+    }
+  });
+
   // ── 自動遷移舊資料至多對多架構 ──
   // 條件：有組員資料 AND 關聯表是空的 AND 這不是全新空帳號
   // 修正：只在確實有舊組員（DB.members.length > 0）且關聯表完全空白時遷移
