@@ -2317,8 +2317,13 @@ async function importMembersSmart() {
   lines.forEach(line => {
     let memberId = '', name = '';
 
-    // 清除行首的序號（可選）：「1. 」「1. 」「1） 」等
-    let cleanLine = line.replace(/^[\d\.\）\)]+[\s\.）\)]*/, '').trim();
+    // 清除行首的序號（可選）：「1. 」「2） 」「3. 1031 彭月秋」「5.1031 李大明」等
+    // ★ 修復：只比對 1~2 位數字的序號（1–99），避免將 4 位研修代號（如 1031）誤判為序號
+    let cleanLine = line.replace(/^\d{1,2}\s*[\.。\）\)]\s+/, '').trim();
+    // 補充：「1~2位序號+點+研修代號」（如「5.1031 李大明」）也清除序號部分
+    cleanLine = cleanLine.replace(/^\d{1,2}\.(\d{3,5})/, '$1').trim();
+    // 補充：「1~2位數字+標點+緊接中文」（如「1.徐星林」，序號無空格）也一併清除
+    cleanLine = cleanLine.replace(/^\d{1,2}[\.。\）\)](?=[\u4e00-\u9fff])/, '').trim();
 
     // 策略 A：代號在前（3–5位數）+ 可選空白 + 中文姓名（2–6字）
     // 改進：使用更嚴格的正規表達式，避免誤匹配
