@@ -2966,6 +2966,9 @@ onAuthStateChanged(auth, (user) => {
     user.displayName || user.email;
 
   const isAdmin = user.email === ADMIN_EMAIL;
+  
+  // 同步到本地權限系統
+  window.isAdminUser = isAdmin;
 
   if (!isAdmin) {
 
@@ -2990,24 +2993,7 @@ window.firebaseDB = db;
 
 
 <script>
-window.isAdminUser = false;
-window.ADMIN_EMAILS = [
-  "hsinglinstar@gmail.com"
-];
-
-function applyRolePermissions(user){
-  if(!user) return;
-
-  window.isAdminUser = window.ADMIN_EMAILS.includes(user.email);
-
-  if(!window.isAdminUser){
-    const addBtn = document.getElementById('btn-add-session');
-    if(addBtn){
-      addBtn.style.display = 'none';
-    }
-  }
-}
-
+// 權限驗證已在 Firebase 認證部分處理
 window.addEventListener('DOMContentLoaded', function(){
 
   const guard = function(fn, msg){
