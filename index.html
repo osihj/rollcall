@@ -1431,19 +1431,30 @@ function applyRemoteData(data) {
   DB.sessions.forEach(s => { if (!s.courseType) s.courseType = '神鼓陣'; });
 
   // ── 自動遷移舊資料至多對多架構 ──
-  // 若組員仍有 courseType 欄位，且 memberMappings 為空，自動建立關聯表
-  if (DB.memberMappings.length === 0 && DB.members.some(m => m.courseType)) {
+  // 條件：有組員資料 AND 關聯表是空的 AND 這不是全新空帳號
+  // 修正：只在確實有舊組員（DB.members.length > 0）且關聯表完全空白時遷移
+  // 避免「新建類別尚無組員」時誤觸發
+  if (DB.members.length > 0 && DB.memberMappings.length === 0) {
     DB.members.forEach(m => {
-      const ct = m.courseType || '神鼓陣';
-      // 確保組員有唯一 memberId（用舊系統的 id 作為 memberId 若無）
       if (!m.memberId) m.memberId = '';
-      // 建立關聯（以 m.id 為 row key，因舊資料 memberId 可能為空）
+      const ct = m.courseType || '神鼓陣';
       if (!DB.memberMappings.some(mp => mp.rowId === m.id && mp.courseType === ct)) {
         DB.memberMappings.push({ rowId: m.id, memberId: m.memberId, courseType: ct });
       }
     });
     console.log('[Migration] 已自動建立', DB.memberMappings.length, '筆多對多關聯');
   }
+
+  // ── 補漏：確保每位組員在關聯表中至少有一筆記錄 ──
+  // 防止部分組員因儲存問題沒有關聯，導致從篩選中消失
+  DB.members.forEach(m => {
+    const hasMappings = DB.memberMappings.some(mp => mp.rowId === m.id);
+    if (!hasMappings) {
+      const ct = m.courseType || '神鼓陣';
+      DB.memberMappings.push({ rowId: m.id, memberId: m.memberId || '', courseType: ct });
+      console.log('[補漏] 為組員', m.name, '補建關聯:', ct);
+    }
+  });
 
   // 本地快取同步
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch(e) {}
@@ -1510,47 +1521,49 @@ function updateMappingsMemberId(rowId, newMemberId) {
 }
 
 // 智慧匯入核心邏輯：以研修代號為唯一識別，多對多綁定
-// 回傳 { newCount, bindCount } 分別為新增組員數與新增關聯數
+// 回傳 { newCount, bindCount, skipCount }
 function smartImportPipeline(parsed, courseType, defaultRole) {
-  let newCount = 0, bindCount = 0;
+  let newCount = 0, bindCount = 0, skipCount = 0;
 
   parsed.forEach(({ name, memberId }) => {
     if (!name || name.length < 2) return;
 
-    // 【狀況 A】以研修代號查重（若有代號）
     let existingMember = null;
+
+    // 【優先】以研修代號查重：代號相同 = 確定同一人
     if (memberId) {
       existingMember = DB.members.find(m => m.memberId && m.memberId === memberId);
     }
-    // 若沒有代號或找不到，再用姓名查重（相容舊資料）
-    if (!existingMember) {
-      existingMember = DB.members.find(m => m.name === name && (!memberId || !m.memberId));
+
+    // 【次要】無研修代號時：只在「已綁定到當前類別的同名無代號組員」裡查重
+    // 關鍵修正：不能跨類別用姓名判斷同一人，避免同名不同人被誤合併
+    if (!existingMember && !memberId) {
+      const sameNameNoId = DB.members.filter(m => m.name === name && !m.memberId);
+      existingMember = sameNameNoId.find(m =>
+        DB.memberMappings.some(mp => mp.rowId === m.id && mp.courseType === courseType)
+      );
     }
 
-    let rowId;
     if (existingMember) {
-      // 【狀況 A】：舊組員，只新增關聯，不覆蓋資料
-      rowId = existingMember.id;
-      const added = bindMemberToCourseType(rowId, memberId || existingMember.memberId || '', courseType);
+      // 【狀況 A】確認是同一人：嘗試新增關聯（關聯已存在則 skip）
+      const added = bindMemberToCourseType(existingMember.id, memberId || existingMember.memberId || '', courseType);
       if (added) bindCount++;
+      else skipCount++;
     } else {
-      // 【狀況 B】：全新組員，新建母體資料並建立關聯
-      rowId = 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      // 【狀況 B】全新組員（或同名但不同類別）：建立母體並綁定
+      const rowId = 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
       DB.members.push({
         id: rowId, name, gender: '女',
         memberId: memberId || '', hall: '',
-        courseType: courseType, // 相容舊欄位（也保留）
+        courseType: courseType,
         role: defaultRole, note: ''
       });
       bindMemberToCourseType(rowId, memberId || '', courseType);
       newCount++;
-      // 避免同一毫秒產生相同 id
-      // eslint-disable-next-line no-unused-expressions
-      void new Promise(r => setTimeout(r, 1));
     }
   });
 
-  return { newCount, bindCount };
+  return { newCount, bindCount, skipCount };
 }
 
 // 簡易 XSS 防護
@@ -1998,7 +2011,7 @@ async function importMembersSmart() {
   if (!parsed.length) { showToast('未解析到任何姓名（請確認格式）'); return; }
 
   // ── 智慧匯入 Pipeline（多對多架構）──
-  const { newCount, bindCount } = smartImportPipeline(parsed, courseType, role);
+  const { newCount, bindCount, skipCount } = smartImportPipeline(parsed, courseType, role);
 
   if (newCount === 0 && bindCount === 0) {
     showToast('所有組員皆已在此名單類別中，無需重複匯入');
@@ -2010,8 +2023,9 @@ async function importMembersSmart() {
   switchMemberTab('list');
 
   const msgs = [];
-  if (newCount > 0) msgs.push(`新增 ${newCount} 位組員`);
+  if (newCount > 0) msgs.push(`新增 ${newCount} 位新組員`);
   if (bindCount > 0) msgs.push(`${bindCount} 位舊組員已綁定至「${courseType}」`);
+  if (skipCount > 0) msgs.push(`${skipCount} 位已略過（重複）`);
   showToast('✅ ' + msgs.join('，'));
 }
 
