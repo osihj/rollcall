@@ -986,6 +986,32 @@
           </select>
         </div>
       </div>
+      <div class="form-row" style="margin-top:-4px;">
+        <div class="form-group">
+          <label>預設館別 <span style="color:var(--text3);font-size:12px;font-weight:400;">（批次套用，可留空）</span></label>
+          <select id="import-hall">
+            <option value="">— 未設定 —</option>
+            <option value="內湖">內湖</option>
+            <option value="南港">南港</option>
+            <option value="古亭">古亭</option>
+            <option value="大安">大安</option>
+            <option value="樹林">樹林</option>
+            <option value="桃園">桃園</option>
+            <option value="中壢">中壢</option>
+            <option value="環北">環北</option>
+            <option value="新竹">新竹</option>
+            <option value="竹北">竹北</option>
+            <option value="苗栗">苗栗</option>
+            <option value="台中">台中</option>
+            <option value="虎尾">虎尾</option>
+            <option value="嘉義">嘉義</option>
+            <option value="台南">台南</option>
+            <option value="高雄">高雄</option>
+            <option value="屏東">屏東</option>
+            <option value="宜蘭">宜蘭</option>
+          </select>
+        </div>
+      </div>
       <textarea id="import-text" placeholder="例：1031 王曉明&#10;2045 李美華&#10;3057陳小同&#10;&#10;支援代號在前或姓名在前，有無空格均可解析。" rows="4"></textarea>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px; flex-wrap:wrap; gap:8px;">
         <button class="btn btn-primary btn-sm" onclick="importMembersSmart()">解析並快速匯入</button>
@@ -1262,25 +1288,24 @@
         </select>
       </div>
     </div>
-    <!-- 名單類別 + 組員類別同排 -->
-    <div class="form-row">
-      <div class="form-group">
-        <label>名單類別 *</label>
-        <select id="m-course-type"></select>
-        <div id="m-extra-bindings" style="margin-top:8px; display:none;">
-          <div style="font-size:12px; color:var(--text3); margin-bottom:4px;">此組員同時隸屬於：</div>
-          <div id="m-extra-bindings-list" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>組員類別 *</label>
-        <select id="m-role">
+    <!-- 名單類別綁定（多對多，每個類別有獨立角色）-->
+    <div class="form-group" id="m-bindings-section">
+      <label>名單類別綁定 <span style="color:var(--text3);font-size:12px;font-weight:400;">（各類別角色可分別設定）</span></label>
+      <div id="m-bindings-list" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;"></div>
+      <!-- 新增綁定列 -->
+      <div style="display:flex; gap:6px; margin-top:8px; align-items:center;" id="m-add-binding-row">
+        <select id="m-add-binding-ct" style="flex:1;"></select>
+        <select id="m-add-binding-role" style="flex:0 0 80px;">
           <option value="組員">組員</option>
           <option value="窗口">窗口</option>
           <option value="輔導">輔導</option>
         </select>
+        <button class="btn btn-secondary btn-sm" style="white-space:nowrap;" onclick="addBindingFromModal()">＋ 新增</button>
       </div>
     </div>
+    <!-- 隱藏欄位：相容性保留，供 saveMember 讀取主要類別 -->
+    <input type="hidden" id="m-course-type" value="">
+    <input type="hidden" id="m-role" value="組員">
     <div class="form-group"><label>備註</label><input type="text" id="m-note"></div>
     <button class="btn btn-primary btn-block" onclick="saveMember()">確認儲存</button>
   </div>
@@ -1356,7 +1381,7 @@ const STORAGE_KEY = 'attendance_smart_v4_cache';
 
 let DB = {
   members: [],        // 組員母體資料庫（以 memberId 為唯一識別）
-  memberMappings: [], // 多對多關聯表 [{ memberId: '1031', courseType: '週三名單' }]
+  memberMappings: [], // 多對多關聯表 [{ rowId, memberId, courseType, role }]（role 為此組員在此類別的身分）
   sessions: [], records: {}, courseTypes: ['神鼓陣']
 };
 
@@ -1480,21 +1505,24 @@ function applyRemoteData(data) {
       if (!m.memberId) m.memberId = '';
       const ct = m.courseType || '神鼓陣';
       if (!DB.memberMappings.some(mp => mp.rowId === m.id && mp.courseType === ct)) {
-        DB.memberMappings.push({ rowId: m.id, memberId: m.memberId, courseType: ct });
+        DB.memberMappings.push({ rowId: m.id, memberId: m.memberId, courseType: ct, role: m.role || '組員' });
       }
     });
-    console.log('[Migration] 已自動建立', DB.memberMappings.length, '筆多對多關聯');
+    console.log('[Migration] 已自動建立', DB.memberMappings.length, '筆多對多關聯（含 role）');
   }
 
   // ── 補漏：確保每位組員在關聯表中至少有一筆記錄 ──
-  // 防止部分組員因儲存問題沒有關聯，導致從篩選中消失
   DB.members.forEach(m => {
     const hasMappings = DB.memberMappings.some(mp => mp.rowId === m.id);
     if (!hasMappings) {
       const ct = m.courseType || '神鼓陣';
-      DB.memberMappings.push({ rowId: m.id, memberId: m.memberId || '', courseType: ct });
+      DB.memberMappings.push({ rowId: m.id, memberId: m.memberId || '', courseType: ct, role: m.role || '組員' });
       console.log('[補漏] 為組員', m.name, '補建關聯:', ct);
     }
+    // ── 補漏 2：既有關聯若缺少 role 欄位，從 member 本身補填 ──
+    DB.memberMappings.filter(mp => mp.rowId === m.id && !mp.role).forEach(mp => {
+      mp.role = m.role || '組員';
+    });
   });
 
   // 本地快取同步
@@ -1566,13 +1594,23 @@ function getMemberCountByCourseType(courseType) {
   return DB.memberMappings.filter(mp => mp.courseType === courseType).length;
 }
 
-// 將組員綁定至名單類別（若已存在則跳過）
-function bindMemberToCourseType(rowId, memberId, courseType) {
-  if (!DB.memberMappings.some(mp => mp.rowId === rowId && mp.courseType === courseType)) {
-    DB.memberMappings.push({ rowId, memberId, courseType });
+// 將組員綁定至名單類別（若已存在則跳過；可選更新 role）
+function bindMemberToCourseType(rowId, memberId, courseType, role) {
+  const existing = DB.memberMappings.find(mp => mp.rowId === rowId && mp.courseType === courseType);
+  if (!existing) {
+    DB.memberMappings.push({ rowId, memberId, courseType, role: role || '組員' });
     return true; // 新增
   }
   return false; // 已存在
+}
+
+// 取得某組員在特定名單類別中的角色
+function getMemberRoleInCourse(rowId, courseType) {
+  const mp = DB.memberMappings.find(m => m.rowId === rowId && m.courseType === courseType);
+  if (mp && mp.role) return mp.role;
+  // 降級相容：無 role 欄位時讀組員本身的 role
+  const m = DB.members.find(x => x.id === rowId);
+  return (m && m.role) || '組員';
 }
 
 // 解除組員與名單類別的綁定
@@ -1594,7 +1632,7 @@ function updateMappingsMemberId(rowId, newMemberId) {
 
 // 智慧匯入核心邏輯：以研修代號為唯一識別，多對多綁定
 // 回傳 { newCount, bindCount, skipCount }
-function smartImportPipeline(parsed, courseType, defaultRole) {
+function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
   let newCount = 0, bindCount = 0, skipCount = 0;
 
   // 正規化輔助：去除空白、統一全半形
@@ -1613,26 +1651,30 @@ function smartImportPipeline(parsed, courseType, defaultRole) {
     }
 
     // 【次要】代號查無此人時，用姓名查重（正規化比對，容錯空白/全半形）
-    // 規則：同名 = 同一人，無論對方有無研修代號
     if (!existingMember) {
       existingMember = DB.members.find(m => normalize(m.name) === normName);
     }
 
     if (existingMember) {
-      // 【狀況 A】是舊組員：只新增關聯，已有關聯則跳過，不建立重複檔案
-      const added = bindMemberToCourseType(existingMember.id, memberId || existingMember.memberId || '', courseType);
+      // 【狀況 A】舊組員：新增關聯綁定（含此類別的 role），已存在則略過
+      const added = bindMemberToCourseType(existingMember.id, memberId || existingMember.memberId || '', courseType, defaultRole);
+      // 若有批次館別且舊組員館別為空，補填
+      if (added && defaultHall && !existingMember.hall) {
+        existingMember.hall = defaultHall;
+      }
       if (added) bindCount++;
       else skipCount++;
     } else {
-      // 【狀況 B】確認是全新組員：建立母體資料並綁定
+      // 【狀況 B】全新組員：建立母體資料（含批次館別）並綁定
       const rowId = 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
       DB.members.push({
         id: rowId, name, gender: '女',
-        memberId: memberId || '', hall: '',
+        memberId: memberId || '',
+        hall: defaultHall || '',
         courseType: courseType,
         role: defaultRole, note: ''
       });
-      bindMemberToCourseType(rowId, memberId || '', courseType);
+      bindMemberToCourseType(rowId, memberId || '', courseType, defaultRole);
       newCount++;
     }
   });
@@ -1767,7 +1809,7 @@ function renderDashboard() {
 ══════════════════════════════════════════ */
 function updateCourseDropdowns() {
   const types = DB.courseTypes;
-  ['import-course-type','m-course-type','s-course-type'].forEach(id => {
+  ['import-course-type','m-add-binding-ct','s-course-type'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   });
@@ -1898,10 +1940,29 @@ function renderMembers() {
   list.innerHTML = filtered.map((m, i) => {
     // 取得此組員所屬的所有名單類別（多對多）
     const memberCourseTypes = getCourseTypesByMember(m.id);
-    const courseTypeBadges = memberCourseTypes.length > 0
-      ? memberCourseTypes.map(ct => `<span class="course-badge" style="margin-right:2px;">${esc(ct)}</span>`).join('')
-      : `<span class="course-badge">${esc(m.courseType || '神鼓陣')}</span>`;
-    const firstCourseType = memberCourseTypes[0] || m.courseType || '神鼓陣';
+
+    // 當篩選特定類別時，顯示「類別 + 該類別角色」組合 badge
+    // 當顯示全部時，逐一列出每個類別及其對應角色
+    let courseRoleBadges;
+    if (activeMemberFilter !== 'ALL') {
+      // 指定類別篩選：只顯示當前類別的角色 badge（角色可能與其他類別不同）
+      const roleInThisCourse = getMemberRoleInCourse(m.id, activeMemberFilter);
+      courseRoleBadges = `
+        <span class="course-badge" style="margin-right:2px;">${esc(activeMemberFilter)}</span>
+        <span class="${roleClass[roleInThisCourse] || 'role-badge role-badge-member'}">${esc(roleInThisCourse)}</span>`;
+    } else {
+      // 全部顯示：每個類別旁邊緊跟該類別的角色
+      if (memberCourseTypes.length > 0) {
+        courseRoleBadges = memberCourseTypes.map(ct => {
+          const roleInCt = getMemberRoleInCourse(m.id, ct);
+          return `<span class="course-badge" style="margin-right:2px;">${esc(ct)}</span><span class="${roleClass[roleInCt] || 'role-badge role-badge-member'}" style="margin-right:4px;">${esc(roleInCt)}</span>`;
+        }).join('');
+      } else {
+        const fallbackRole = m.role || '組員';
+        courseRoleBadges = `<span class="course-badge">${esc(m.courseType || '神鼓陣')}</span><span class="${roleClass[fallbackRole] || 'role-badge role-badge-member'}">${esc(fallbackRole)}</span>`;
+      }
+    }
+
     return `
     <div class="member-item">
       <div class="num-badge">${i + 1}</div>
@@ -1919,13 +1980,10 @@ function renderMembers() {
           ${m.hall ? `<span style="font-size:11px; color:var(--text3); margin-left:4px;">${esc(m.hall)}</span>` : ''}
         </div>
       </div>
-      <div style="flex:1.1; display:flex; align-items:center; min-width:0; flex-wrap:wrap; gap:2px;" class="member-desktop-only">
-        ${courseTypeBadges}
+      <div style="flex:1.6; display:flex; align-items:center; min-width:0; flex-wrap:wrap; gap:2px;" class="member-desktop-only">
+        ${courseRoleBadges}
       </div>
-      <div style="flex:0.9; display:flex; align-items:center; min-width:0;" class="member-desktop-only">
-        <span class="${roleClass[m.role] || 'role-badge role-badge-member'}">${esc(m.role || '組員')}</span>
-      </div>
-      <div style="width:140px; flex-shrink:0; display:flex; gap:4px; justify-content:flex-end;" class="member-desktop-only">
+      <div style="width:140px; flex-shrink:0; display:flex; gap:4px; justify-content:flex-end; margin-left:auto;" class="member-desktop-only">
         <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button>
         <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">刪除</button>
       </div>
@@ -1935,8 +1993,7 @@ function renderMembers() {
           <span class="member-item-name">${esc(m.name)}</span>
           <span class="member-item-meta">(${esc(m.gender || '女')})${m.memberId ? ' ' + esc(m.memberId) : ''}${m.hall ? ' ' + esc(m.hall) : ''}</span>
           <div class="member-item-badges">
-            ${courseTypeBadges}
-            <span class="${roleClass[m.role] || 'role-badge role-badge-member'}">${esc(m.role || '組員')}</span>
+            ${courseRoleBadges}
           </div>
         </div>
         <button class="member-more-btn" onclick="toggleMemberPopover(event,'popover-${m.id}')" aria-label="更多操作">⋯</button>
@@ -1956,10 +2013,13 @@ function openMemberModal() {
   document.getElementById('m-name').value = '';
   document.querySelector('input[name="m-gender"][value="女"]').checked = true;
   document.getElementById('m-id').value   = '';
-  document.getElementById('m-hall').value  = '';
-  document.getElementById('m-role').value = '組員';
+  document.getElementById('m-hall').value = '';
   document.getElementById('m-note').value = '';
-  if (DB.courseTypes.length > 0) document.getElementById('m-course-type').value = DB.courseTypes[0];
+  // 新增模式：清空綁定列，新增下拉顯示所有類別
+  document.getElementById('m-bindings-list').innerHTML = '<div style="font-size:13px;color:var(--text3);padding:4px 0;">儲存後可在此新增名單綁定</div>';
+  const sel = document.getElementById('m-add-binding-ct');
+  sel.innerHTML = DB.courseTypes.map(ct => `<option value="${esc(ct)}">${esc(ct)}</option>`).join('');
+  document.getElementById('m-add-binding-role').value = '組員';
   openModal('modal-member');
 }
 
@@ -1970,35 +2030,79 @@ function editMember(id) {
   document.getElementById('modal-member-title').textContent = '編輯組員資料';
   document.getElementById('m-name').value = m.name;
   document.querySelector(`input[name="m-gender"][value="${m.gender === '男' ? '男' : '女'}"]`).checked = true;
-  document.getElementById('m-id').value          = m.memberId || '';
-  document.getElementById('m-hall').value         = m.hall || '';
-  document.getElementById('m-role').value        = m.role || '組員';
-  document.getElementById('m-note').value        = m.note || '';
+  document.getElementById('m-id').value   = m.memberId || '';
+  document.getElementById('m-hall').value = m.hall || '';
+  document.getElementById('m-note').value = m.note || '';
 
-  // 取得此組員所有名單類別綁定
-  const allCts = getCourseTypesByMember(id);
-  const primaryCt = allCts[0] || m.courseType || '神鼓陣';
-  document.getElementById('m-course-type').value = primaryCt;
+  // 渲染「名單類別綁定」列表（每個綁定顯示類別＋角色，可個別編輯/解除）
+  renderMemberBindings(id);
 
-  // 若有多個名單類別，顯示其他綁定
-  const extraWrap = document.getElementById('m-extra-bindings');
-  const extraList = document.getElementById('m-extra-bindings-list');
-  if (allCts.length > 1) {
-    extraWrap.style.display = '';
-    extraList.innerHTML = allCts.map(ct => `
-      <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:var(--accent-light);color:var(--accent);border:1px solid rgba(44,82,52,0.15);font-size:12px;font-weight:500;">
-        ${esc(ct)}
-        <button title="解除此綁定" onclick="unbindAndRefresh('${esc(id)}','${esc(ct)}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;line-height:1;padding:0 2px;">×</button>
-      </span>`).join('');
-  } else {
-    extraWrap.style.display = 'none';
-    extraList.innerHTML = '';
-  }
+  // 填入「新增綁定」類別下拉（排除已綁定的）
+  refreshAddBindingDropdown(id);
 
   openModal('modal-member');
 }
 
-// 解除某組員與某名單類別的綁定，並刷新彈窗
+function renderMemberBindings(memberId) {
+  const roleClass = { '輔導': 'role-badge role-badge-leader', '窗口': 'role-badge role-badge-window', '組員': 'role-badge role-badge-member' };
+  const bindings  = DB.memberMappings.filter(mp => mp.rowId === memberId);
+  const listEl    = document.getElementById('m-bindings-list');
+
+  if (!bindings.length) {
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:4px 0;">尚無名單綁定</div>';
+    return;
+  }
+
+  listEl.innerHTML = bindings.map(mp => {
+    const currentRole = mp.role || '組員';
+    const roleOpts = ['組員','窗口','輔導'].map(r =>
+      `<option value="${r}"${r === currentRole ? ' selected' : ''}>${r}</option>`
+    ).join('');
+    return `
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);">
+      <span class="course-badge" style="flex:1;min-width:0;">${esc(mp.courseType)}</span>
+      <select onchange="updateBindingRole('${esc(memberId)}','${esc(mp.courseType)}',this.value)"
+              style="font-size:12px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);">
+        ${roleOpts}
+      </select>
+      <button title="解除此綁定" onclick="unbindAndRefresh('${esc(memberId)}','${esc(mp.courseType)}')"
+              style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">×</button>
+    </div>`;
+  }).join('');
+}
+
+function refreshAddBindingDropdown(memberId) {
+  const bound   = new Set(DB.memberMappings.filter(mp => mp.rowId === memberId).map(mp => mp.courseType));
+  const unbound = DB.courseTypes.filter(ct => !bound.has(ct));
+  const sel     = document.getElementById('m-add-binding-ct');
+  sel.innerHTML = unbound.length
+    ? unbound.map(ct => `<option value="${esc(ct)}">${esc(ct)}</option>`).join('')
+    : '<option value="">（已綁定所有類別）</option>';
+}
+
+function updateBindingRole(memberId, courseType, newRole) {
+  const mp = DB.memberMappings.find(m => m.rowId === memberId && m.courseType === courseType);
+  if (mp) mp.role = newRole;
+  saveDB();
+  showToast(`已更新「${courseType}」角色為${newRole}`);
+}
+
+function addBindingFromModal() {
+  const memberId   = document.getElementById('edit-member-id').value;
+  const courseType = document.getElementById('m-add-binding-ct').value;
+  const role       = document.getElementById('m-add-binding-role').value;
+  if (!courseType || !memberId) return;
+  const m = DB.members.find(x => x.id === memberId);
+  if (!m) return;
+  const added = bindMemberToCourseType(memberId, m.memberId || '', courseType, role);
+  if (!added) { showToast('此類別已有綁定'); return; }
+  saveDB();
+  renderMemberBindings(memberId);
+  refreshAddBindingDropdown(memberId);
+  showToast(`已將「${m.name}」新增至「${courseType}」（${role}）`);
+}
+
+// 解除某組員與某名單類別的綁定，並刷新彈窗內的綁定清單
 function unbindAndRefresh(memberId, courseType) {
   const m = DB.members.find(x => x.id === memberId);
   if (!m) return;
@@ -2008,35 +2112,52 @@ function unbindAndRefresh(memberId, courseType) {
     unbindMemberFromCourseType(memberId, courseType);
     await saveDB();
     showToast(`已解除「${courseType}」綁定`);
-    editMember(memberId);
+    renderMemberBindings(memberId);
+    refreshAddBindingDropdown(memberId);
+    renderMembers();
   }, '解除名單綁定');
 }
 
 async function saveMember() {
   const name = document.getElementById('m-name').value.trim();
   if (!name) { showToast('請填寫姓名'); return; }
-  const id = document.getElementById('edit-member-id').value;
+  const id          = document.getElementById('edit-member-id').value;
   const newMemberId = document.getElementById('m-id').value.trim();
-  const newCourseType = document.getElementById('m-course-type').value || '神鼓陣';
+
+  // 從目前 memberMappings 取第一個綁定作為主要類別（相容欄位）
+  let primaryCt   = '神鼓陣';
+  let primaryRole = '組員';
+  if (id) {
+    const firstBinding = DB.memberMappings.find(mp => mp.rowId === id);
+    if (firstBinding) {
+      primaryCt   = firstBinding.courseType;
+      primaryRole = firstBinding.role || '組員';
+    }
+  } else {
+    // 新增模式：從「新增綁定」欄讀取首個類別
+    primaryCt   = document.getElementById('m-add-binding-ct').value || '神鼓陣';
+    primaryRole = document.getElementById('m-add-binding-role').value || '組員';
+  }
+
   const data = {
     name,
     gender:     document.querySelector('input[name="m-gender"]:checked').value,
     memberId:   newMemberId,
     hall:       document.getElementById('m-hall').value.trim(),
-    courseType: newCourseType, // 相容欄位，保留
-    role:       document.getElementById('m-role').value || '組員',
+    courseType: primaryCt,   // 相容欄位，取主要類別
+    role:       primaryRole, // 相容欄位，取主要類別角色
     note:       document.getElementById('m-note').value.trim()
   };
+
   if (id) {
-    // 編輯模式：更新組員資料，並同步 memberId 至關聯表
     const idx = DB.members.findIndex(x => x.id === id);
     DB.members[idx] = { ...DB.members[idx], ...data };
     updateMappingsMemberId(id, newMemberId);
   } else {
-    // 新增模式：建立組員並建立關聯
     const rowId = 'm_' + Date.now();
     DB.members.push({ id: rowId, ...data });
-    bindMemberToCourseType(rowId, newMemberId, newCourseType);
+    // 新增模式：從下拉建立第一筆綁定
+    if (primaryCt) bindMemberToCourseType(rowId, newMemberId, primaryCt, primaryRole);
   }
   await saveDB(); closeModal('modal-member'); switchMemberTab('list');
   showToast('組員資料已儲存');
@@ -2056,6 +2177,7 @@ async function importMembersSmart() {
   const text       = document.getElementById('import-text').value.trim();
   const courseType = document.getElementById('import-course-type').value || '神鼓陣';
   const role       = document.getElementById('import-role-type').value || '組員';
+  const hall       = document.getElementById('import-hall').value || '';
   if (!text) { showToast('請輸入匯入名單內容'); return; }
 
   // 逐行解析（修復版）：支援「代號緊接姓名」與「代號空格姓名」等多種格式
@@ -2085,7 +2207,7 @@ async function importMembersSmart() {
   if (!parsed.length) { showToast('未解析到任何姓名（請確認格式）'); return; }
 
   // ── 智慧匯入 Pipeline（多對多架構）──
-  const { newCount, bindCount, skipCount } = smartImportPipeline(parsed, courseType, role);
+  const { newCount, bindCount, skipCount } = smartImportPipeline(parsed, courseType, role, hall);
 
   if (newCount === 0 && bindCount === 0) {
     showToast('所有組員皆已在此名單類別中，無需重複匯入');
@@ -2482,16 +2604,19 @@ function loadAttendance() {
   }
 
   list.innerHTML = filteredMembers.map((m, idx) => {
-    // 預設出席（奶油黃），若已有紀錄則用紀錄值
     const status = rec[m.id] !== undefined ? rec[m.id] : 'absent';
-    // 舊資料若有 present(遲到) 視為 absent(出席)
     const displayStatus = status === 'present' ? 'absent' : status;
     const labels = { absent: '出席', leave: '請假' };
+    // 顯示此組員在本場活動所屬類別的角色
+    const roleInCourse = getMemberRoleInCourse(m.id, sessionCourseType);
+    const roleClass = { '輔導': 'role-badge role-badge-leader', '窗口': 'role-badge role-badge-window', '組員': 'role-badge role-badge-member' };
     return `
       <div class="att-row">
         <div class="num-badge">${idx + 1}</div>
         <div style="flex:1; min-width:0;">
-          <div class="att-name" style="font-size:17px;">${esc(m.name)}</div>
+          <div class="att-name" style="font-size:17px;">${esc(m.name)}
+            <span class="${roleClass[roleInCourse] || 'role-badge role-badge-member'}" style="font-size:11px;margin-left:4px;vertical-align:middle;">${esc(roleInCourse)}</span>
+          </div>
         </div>
         <div class="att-btns">
           <button class="att-cycle-btn ${displayStatus}" onclick="cycleAttStatus('${sid}','${m.id}',this)">${labels[displayStatus] || labels.absent}</button>
