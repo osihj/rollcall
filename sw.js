@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════
 
 const CACHE_NAME = 'jilv-v1';
-const NOTIF_ICON = '/drum/icon-96x96.png';
+const NOTIF_ICON = '/rollcall/icon-96x96.png';
 
 // ── 安裝 & 啟動 ──────────────────────────────────────
 self.addEventListener('install', () => self.skipWaiting());
@@ -76,14 +76,14 @@ function showNotif(title, body, tag = 'general') {
     icon:  NOTIF_ICON,
     badge: NOTIF_ICON,
     tag,                   // 同 tag 的新通知會取代舊的，避免堆積
-    data:  { url: '/drum/' },
+    data:  { url: '/rollcall/' },
   });
 }
 
 // ── 點擊通知：開啟 app ────────────────────────────────
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const target = event.notification.data?.url || '/drum/';
+  const target = event.notification.data?.url || '/rollcall/';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       const existing = list.find(c => c.url.includes(target));

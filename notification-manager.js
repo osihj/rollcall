@@ -23,7 +23,7 @@ export async function initNotifications() {
 
   // 註冊 Service Worker（路徑需對應 GitHub Pages 的實際位置）
   // GitHub Pages: osihj.github.io/rollcall/ → sw.js 放在 /rollcall/sw.js
-  const swPath = '/drum/sw.js';
+  const swPath = '/rollcall/sw.js';
   try {
     await navigator.serviceWorker.register(swPath);
   } catch (e) {
