@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>活動點名行事曆</title>
+<title>點名活動行事曆</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -739,24 +739,6 @@
   .copy-result-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 16px; font-size: 13px; cursor: pointer; font-weight: 500; }
   .copy-result-btn:hover { background: var(--border); }
 
-  /* ── 複製結果 Modal ── */
-  #modal-copy-result .modal { border-radius: var(--radius); max-height: 80vh; }
-  .copy-result-textarea {
-    width: 100%; min-height: 160px; resize: none;
-    font-size: 14px; line-height: 1.7; font-family: inherit;
-    border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 12px 14px; background: var(--surface2); color: var(--text);
-  }
-  .copy-result-actions {
-    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px;
-  }
-  .btn-line {
-    background: #06C755; color: #fff; border-color: #06C755;
-    font-weight: 600;
-  }
-  .btn-line:hover { background: #05b34c; border-color: #05b34c; }
-  .btn-line i { font-size: 16px; }
-
   /* ── MEMBER SUB-TABS ── */
   .member-subtab {
     padding: 10px 18px; font-size: 14px; font-weight: 500;
@@ -942,7 +924,7 @@
 <!-- Firebase Login UI -->
 <div id="login-screen" style="position:fixed;inset:0;background:#f8f7f4;display:flex;justify-content:center;align-items:center;z-index:99999;">
   <div style="background:#fff;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);text-align:center;width:90%;max-width:320px;">
-    <div style="font-size:24px;font-weight:700;margin-bottom:10px;">活動點名行事曆</div>
+    <div style="font-size:24px;font-weight:700;margin-bottom:10px;">活動行事曆</div>
     <div style="font-size:14px;color:#666;margin-bottom:24px;">請使用 Google 帳號登入</div>
     <button onclick="googleLogin()" style="width:100%;padding:14px;border:none;border-radius:10px;background:#2c5234;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">
       使用 Google 登入
@@ -976,6 +958,9 @@
     <button class="nav-btn" onclick="switchPage('attendance')" id="nav-attendance"><i class="fas fa-list-check"></i>點名</button>
     <button class="nav-btn" onclick="switchPage('lottery')" id="nav-lottery"><i class="fas fa-code-branch"></i>分組</button>
     <button class="nav-btn" onclick="switchPage('stats')" id="nav-stats"><i class="fas fa-chart-bar"></i>報表</button>
+    <button class="nav-btn" onclick="switchPage('notifications')" id="nav-notifications">
+      <i class="fas fa-bell"></i>通知
+    </button>
   </div>
 </nav>
 
@@ -1262,6 +1247,128 @@
   <select id="stats-month" style="display:none;"><option value="0" selected>0</option></select>
 </div>
 
+<!-- ════════════ 通知管理頁 ════════════ -->
+<div id="page-notifications" class="page">
+
+  <!-- iOS 提示 banner（使用者是 iOS 且尚未安裝到主畫面時顯示） -->
+  <div id="ios-hint" style="display:none;
+    background:#EAF3DE; border:1px solid #97C459; border-radius:8px;
+    padding:12px 16px; margin-bottom:16px; font-size:13px; color:#27500A; line-height:1.6">
+    <strong>iPhone 使用者注意：</strong>請先點 Safari 右下角分享鍵 → 「加入主畫面」，
+    才能接收推播通知。加入後重新開啟即可啟用。
+  </div>
+
+  <!-- 通知授權狀態提示 -->
+  <div id="notif-status-bar" style="
+    border-radius:8px; padding:10px 14px; margin-bottom:16px;
+    font-size:13px; line-height:1.5; display:none">
+  </div>
+
+  <!-- ── 區塊 1：每日定時 ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title"><div class="title-text-wrapper">每日定時提醒</div></div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px">
+      <div>
+        <div style="font-size:14px; font-weight:600; color:var(--text)">啟用每日推播</div>
+        <div style="font-size:12px; color:var(--text3); margin-top:2px">每天在指定時間提醒所有使用者打卡</div>
+      </div>
+      <label style="position:relative; display:inline-block; width:42px; height:24px; cursor:pointer">
+        <input type="checkbox" id="daily-enabled" style="opacity:0;width:0;height:0"
+               onchange="onDailyToggle()">
+        <span id="daily-toggle-track" style="
+          position:absolute; inset:0; border-radius:12px;
+          background:var(--border); transition:.2s">
+          <span id="daily-toggle-dot" style="
+            position:absolute; top:3px; left:3px; width:18px; height:18px;
+            background:#fff; border-radius:50%; transition:.2s"></span>
+        </span>
+      </label>
+    </div>
+
+    <div id="daily-settings" style="display:none; border-top:1px solid var(--border); padding-top:14px">
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 130px">
+          <label>推播時間</label>
+          <input type="time" id="daily-time" value="08:00">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>通知訊息</label>
+          <input type="text" id="daily-message" placeholder="記得今日打卡！" maxlength="50">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" style="margin-top:4px"
+              onclick="saveDailyConfig()">儲存定時設定</button>
+    </div>
+  </div>
+
+  <!-- ── 區塊 2：預約通知 ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="display:flex; justify-content:space-between; align-items:center">
+      <div class="title-text-wrapper">預約通知</div>
+      <button class="btn btn-secondary btn-sm" onclick="openScheduleModal()">＋ 新增</button>
+    </div>
+
+    <div id="scheduled-list" style="margin-top:4px">
+      <!-- 由 JS 動態填入 -->
+      <div style="font-size:13px; color:var(--text3); padding:8px 0">尚未設定預約通知</div>
+    </div>
+  </div>
+
+  <!-- ── 區塊 3：臨時通知 ── -->
+  <div class="card">
+    <div class="card-title"><div class="title-text-wrapper">臨時通知</div></div>
+    <div style="font-size:13px; color:var(--text2); margin-bottom:10px">
+      立即推播給所有已安裝自律打卡的成員
+    </div>
+    <textarea id="instant-message" rows="3" placeholder="輸入要立即推送的訊息..."
+      style="width:100%; border:1px solid var(--border); border-radius:8px;
+             padding:10px 12px; font-size:14px; resize:none; font-family:inherit;
+             color:var(--text); background:var(--surface)"></textarea>
+    <button class="btn btn-primary" style="width:100%; margin-top:10px; justify-content:center"
+            onclick="sendInstantMsg()">
+      <i class="fas fa-paper-plane" style="margin-right:6px"></i>立即推播給所有成員
+    </button>
+  </div>
+</div>
+
+<!-- ── 預約通知 Modal ── -->
+<div id="schedule-modal" class="modal-overlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">新增預約通知</div>
+      <button class="close-btn" onclick="closeScheduleModal()">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label>通知標題</label>
+      <input type="text" id="sch-title" placeholder="例：神鼓陣課程提醒" maxlength="30">
+    </div>
+    <div class="form-group">
+      <label>通知訊息</label>
+      <textarea id="sch-message" rows="2" placeholder="例：今天下午 2 點在內湖館集合，請準時到場"
+        style="border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+               font-size:14px; resize:none; font-family:inherit; width:100%;
+               color:var(--text); background:var(--surface)"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>日期</label>
+        <input type="date" id="sch-date">
+      </div>
+      <div class="form-group" style="flex:0 0 130px">
+        <label>時間</label>
+        <input type="time" id="sch-time" value="09:00">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeScheduleModal()">取消</button>
+      <button class="btn btn-primary"   style="flex:1" onclick="saveSchedule()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════ MODALS ════════════════ -->
 <div class="modal-overlay" id="modal-member">
   <div class="modal">
@@ -1400,55 +1507,6 @@
     <div style="display:flex; gap:10px; justify-content:flex-end;">
       <button class="btn btn-secondary" onclick="closeModal('modal-confirm')">取消</button>
       <button class="btn btn-danger" id="confirm-ok-btn">確認刪除</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════ 活動詳情 Modal（雙 tab） ════════════════ -->
-<div class="modal-overlay" id="modal-copy-result" style="align-items:center; justify-content:center; padding:20px;">
-  <div class="modal" style="max-width:480px; width:100%; border-radius:12px; padding:24px 20px 28px;">
-    <div class="modal-header">
-      <div class="modal-title" id="copy-result-title">活動詳情</div>
-      <button class="close-btn" onclick="closeModal('modal-copy-result')">✕</button>
-    </div>
-    <!-- Tab 列 -->
-    <div style="display:flex; border-bottom:2px solid var(--border); margin-bottom:16px;">
-      <button id="tab-btn-notify" onclick="switchResultTab('notify')"
-        style="flex:1; padding:10px 0; font-size:14px; font-weight:600; border:none; background:none; cursor:pointer;
-               color:var(--accent); border-bottom:2px solid var(--accent); margin-bottom:-2px; font-family:inherit;">
-        通知訊息
-      </button>
-      <button id="tab-btn-result" onclick="switchResultTab('result')"
-        style="flex:1; padding:10px 0; font-size:14px; font-weight:500; border:none; background:none; cursor:pointer;
-               color:var(--text2); border-bottom:2px solid transparent; margin-bottom:-2px; font-family:inherit;">
-        出席結果
-      </button>
-    </div>
-    <!-- 通知訊息 Tab -->
-    <div id="tab-panel-notify">
-      <textarea class="copy-result-textarea" id="copy-result-notify-text" readonly></textarea>
-      <div class="copy-result-actions">
-        <button class="btn btn-primary" onclick="doCopyText('copy-result-notify-text','copy-btn-notify')" id="copy-btn-notify">
-          <i class="fa-regular fa-copy"></i> 複製文字
-        </button>
-        <button class="btn btn-line" onclick="shareTextToLine('copy-result-notify-text')">
-          <i class="fa-brands fa-line"></i> 分享至 LINE
-        </button>
-        <button class="btn btn-secondary" onclick="closeModal('modal-copy-result')" style="margin-left:auto;">關閉</button>
-      </div>
-    </div>
-    <!-- 出席結果 Tab -->
-    <div id="tab-panel-result" style="display:none;">
-      <textarea class="copy-result-textarea" id="copy-result-text" readonly></textarea>
-      <div class="copy-result-actions">
-        <button class="btn btn-primary" onclick="doCopyText('copy-result-text','copy-btn-result')" id="copy-btn-result">
-          <i class="fa-regular fa-copy"></i> 複製文字
-        </button>
-        <button class="btn btn-line" onclick="shareTextToLine('copy-result-text')">
-          <i class="fa-brands fa-line"></i> 分享至 LINE
-        </button>
-        <button class="btn btn-secondary" onclick="closeModal('modal-copy-result')" style="margin-left:auto;">關閉</button>
-      </div>
     </div>
   </div>
 </div>
@@ -1850,117 +1908,6 @@ function showConfirm(msg, onOk, title = '確認操作') {
 }
 
 /* ══════════════════════════════════════════
-   複製結果功能
-══════════════════════════════════════════ */
-function switchResultTab(tab) {
-  const isNotify = tab === 'notify';
-  document.getElementById('tab-panel-notify').style.display = isNotify ? '' : 'none';
-  document.getElementById('tab-panel-result').style.display = isNotify ? 'none' : '';
-  const nbtn = document.getElementById('tab-btn-notify');
-  const rbtn = document.getElementById('tab-btn-result');
-  nbtn.style.color = isNotify ? 'var(--accent)' : 'var(--text2)';
-  nbtn.style.borderBottomColor = isNotify ? 'var(--accent)' : 'transparent';
-  nbtn.style.fontWeight = isNotify ? '600' : '500';
-  rbtn.style.color = !isNotify ? 'var(--accent)' : 'var(--text2)';
-  rbtn.style.borderBottomColor = !isNotify ? 'var(--accent)' : 'transparent';
-  rbtn.style.fontWeight = !isNotify ? '600' : '500';
-}
-
-function doCopyText(textareaId, btnId) {
-  const ta = document.getElementById(textareaId);
-  ta.select();
-  ta.setSelectionRange(0, 99999);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(ta.value).then(() => {
-      showToast('✅ 已複製，可貼到 LINE 或其他通訊軟體');
-    }).catch(() => { document.execCommand('copy'); showToast('✅ 已複製'); });
-  } else {
-    document.execCommand('copy');
-    showToast('✅ 已複製');
-  }
-  const btn = document.getElementById(btnId);
-  if (btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-check"></i> 已複製！';
-    btn.style.background = '#1a9c3e';
-    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1800);
-  }
-}
-
-function shareTextToLine(textareaId) {
-  const text = document.getElementById(textareaId).value;
-  window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
-}
-
-function copySessionResult(sessionId) {
-  const s = DB.sessions.find(x => x.id === sessionId);
-  if (!s) { showToast('找不到此活動'); return; }
-
-  const d = new Date(s.date);
-  const weekDays = ['日','一','二','三','四','五','六'];
-  const fullDateLabel = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${weekDays[d.getDay()]}）`;
-  const shortDateLabel = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}(${weekDays[d.getDay()]})`;
-
-  // ── 通知訊息（活動前發送用） ──
-  let notifyLines = [];
-  notifyLines.push(`▹ ${s.name}`);
-  notifyLines.push(`▹ 日期：${shortDateLabel}`);
-  notifyLines.push(`▹ 時間：${s.timeStart}～${s.timeEnd}`);
-  if (s.helper) notifyLines.push(`▹ 值班小幫手：${s.helper}`);
-  if (s.note)   notifyLines.push(`▹ 備註：${s.note}`);
-
-  // ── 出席結果（點名後發送用） ──
-  // 系統邏輯：absent = 出席（預設）；leave = 請假
-  const rec = DB.records[sessionId] || {};
-  const hasRecord = Object.keys(rec).length > 0;
-  const courseMembers = getMembersByCourseType(s.courseType || '神鼓陣');
-
-  const presentList = [], leaveList = [], noRecordList = [];
-  courseMembers.forEach(m => {
-    const status = rec[m.id];
-    if (!hasRecord) {
-      noRecordList.push(m.name);
-    } else if (status === 'leave') {
-      leaveList.push(m.name);
-    } else {
-      // 'absent'（出席）、undefined（預設出席）、'present'（舊遲到，算出席）
-      presentList.push(m.name);
-    }
-  });
-
-  const total        = courseMembers.length;
-  const presentCount = presentList.length;
-  const leaveCount   = leaveList.length;
-  const rate = total > 0 ? Math.round(presentCount / total * 100) : 0;
-
-  let resultLines = [];
-  resultLines.push(`▹ ${s.name}`);
-  resultLines.push(`▹ 日期：${shortDateLabel}`);
-  resultLines.push(`▹ 時間：${s.timeStart}～${s.timeEnd}`);
-  if (hasRecord) {
-    resultLines.push('');
-    resultLines.push(`▹ 出席（${presentCount} 人）：${presentList.join('、') || '（無）'}`);
-    resultLines.push('');
-    resultLines.push(`▹ 請假（${leaveCount} 人）：${leaveList.join('、') || '（無）'}`);
-    resultLines.push('');
-    resultLines.push(`▹ 出席率：${presentCount}/${total}（${rate}%）`);
-  } else {
-    resultLines.push('');
-    resultLines.push('▹ 尚未進行點名');
-  }
-
-  document.getElementById('copy-result-title').textContent = s.name;
-  document.getElementById('copy-result-notify-text').value = notifyLines.join('\n');
-  document.getElementById('copy-result-text').value = resultLines.join('\n');
-
-  // 預設顯示通知訊息 tab
-  switchResultTab('notify');
-  openModal('modal-copy-result');
-}
-
-// doCopyResultText 和 shareToLine 已由 doCopyText / shareTextToLine 取代
-
-/* ══════════════════════════════════════════
    頁面狀態
 ══════════════════════════════════════════ */
 let currentSessionYear  = new Date().getFullYear();
@@ -2077,19 +2024,10 @@ function renderDashboard() {
 ══════════════════════════════════════════ */
 function updateCourseDropdowns() {
   const types = DB.courseTypes;
-  // import-course-type 和 m-add-binding-ct 維持原有（無空白選項）
-  ['import-course-type','m-add-binding-ct'].forEach(id => {
+  ['import-course-type','m-add-binding-ct','s-course-type'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   });
-  // s-course-type：加入空白選項作為預設（不強制預選任何類別）
-  const sctEl = document.getElementById('s-course-type');
-  if (sctEl) {
-    const prev = sctEl.value;
-    sctEl.innerHTML = '<option value="">— 請選擇名單類別 —</option>' +
-      types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
-    if (prev && [...sctEl.options].some(o => o.value === prev)) sctEl.value = prev;
-  }
   // 統計報表名單類別下拉
   const statsEl = document.getElementById('stats-course-type');
   if (statsEl) {
@@ -2629,7 +2567,6 @@ function renderSessions() {
           <div class="session-header-actions">
             <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editSession('${s.id}')">編輯</button>
             <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();duplicateSession('${s.id}')">複製</button>
-            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();copySessionResult('${s.id}')" title="查看通知訊息與出席結果"><i class="fa-regular fa-copy" style="margin-right:3px;"></i>查看詳情</button>
             <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteSession('${s.id}')">刪除</button>
             <span class="session-toggle-icon">&#9660;</span>
           </div>
@@ -2638,7 +2575,6 @@ function renderSessions() {
           <div class="session-popover" id="spop-${s.id}">
             <button class="session-popover-btn edit" onclick="closeAllSessionPopovers();editSession('${s.id}')">編輯</button>
             <button class="session-popover-btn copy" onclick="closeAllSessionPopovers();duplicateSession('${s.id}')">複製</button>
-            <button class="session-popover-btn copy" onclick="closeAllSessionPopovers();copySessionResult('${s.id}')">查看詳情</button>
             <button class="session-popover-btn del"  onclick="closeAllSessionPopovers();deleteSession('${s.id}')">刪除</button>
           </div>
         </div>
@@ -2786,7 +2722,7 @@ function openSessionModal() {
   document.getElementById('s-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('s-time-start').value = '19:00';
   document.getElementById('s-time-end').value   = '21:00';
-  if (DB.courseTypes.length > 0) document.getElementById('s-course-type').value = '';
+  if (DB.courseTypes.length > 0) document.getElementById('s-course-type').value = DB.courseTypes[0];
   document.getElementById('s-color').value = '#0f9d58';
   document.querySelectorAll('.color-opt').forEach((el, i) => el.classList.toggle('selected', i === 0));
   document.getElementById('s-helper').value = '';
@@ -2818,8 +2754,7 @@ async function saveSession() {
   const name = document.getElementById('s-name').value.trim();
   const date = document.getElementById('s-date').value;
   if (!name || !date) { showToast('請填寫完整資訊'); return; }
-  const courseType = document.getElementById('s-course-type').value;
-  if (!courseType) { showToast('請選擇名單類別'); return; }
+  const courseType = document.getElementById('s-course-type').value || '神鼓陣';
   const color = document.getElementById('s-color').value || '#0f9d58';
   const editId = document.getElementById('edit-session-id').value;
   if (editId) {
@@ -3876,6 +3811,11 @@ onAuthStateChanged(auth, (user) => {
     if (typeof switchPage === "function") switchPage("sessions");
   }
 
+  // ★ 通知初始化：管理員登入後啟動
+  if (isAdmin && typeof window._initNotifPage === 'function') {
+    window._initNotifPage();
+  }
+
   // ★ 核心修復：以登入者 UID 為路徑啟動即時監聽
   startRealtimeSync(user.uid);
 });
@@ -3941,6 +3881,149 @@ window.addEventListener('DOMContentLoaded', function(){
   }
 
 });
+</script>
+
+
+<!-- ════════════ 通知管理 JavaScript ════════════ -->
+<script type="module">
+import {
+  initNotifications, saveDailySettings, addScheduled,
+  deleteScheduled, sendInstant, loadSettings
+} from './notification-manager.js';
+
+// 頁面載入後初始化（需登入才執行）
+window._initNotifPage = async function() {
+  // iOS 提示
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  if (isIOS && !isStandalone) {
+    document.getElementById('ios-hint').style.display = 'block';
+  }
+
+  // 初始化通知（申請授權、註冊 SW）
+  const ok = await initNotifications();
+  showStatusBar(ok);
+
+  // 讀取目前設定並填入 UI
+  const cfg = await loadSettings();
+  fillDailyUI(cfg);
+  renderScheduledList(cfg.scheduled || []);
+};
+
+function showStatusBar(granted) {
+  const bar = document.getElementById('notif-status-bar');
+  bar.style.display = 'block';
+  if (granted) {
+    bar.style.background = '#EAF3DE';
+    bar.style.border = '1px solid #97C459';
+    bar.style.color = '#27500A';
+    bar.textContent = '通知已啟用。設定後所有已安裝自律打卡的成員將收到推播。';
+  } else {
+    bar.style.background = '#FFF3CD';
+    bar.style.border = '1px solid #FFCA2C';
+    bar.style.color = '#664D03';
+    bar.textContent = '通知授權未開啟。請至瀏覽器設定允許「自律動起來」的通知。';
+  }
+}
+
+function fillDailyUI(cfg) {
+  const cb = document.getElementById('daily-enabled');
+  cb.checked = !!cfg.dailyEnabled;
+  if (cfg.dailyTime) document.getElementById('daily-time').value = cfg.dailyTime;
+  if (cfg.dailyMessage) document.getElementById('daily-message').value = cfg.dailyMessage;
+  updateDailyToggle(cb.checked);
+}
+
+window.onDailyToggle = function() {
+  const checked = document.getElementById('daily-enabled').checked;
+  updateDailyToggle(checked);
+};
+
+function updateDailyToggle(on) {
+  const track = document.getElementById('daily-toggle-track');
+  const dot   = document.getElementById('daily-toggle-dot');
+  track.style.background = on ? 'var(--accent)' : 'var(--border)';
+  dot.style.transform = on ? 'translateX(18px)' : 'translateX(0)';
+  document.getElementById('daily-settings').style.display = on ? 'block' : 'none';
+}
+
+window.saveDailyConfig = async function() {
+  const enabled = document.getElementById('daily-enabled').checked;
+  const time    = document.getElementById('daily-time').value;
+  const message = document.getElementById('daily-message').value || '記得今日打卡！';
+  await saveDailySettings({ enabled, time, message });
+  if (typeof showToast === 'function') showToast('✅ 每日定時設定已儲存');
+};
+
+// 預約通知列表渲染
+function renderScheduledList(items) {
+  const el = document.getElementById('scheduled-list');
+  if (!items.length) {
+    el.innerHTML = '<div style="font-size:13px; color:var(--text3); padding:8px 0">尚未設定預約通知</div>';
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const d = new Date(item.datetime);
+    const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+    const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 0;
+                  border-bottom:1px solid var(--border)">
+        <div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-size:13px; font-weight:600; color:var(--text)">${escHtml(item.title)}</div>
+          <div style="font-size:12px; color:var(--text3)">${dateStr}　${timeStr}</div>
+        </div>
+        <button onclick="removeSchedule('${item.id}')"
+          style="border:none; background:none; cursor:pointer; color:var(--text3); font-size:18px; padding:0 4px">
+          <i class="fas fa-trash-alt" style="font-size:14px"></i>
+        </button>
+      </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+window.openScheduleModal = function() {
+  document.getElementById('schedule-modal').classList.add('open');
+  document.getElementById('sch-date').valueAsDate = new Date();
+};
+window.closeScheduleModal = function() {
+  document.getElementById('schedule-modal').classList.remove('open');
+};
+
+window.saveSchedule = async function() {
+  const title    = document.getElementById('sch-title').value.trim();
+  const message  = document.getElementById('sch-message').value.trim();
+  const date     = document.getElementById('sch-date').value;
+  const time     = document.getElementById('sch-time').value;
+  if (!title || !message || !date || !time) {
+    if (typeof showToast === 'function') showToast('請填寫所有欄位');
+    return;
+  }
+  await addScheduled({ title, message, datetime: `${date}T${time}` });
+  closeScheduleModal();
+  const cfg = await loadSettings();
+  renderScheduledList(cfg.scheduled || []);
+  if (typeof showToast === 'function') showToast('✅ 預約通知已新增');
+};
+
+window.removeSchedule = async function(id) {
+  await deleteScheduled(id);
+  const cfg = await loadSettings();
+  renderScheduledList(cfg.scheduled || []);
+  if (typeof showToast === 'function') showToast('已刪除');
+};
+
+window.sendInstantMsg = async function() {
+  const msg = document.getElementById('instant-message').value.trim();
+  if (!msg) { if (typeof showToast === 'function') showToast('請輸入訊息'); return; }
+  await sendInstant(msg);
+  document.getElementById('instant-message').value = '';
+  if (typeof showToast === 'function') showToast('✅ 已推播給所有成員');
+};
 </script>
 
 </body>
