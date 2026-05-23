@@ -1937,14 +1937,15 @@ function copySessionResult(sessionId) {
   resultLines.push(`▹ ${s.name}`);
   resultLines.push(`▹ 日期：${shortDateLabel}`);
   resultLines.push(`▹ 時間：${s.timeStart}～${s.timeEnd}`);
-  if (s.courseType) resultLines.push(`▹ ${s.courseType}`);
-  resultLines.push('');
   if (hasRecord) {
+    resultLines.push('');
     resultLines.push(`▹ 出席（${presentCount} 人）：${presentList.join('、') || '（無）'}`);
+    resultLines.push('');
     resultLines.push(`▹ 請假（${leaveCount} 人）：${leaveList.join('、') || '（無）'}`);
     resultLines.push('');
     resultLines.push(`▹ 出席率：${presentCount}/${total}（${rate}%）`);
   } else {
+    resultLines.push('');
     resultLines.push('▹ 尚未進行點名');
   }
 
