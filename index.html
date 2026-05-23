@@ -1404,22 +1404,51 @@
   </div>
 </div>
 
-<!-- ════════════════ 複製結果 Modal ════════════════ -->
+<!-- ════════════════ 活動詳情 Modal（雙 tab） ════════════════ -->
 <div class="modal-overlay" id="modal-copy-result" style="align-items:center; justify-content:center; padding:20px;">
   <div class="modal" style="max-width:480px; width:100%; border-radius:12px; padding:24px 20px 28px;">
     <div class="modal-header">
-      <div class="modal-title" id="copy-result-title">點名結果</div>
+      <div class="modal-title" id="copy-result-title">活動詳情</div>
       <button class="close-btn" onclick="closeModal('modal-copy-result')">✕</button>
     </div>
-    <textarea class="copy-result-textarea" id="copy-result-text" readonly></textarea>
-    <div class="copy-result-actions">
-      <button class="btn btn-primary" onclick="doCopyResultText()" id="copy-result-copy-btn">
-        <i class="fa-regular fa-copy"></i> 複製文字
+    <!-- Tab 列 -->
+    <div style="display:flex; border-bottom:2px solid var(--border); margin-bottom:16px;">
+      <button id="tab-btn-notify" onclick="switchResultTab('notify')"
+        style="flex:1; padding:10px 0; font-size:14px; font-weight:600; border:none; background:none; cursor:pointer;
+               color:var(--accent); border-bottom:2px solid var(--accent); margin-bottom:-2px; font-family:inherit;">
+        通知訊息
       </button>
-      <button class="btn btn-line" onclick="shareToLine()">
-        <i class="fa-brands fa-line"></i> 分享至 LINE
+      <button id="tab-btn-result" onclick="switchResultTab('result')"
+        style="flex:1; padding:10px 0; font-size:14px; font-weight:500; border:none; background:none; cursor:pointer;
+               color:var(--text2); border-bottom:2px solid transparent; margin-bottom:-2px; font-family:inherit;">
+        出席結果
       </button>
-      <button class="btn btn-secondary" onclick="closeModal('modal-copy-result')" style="margin-left:auto;">關閉</button>
+    </div>
+    <!-- 通知訊息 Tab -->
+    <div id="tab-panel-notify">
+      <textarea class="copy-result-textarea" id="copy-result-notify-text" readonly></textarea>
+      <div class="copy-result-actions">
+        <button class="btn btn-primary" onclick="doCopyText('copy-result-notify-text','copy-btn-notify')" id="copy-btn-notify">
+          <i class="fa-regular fa-copy"></i> 複製文字
+        </button>
+        <button class="btn btn-line" onclick="shareTextToLine('copy-result-notify-text')">
+          <i class="fa-brands fa-line"></i> 分享至 LINE
+        </button>
+        <button class="btn btn-secondary" onclick="closeModal('modal-copy-result')" style="margin-left:auto;">關閉</button>
+      </div>
+    </div>
+    <!-- 出席結果 Tab -->
+    <div id="tab-panel-result" style="display:none;">
+      <textarea class="copy-result-textarea" id="copy-result-text" readonly></textarea>
+      <div class="copy-result-actions">
+        <button class="btn btn-primary" onclick="doCopyText('copy-result-text','copy-btn-result')" id="copy-btn-result">
+          <i class="fa-regular fa-copy"></i> 複製文字
+        </button>
+        <button class="btn btn-line" onclick="shareTextToLine('copy-result-text')">
+          <i class="fa-brands fa-line"></i> 分享至 LINE
+        </button>
+        <button class="btn btn-secondary" onclick="closeModal('modal-copy-result')" style="margin-left:auto;">關閉</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1823,6 +1852,46 @@ function showConfirm(msg, onOk, title = '確認操作') {
 /* ══════════════════════════════════════════
    複製結果功能
 ══════════════════════════════════════════ */
+function switchResultTab(tab) {
+  const isNotify = tab === 'notify';
+  document.getElementById('tab-panel-notify').style.display = isNotify ? '' : 'none';
+  document.getElementById('tab-panel-result').style.display = isNotify ? 'none' : '';
+  const nbtn = document.getElementById('tab-btn-notify');
+  const rbtn = document.getElementById('tab-btn-result');
+  nbtn.style.color = isNotify ? 'var(--accent)' : 'var(--text2)';
+  nbtn.style.borderBottomColor = isNotify ? 'var(--accent)' : 'transparent';
+  nbtn.style.fontWeight = isNotify ? '600' : '500';
+  rbtn.style.color = !isNotify ? 'var(--accent)' : 'var(--text2)';
+  rbtn.style.borderBottomColor = !isNotify ? 'var(--accent)' : 'transparent';
+  rbtn.style.fontWeight = !isNotify ? '600' : '500';
+}
+
+function doCopyText(textareaId, btnId) {
+  const ta = document.getElementById(textareaId);
+  ta.select();
+  ta.setSelectionRange(0, 99999);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value).then(() => {
+      showToast('✅ 已複製，可貼到 LINE 或其他通訊軟體');
+    }).catch(() => { document.execCommand('copy'); showToast('✅ 已複製'); });
+  } else {
+    document.execCommand('copy');
+    showToast('✅ 已複製');
+  }
+  const btn = document.getElementById(btnId);
+  if (btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> 已複製！';
+    btn.style.background = '#1a9c3e';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1800);
+  }
+}
+
+function shareTextToLine(textareaId) {
+  const text = document.getElementById(textareaId).value;
+  window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+}
+
 function copySessionResult(sessionId) {
   const s = DB.sessions.find(x => x.id === sessionId);
   if (!s) { showToast('找不到此活動'); return; }
@@ -1831,81 +1900,64 @@ function copySessionResult(sessionId) {
   const weekDays = ['日','一','二','三','四','五','六'];
   const dateLabel = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${weekDays[d.getDay()]}）`;
 
+  // ── 通知訊息（活動前發送用） ──
+  let notifyLines = [];
+  notifyLines.push(`▹ ${s.name}`);
+  notifyLines.push(`▹ ${dateLabel}`);
+  notifyLines.push(`▹ ${s.timeStart}～${s.timeEnd}`);
+  if (s.courseType) notifyLines.push(`▹ ${s.courseType}`);
+  if (s.helper) notifyLines.push(`▹ 值班小幫手：${s.helper}`);
+  if (s.note)   notifyLines.push(`▹ 備註：${s.note}`);
+
+  // ── 出席結果（點名後發送用） ──
+  // 系統邏輯：absent = 出席（預設）；leave = 請假
   const rec = DB.records[sessionId] || {};
+  const hasRecord = Object.keys(rec).length > 0;
   const courseMembers = getMembersByCourseType(s.courseType || '神鼓陣');
 
-  const presentList = [], absentList = [], noRecordList = [];
+  const presentList = [], leaveList = [], noRecordList = [];
   courseMembers.forEach(m => {
     const status = rec[m.id];
-    if (status === 'present') presentList.push(m.name);
-    else if (status === 'absent') absentList.push(m.name);
-    else noRecordList.push(m.name);
+    if (!hasRecord) {
+      noRecordList.push(m.name);
+    } else if (status === 'leave') {
+      leaveList.push(m.name);
+    } else {
+      // 'absent'（出席）、undefined（預設出席）、'present'（舊遲到，算出席）
+      presentList.push(m.name);
+    }
   });
 
-  const total = courseMembers.length;
+  const total        = courseMembers.length;
   const presentCount = presentList.length;
-  const absentCount  = absentList.length;
+  const leaveCount   = leaveList.length;
   const rate = total > 0 ? Math.round(presentCount / total * 100) : 0;
 
-  let lines = [];
-  lines.push(`📋 ${s.name} 點名結果`);
-  lines.push(`📅 ${dateLabel}`);
-  lines.push(`⏰ ${s.timeStart}～${s.timeEnd}`);
-  if (s.courseType) lines.push(`🏷️ ${s.courseType}`);
-  lines.push('');
-  lines.push(`✅ 出席（${presentCount} 人）：`);
-  if (presentList.length) lines.push(presentList.join('、'));
-  else lines.push('（無）');
-  lines.push('');
-  lines.push(`❌ 請假（${absentCount} 人）：`);
-  if (absentList.length) lines.push(absentList.join('、'));
-  else lines.push('（無）');
-  if (noRecordList.length) {
-    lines.push('');
-    lines.push(`⬜ 未點名（${noRecordList.length} 人）：`);
-    lines.push(noRecordList.join('、'));
+  let resultLines = [];
+  resultLines.push(`▹ ${s.name}`);
+  resultLines.push(`▹ ${dateLabel}`);
+  resultLines.push(`▹ ${s.timeStart}～${s.timeEnd}`);
+  if (s.courseType) resultLines.push(`▹ ${s.courseType}`);
+  resultLines.push('');
+  if (hasRecord) {
+    resultLines.push(`▹ 出席（${presentCount} 人）：${presentList.join('、') || '（無）'}`);
+    resultLines.push(`▹ 請假（${leaveCount} 人）：${leaveList.join('、') || '（無）'}`);
+    resultLines.push('');
+    resultLines.push(`▹ 出席率：${presentCount}/${total}（${rate}%）`);
+  } else {
+    resultLines.push('▹ 尚未進行點名');
   }
-  lines.push('');
-  lines.push(`📊 出席率：${presentCount}/${total}（${rate}%）`);
-  if (s.helper) lines.push(`👤 值班小幫手：${s.helper}`);
-  if (s.note)   lines.push(`📝 備註：${s.note}`);
 
-  const text = lines.join('\n');
-  document.getElementById('copy-result-title').textContent = `${s.name} 點名結果`;
-  document.getElementById('copy-result-text').value = text;
+  document.getElementById('copy-result-title').textContent = s.name;
+  document.getElementById('copy-result-notify-text').value = notifyLines.join('\n');
+  document.getElementById('copy-result-text').value = resultLines.join('\n');
+
+  // 預設顯示通知訊息 tab
+  switchResultTab('notify');
   openModal('modal-copy-result');
 }
 
-function doCopyResultText() {
-  const ta = document.getElementById('copy-result-text');
-  ta.select();
-  ta.setSelectionRange(0, 99999);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(ta.value).then(() => {
-      showToast('✅ 已複製，可貼到 LINE 或其他通訊軟體');
-    }).catch(() => {
-      document.execCommand('copy');
-      showToast('✅ 已複製');
-    });
-  } else {
-    document.execCommand('copy');
-    showToast('✅ 已複製');
-  }
-  // 按鈕反饋
-  const btn = document.getElementById('copy-result-copy-btn');
-  const orig = btn.innerHTML;
-  btn.innerHTML = '<i class="fa-solid fa-check"></i> 已複製！';
-  btn.style.background = '#1a9c3e';
-  setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1800);
-}
-
-function shareToLine() {
-  const text = document.getElementById('copy-result-text').value;
-  const encoded = encodeURIComponent(text);
-  // LINE 分享：在手機會開啟 LINE App，在桌機會開啟 LINE 網頁版
-  const lineUrl = `https://line.me/R/msg/text/?${encoded}`;
-  window.open(lineUrl, '_blank', 'noopener,noreferrer');
-}
+// doCopyResultText 和 shareToLine 已由 doCopyText / shareTextToLine 取代
 
 /* ══════════════════════════════════════════
    頁面狀態
@@ -2024,10 +2076,19 @@ function renderDashboard() {
 ══════════════════════════════════════════ */
 function updateCourseDropdowns() {
   const types = DB.courseTypes;
-  ['import-course-type','m-add-binding-ct','s-course-type'].forEach(id => {
+  // import-course-type 和 m-add-binding-ct 維持原有（無空白選項）
+  ['import-course-type','m-add-binding-ct'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   });
+  // s-course-type：加入空白選項作為預設（不強制預選任何類別）
+  const sctEl = document.getElementById('s-course-type');
+  if (sctEl) {
+    const prev = sctEl.value;
+    sctEl.innerHTML = '<option value="">— 請選擇名單類別 —</option>' +
+      types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    if (prev && [...sctEl.options].some(o => o.value === prev)) sctEl.value = prev;
+  }
   // 統計報表名單類別下拉
   const statsEl = document.getElementById('stats-course-type');
   if (statsEl) {
@@ -2567,7 +2628,7 @@ function renderSessions() {
           <div class="session-header-actions">
             <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editSession('${s.id}')">編輯</button>
             <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();duplicateSession('${s.id}')">複製</button>
-            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();copySessionResult('${s.id}')" title="複製點名結果文字"><i class="fa-regular fa-copy" style="margin-right:3px;"></i>複製結果</button>
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();copySessionResult('${s.id}')" title="查看通知訊息與出席結果"><i class="fa-regular fa-copy" style="margin-right:3px;"></i>查看詳情</button>
             <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteSession('${s.id}')">刪除</button>
             <span class="session-toggle-icon">&#9660;</span>
           </div>
@@ -2576,7 +2637,7 @@ function renderSessions() {
           <div class="session-popover" id="spop-${s.id}">
             <button class="session-popover-btn edit" onclick="closeAllSessionPopovers();editSession('${s.id}')">編輯</button>
             <button class="session-popover-btn copy" onclick="closeAllSessionPopovers();duplicateSession('${s.id}')">複製</button>
-            <button class="session-popover-btn copy" onclick="closeAllSessionPopovers();copySessionResult('${s.id}')">複製結果</button>
+            <button class="session-popover-btn copy" onclick="closeAllSessionPopovers();copySessionResult('${s.id}')">查看詳情</button>
             <button class="session-popover-btn del"  onclick="closeAllSessionPopovers();deleteSession('${s.id}')">刪除</button>
           </div>
         </div>
@@ -2724,7 +2785,7 @@ function openSessionModal() {
   document.getElementById('s-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('s-time-start').value = '19:00';
   document.getElementById('s-time-end').value   = '21:00';
-  if (DB.courseTypes.length > 0) document.getElementById('s-course-type').value = DB.courseTypes[0];
+  if (DB.courseTypes.length > 0) document.getElementById('s-course-type').value = '';
   document.getElementById('s-color').value = '#0f9d58';
   document.querySelectorAll('.color-opt').forEach((el, i) => el.classList.toggle('selected', i === 0));
   document.getElementById('s-helper').value = '';
@@ -2756,7 +2817,8 @@ async function saveSession() {
   const name = document.getElementById('s-name').value.trim();
   const date = document.getElementById('s-date').value;
   if (!name || !date) { showToast('請填寫完整資訊'); return; }
-  const courseType = document.getElementById('s-course-type').value || '神鼓陣';
+  const courseType = document.getElementById('s-course-type').value;
+  if (!courseType) { showToast('請選擇名單類別'); return; }
   const color = document.getElementById('s-color').value || '#0f9d58';
   const editId = document.getElementById('edit-session-id').value;
   if (editId) {
