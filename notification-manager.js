@@ -100,4 +100,5 @@ export async function loadSettings() {
   const base = snap.exists() ? snap.data() : {};
   const scheduled = await loadScheduled();
   return { ...base, scheduled };
+  import { initNotifications, saveDailySettings, ... } from './notification-manager.js';
 }
