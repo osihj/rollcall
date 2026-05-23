@@ -1898,14 +1898,14 @@ function copySessionResult(sessionId) {
 
   const d = new Date(s.date);
   const weekDays = ['日','一','二','三','四','五','六'];
-  const dateLabel = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${weekDays[d.getDay()]}）`;
+  const fullDateLabel = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${weekDays[d.getDay()]}）`;
+  const shortDateLabel = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}(${weekDays[d.getDay()]})`;
 
   // ── 通知訊息（活動前發送用） ──
   let notifyLines = [];
   notifyLines.push(`▹ ${s.name}`);
-  notifyLines.push(`▹ ${dateLabel}`);
-  notifyLines.push(`▹ ${s.timeStart}～${s.timeEnd}`);
-  if (s.courseType) notifyLines.push(`▹ ${s.courseType}`);
+  notifyLines.push(`▹ 日期：${shortDateLabel}`);
+  notifyLines.push(`▹ 時間：${s.timeStart}～${s.timeEnd}`);
   if (s.helper) notifyLines.push(`▹ 值班小幫手：${s.helper}`);
   if (s.note)   notifyLines.push(`▹ 備註：${s.note}`);
 
@@ -1935,8 +1935,8 @@ function copySessionResult(sessionId) {
 
   let resultLines = [];
   resultLines.push(`▹ ${s.name}`);
-  resultLines.push(`▹ ${dateLabel}`);
-  resultLines.push(`▹ ${s.timeStart}～${s.timeEnd}`);
+  resultLines.push(`▹ 日期：${shortDateLabel}`);
+  resultLines.push(`▹ 時間：${s.timeStart}～${s.timeEnd}`);
   if (s.courseType) resultLines.push(`▹ ${s.courseType}`);
   resultLines.push('');
   if (hasRecord) {
