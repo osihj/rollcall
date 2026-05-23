@@ -23,7 +23,7 @@ export async function initNotifications() {
 
   // 註冊 Service Worker
   try {
-    await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.register('/rollcall/sw.js');
   } catch (e) {
     console.error('[SW] 註冊失敗', e);
     return false;
