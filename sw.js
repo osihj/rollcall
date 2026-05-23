@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════
 
 const CACHE_NAME = 'jilv-v1';
-const NOTIF_ICON = '/rollcall/icon-96x96.png';
+const NOTIF_ICON = '/icon-96x96.png';
 
 // ── 安裝 & 啟動 ──────────────────────────────────────
 self.addEventListener('install', () => self.skipWaiting());

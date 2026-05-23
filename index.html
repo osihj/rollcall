@@ -1293,7 +1293,7 @@
       </div>
       <label style="position:relative; display:inline-block; width:42px; height:24px; cursor:pointer">
         <input type="checkbox" id="daily-enabled" style="opacity:0;width:0;height:0"
-               onchange="onDailyToggle()">
+               onchange="if(typeof window.onDailyToggle==='function') window.onDailyToggle()">
         <span id="daily-toggle-track" style="
           position:absolute; inset:0; border-radius:12px;
           background:var(--border); transition:.2s">
@@ -4108,6 +4108,16 @@ window.onDailyToggle = function() {
   const checked = document.getElementById('daily-enabled').checked;
   updateDailyToggle(checked);
 };
+
+// 用 addEventListener 再綁一次，確保 module 載入後 checkbox 事件一定有效
+document.addEventListener('DOMContentLoaded', function() {
+  const cb = document.getElementById('daily-enabled');
+  if (cb) {
+    cb.addEventListener('change', function() {
+      updateDailyToggle(cb.checked);
+    });
+  }
+});
 
 function updateDailyToggle(on) {
   const track = document.getElementById('daily-toggle-track');

@@ -21,9 +21,11 @@ export async function initNotifications() {
     return false;
   }
 
-  // 註冊 Service Worker
+  // 註冊 Service Worker（路徑需對應 GitHub Pages 的實際位置）
+  // GitHub Pages: osihj.github.io/rollcall/ → sw.js 放在 /rollcall/sw.js
+  const swPath = location.pathname.startsWith('/rollcall') ? '/rollcall/sw.js' : '/sw.js';
   try {
-    await navigator.serviceWorker.register('/rollcall/sw.js');
+    await navigator.serviceWorker.register(swPath);
   } catch (e) {
     console.error('[SW] 註冊失敗', e);
     return false;
@@ -48,7 +50,6 @@ function listenAndSync() {
   onSnapshot(NOTIF_DOC(), async snap => {
     const settings = snap.exists() ? snap.data() : {};
     // 讀取預約通知子集合
-    const schedSnap = await getDoc(doc(window.firebaseDB, 'adminData', 'notifications'));
     const scheduled = await loadScheduled();
     sendToSW({ type: 'SCHEDULE', settings: { ...settings, scheduled } });
   });
