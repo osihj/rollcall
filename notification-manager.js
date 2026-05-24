@@ -79,15 +79,14 @@ export async function deleteScheduled(id) {
 }
 
 // ── 臨時立即推播 ──────────────────────────────────────
-// 1. 寫入 Firestore（讓開著網頁的用戶也能收到）
-// 2. 呼叫 Apps Script → FCM（推送給背景/手機用戶）
+// 只透過 FCM 推送，不再另外叫 SW 顯示，避免重複通知
 export async function sendInstant(message) {
-  // 寫入 Firestore
+  // 寫入 Firestore（紀錄用）
   await setDoc(NOTIF_DOC(), {
     instant: { message, sentAt: Date.now() }
   }, { merge: true });
 
-  // 呼叫 Apps Script 推送 FCM
+  // 呼叫 Apps Script 推送 FCM（這是唯一的通知來源）
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -104,8 +103,8 @@ export async function sendInstant(message) {
     console.warn('[FCM] 推送失敗:', err.message);
   }
 
-  // 同時通知本機 SW
-  sendToSW({ type: 'INSTANT', message });
+  // ✅ 已移除 sendToSW({ type: 'INSTANT', message })
+  // 原本這行會讓 SW 再顯示一次，與 FCM 推播重複，造成通知出現兩次
 }
 
 // ── 4. 讀取目前設定（供 UI 顯示用）─────────────────
