@@ -9,10 +9,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Firestore 路徑
-//   adminData/notifications        → 全域設定（每日定時）
-//   adminData/notifications/scheduled → 子集合（預約通知清單）
 const NOTIF_DOC = () => doc(window.firebaseDB, 'adminData', 'notifications');
 const SCHEDULED_COL = () => collection(window.firebaseDB, 'adminData', 'notifications', 'scheduled');
+
+// Apps Script 網址（負責呼叫 FCM API 推送給所有裝置）
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrd2uQNkjTCHSn3XTNvGcuqMMgJn5bJ-0Mhs6hXk5GFNqqIERz_H8syK7CzE0aHJsb/exec';
+const APPS_SCRIPT_SECRET = 'drum2024';
 
 // ── 1. 初始化：申請通知權限 + 註冊 SW ────────────────
 export async function initNotifications() {
@@ -21,8 +23,6 @@ export async function initNotifications() {
     return false;
   }
 
-  // 註冊 Service Worker（路徑需對應 GitHub Pages 的實際位置）
-  // GitHub Pages: osihj.github.io/rollcall/ → sw.js 放在 /rollcall/sw.js
   const swPath = '/rollcall/sw.js';
   try {
     await navigator.serviceWorker.register(swPath);
@@ -31,7 +31,6 @@ export async function initNotifications() {
     return false;
   }
 
-  // 申請授權（只在使用者互動後呼叫，例如點按鈕時）
   if (Notification.permission === 'default') {
     const result = await Notification.requestPermission();
     if (result !== 'granted') {
@@ -40,7 +39,6 @@ export async function initNotifications() {
     }
   }
 
-  // 監聽 Firestore 設定變化，推送給 SW
   listenAndSync();
   return true;
 }
@@ -49,7 +47,6 @@ export async function initNotifications() {
 function listenAndSync() {
   onSnapshot(NOTIF_DOC(), async snap => {
     const settings = snap.exists() ? snap.data() : {};
-    // 讀取預約通知子集合
     const scheduled = await loadScheduled();
     sendToSW({ type: 'SCHEDULE', settings: { ...settings, scheduled } });
   });
@@ -69,29 +66,45 @@ function sendToSW(message) {
 
 // ── 3. 管理員操作 API ────────────────────────────────
 
-// 儲存每日定時設定
 export async function saveDailySettings({ enabled, time, message }) {
   await setDoc(NOTIF_DOC(), { dailyEnabled: enabled, dailyTime: time, dailyMessage: message }, { merge: true });
 }
 
-// 新增預約通知
-// item = { title, message, datetime: '2025-06-14T09:30' }
 export async function addScheduled(item) {
   await addDoc(SCHEDULED_COL(), { ...item, createdAt: Date.now() });
 }
 
-// 刪除預約通知
 export async function deleteScheduled(id) {
   await deleteDoc(doc(window.firebaseDB, 'adminData', 'notifications', 'scheduled', id));
 }
 
-// 臨時立即推播（寫入 Firestore + 直接通知本機 SW）
+// ── 臨時立即推播 ──────────────────────────────────────
+// 1. 寫入 Firestore（讓開著網頁的用戶也能收到）
+// 2. 呼叫 Apps Script → FCM（推送給背景/手機用戶）
 export async function sendInstant(message) {
-  // 寫入 Firestore 讓其他使用者的 SW 也能透過 onSnapshot 收到
+  // 寫入 Firestore
   await setDoc(NOTIF_DOC(), {
     instant: { message, sentAt: Date.now() }
   }, { merge: true });
-  // 同時通知本機 SW（管理員自己也看到）
+
+  // 呼叫 Apps Script 推送 FCM
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // Apps Script 不支援 application/json 的 CORS preflight
+      body: JSON.stringify({
+        title: '自律動起來',
+        message,
+        secret: APPS_SCRIPT_SECRET
+      })
+    });
+    const result = await res.json();
+    console.log('[FCM] 推送結果:', result);
+  } catch (err) {
+    console.warn('[FCM] 推送失敗:', err.message);
+  }
+
+  // 同時通知本機 SW
   sendToSW({ type: 'INSTANT', message });
 }
 
