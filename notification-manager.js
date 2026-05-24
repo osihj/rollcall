@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════════════
-//  notification-manager.js
-//  貼入活動行事曆 HTML 的 <script type="module"> 區塊內
+//  notification-manager.js  ─  rollcall 站
 //  依賴：window.firebaseDB 已由 Firebase module 初始化
 // ═══════════════════════════════════════════════════
 
@@ -8,24 +7,21 @@ import {
   doc, getDoc, setDoc, onSnapshot, collection, addDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Firestore 路徑
 const NOTIF_DOC = () => doc(window.firebaseDB, 'adminData', 'notifications');
 const SCHEDULED_COL = () => collection(window.firebaseDB, 'adminData', 'notifications', 'scheduled');
 
-// Apps Script 網址（負責呼叫 FCM API 推送給所有裝置）
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrd2uQNkjTCHSn3XTNvGcuqMMgJn5bJ-0Mhs6hXk5GFNqqIERz_H8syK7CzE0aHJsb/exec';
 const APPS_SCRIPT_SECRET = 'drum2024';
 
-// ── 1. 初始化：申請通知權限 + 註冊 SW ────────────────
+// ── 1. 初始化 ────────────────────────────────────────
 export async function initNotifications() {
   if (!('serviceWorker' in navigator) || !('Notification' in window)) {
     console.warn('[Notif] 此裝置不支援推播通知');
     return false;
   }
 
-  const swPath = '/rollcall/sw.js';
   try {
-    await navigator.serviceWorker.register(swPath);
+    await navigator.serviceWorker.register('/rollcall/sw.js');
   } catch (e) {
     console.error('[SW] 註冊失敗', e);
     return false;
@@ -43,7 +39,8 @@ export async function initNotifications() {
   return true;
 }
 
-// ── 2. 即時監聽 Firestore → 傳給 SW ────────────────
+// ── 2. 監聽 Firestore → 同步排程給 SW ──────────────
+// ✅ 只處理排程設定，不處理 instant（避免重複通知）
 function listenAndSync() {
   onSnapshot(NOTIF_DOC(), async snap => {
     const settings = snap.exists() ? snap.data() : {};
@@ -64,8 +61,7 @@ function sendToSW(message) {
   });
 }
 
-// ── 3. 管理員操作 API ────────────────────────────────
-
+// ── 3. 管理員操作 API ─────────────────────────────────
 export async function saveDailySettings({ enabled, time, message }) {
   await setDoc(NOTIF_DOC(), { dailyEnabled: enabled, dailyTime: time, dailyMessage: message }, { merge: true });
 }
@@ -79,18 +75,19 @@ export async function deleteScheduled(id) {
 }
 
 // ── 臨時立即推播 ──────────────────────────────────────
-// 只透過 FCM 推送，不再另外叫 SW 顯示，避免重複通知
+// 流程：寫入 Firestore（drum 靠 onSnapshot 收到）→ FCM（推給背景/手機用戶）
+// ✅ 不再 sendToSW(INSTANT)，避免 rollcall 自己又顯示一次
 export async function sendInstant(message) {
-  // 寫入 Firestore（紀錄用）
+  // 寫入 Firestore → drum 的 onSnapshot 會收到並顯示通知
   await setDoc(NOTIF_DOC(), {
     instant: { message, sentAt: Date.now() }
   }, { merge: true });
 
-  // 呼叫 Apps Script 推送 FCM（這是唯一的通知來源）
+  // FCM 推播給背景/手機用戶
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' }, // Apps Script 不支援 application/json 的 CORS preflight
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         title: '自律動起來',
         message,
@@ -102,12 +99,9 @@ export async function sendInstant(message) {
   } catch (err) {
     console.warn('[FCM] 推送失敗:', err.message);
   }
-
-  // ✅ 已移除 sendToSW({ type: 'INSTANT', message })
-  // 原本這行會讓 SW 再顯示一次，與 FCM 推播重複，造成通知出現兩次
 }
 
-// ── 4. 讀取目前設定（供 UI 顯示用）─────────────────
+// ── 4. 讀取設定（供 UI 顯示用）──────────────────────
 export async function loadSettings() {
   const snap = await getDoc(NOTIF_DOC());
   const base = snap.exists() ? snap.data() : {};
