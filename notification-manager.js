@@ -40,7 +40,6 @@ export async function initNotifications() {
 }
 
 // ── 2. 監聽 Firestore → 同步排程給 SW ──────────────
-// ✅ 只處理排程設定，不處理 instant（避免重複通知）
 function listenAndSync() {
   onSnapshot(NOTIF_DOC(), async snap => {
     const settings = snap.exists() ? snap.data() : {};
@@ -61,6 +60,21 @@ function sendToSW(message) {
   });
 }
 
+// ── 呼叫 Apps Script FCM 推播 ─────────────────────
+async function callFCM(title, message) {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ title, message, secret: APPS_SCRIPT_SECRET })
+    });
+    const result = await res.json();
+    console.log('[FCM] 推送結果:', result);
+  } catch (err) {
+    console.warn('[FCM] 推送失敗:', err.message);
+  }
+}
+
 // ── 3. 管理員操作 API ─────────────────────────────────
 export async function saveDailySettings({ enabled, time, message }) {
   await setDoc(NOTIF_DOC(), { dailyEnabled: enabled, dailyTime: time, dailyMessage: message }, { merge: true });
@@ -75,30 +89,19 @@ export async function deleteScheduled(id) {
 }
 
 // ── 臨時立即推播 ──────────────────────────────────────
-// 流程：寫入 Firestore（drum 靠 onSnapshot 收到）→ FCM（推給背景/手機用戶）
-// ✅ 不再 sendToSW(INSTANT)，避免 rollcall 自己又顯示一次
+// 只走 FCM，一次通知，標題「臨時通知」
 export async function sendInstant(message) {
-  // 寫入 Firestore → drum 的 onSnapshot 會收到並顯示通知
   await setDoc(NOTIF_DOC(), {
     instant: { message, sentAt: Date.now() }
   }, { merge: true });
 
-  // FCM 推播給背景/手機用戶
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        title: '自律動起來',
-        message,
-        secret: APPS_SCRIPT_SECRET
-      })
-    });
-    const result = await res.json();
-    console.log('[FCM] 推送結果:', result);
-  } catch (err) {
-    console.warn('[FCM] 推送失敗:', err.message);
-  }
+  await callFCM('臨時通知', message);
+}
+
+// ── 預約通知到期時呼叫（由 UI 層在到期時觸發）────────
+// 背景用戶靠 FCM 收到；網頁開著時靠 SW timer 收到
+export async function sendScheduled(item) {
+  await callFCM('預約通知', item.message);
 }
 
 // ── 4. 讀取設定（供 UI 顯示用）──────────────────────
