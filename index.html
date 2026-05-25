@@ -386,6 +386,32 @@
   .session-popover-btn.edit { color: var(--text); border-bottom: 1px solid var(--border); }
   .session-popover-btn.copy { color: var(--text); border-bottom: 1px solid var(--border); }
   .session-popover-btn.del  { color: var(--red); }
+  .session-popover-btn.pub  { color: var(--accent); border-bottom: 1px solid var(--border); }
+
+  /* 草稿 badge */
+  .draft-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+    background: var(--yellow-light); color: var(--yellow);
+    border: 1px solid rgba(181,137,0,0.25); white-space: nowrap; flex-shrink: 0;
+    letter-spacing: 0.03em;
+  }
+  .published-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+    background: var(--accent-light); color: var(--accent);
+    border: 1px solid rgba(44,82,52,0.2); white-space: nowrap; flex-shrink: 0;
+    letter-spacing: 0.03em;
+  }
+  /* 草稿活動整體半透明 */
+  .session-item.is-draft { opacity: 0.72; }
+  /* 草稿/發佈區塊分隔標題 */
+  .session-section-title {
+    font-size: 13px; font-weight: 700; color: var(--text2);
+    letter-spacing: 0.06em; margin: 20px 0 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .session-section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
   .session-popover-btn:active { background: var(--surface2); }
   @media (max-width: 520px) {
     .session-header {
@@ -2064,12 +2090,12 @@ function renderDashboard() {
   document.getElementById('today-date').textContent =
     new Date().toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
   document.getElementById('stat-members').textContent  = DB.members.length;
-  document.getElementById('stat-sessions').textContent = DB.sessions.length;
+  document.getElementById('stat-sessions').textContent = DB.sessions.filter(s => s.published !== false).length;
 
   const now = new Date();
   const monthSessions = DB.sessions.filter(s => {
     const d = new Date(s.date);
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && s.published !== false;
   });
 
   let totalPresent = 0, totalPossible = 0, totalAbsent = 0;
@@ -2606,32 +2632,56 @@ function renderSessions() {
     const d = new Date(s.date);
     return d.getFullYear() === currentSessionYear && (d.getMonth() + 1) === currentSessionMonth;
   }).sort((a,b) => new Date(a.date) - new Date(b.date));
-  document.getElementById('session-month-count').textContent = `本月總計：${monthSessions.length} 次活動`;
-  renderGoogleCalendarGrid(monthSessions);
+
+  const published = monthSessions.filter(s => s.published !== false);
+  const drafts    = monthSessions.filter(s => s.published === false);
+
+  document.getElementById('session-month-count').textContent =
+    `本月總計：${published.length} 次已發佈${drafts.length ? `，${drafts.length} 筆草稿` : ''}`;
+
+  // 月曆只顯示已發佈活動
+  renderGoogleCalendarGrid(published);
+
   const list = document.getElementById('session-list');
-  if (!monthSessions.length) { list.innerHTML = '<div class="empty-state"><div class="empty-dot"></div><br>本月無排定活動</div>'; return; }
-  list.innerHTML = monthSessions.map(s => {
+  if (!monthSessions.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-dot"></div><br>本月無排定活動</div>';
+    return;
+  }
+
+  function buildSessionCard(s) {
     const d = new Date(s.date);
     const borderColor = s.color || '#2c5234';
-    const hasHelper = s.helper && s.helper.trim();
-    const hasNote   = s.note   && s.note.trim();
+    const hasHelper   = s.helper && s.helper.trim();
+    const hasNote     = s.note   && s.note.trim();
+    const isDraft     = s.published === false;
+    const statusBadge = isDraft
+      ? `<span class="draft-badge">草稿</span>`
+      : `<span class="published-badge">已發佈</span>`;
+    const togglePubBtn = isDraft
+      ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();toggleSessionPublish('${s.id}')" title="發佈至自律打卡">發佈</button>`
+      : `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();toggleSessionPublish('${s.id}')" title="收回為草稿" style="color:var(--yellow);border-color:var(--yellow);">收回</button>`;
+    const togglePubPopBtn = isDraft
+      ? `<button class="session-popover-btn pub" onclick="closeAllSessionPopovers();toggleSessionPublish('${s.id}')">發佈至自律打卡</button>`
+      : `<button class="session-popover-btn pub" onclick="closeAllSessionPopovers();toggleSessionPublish('${s.id}')" style="color:var(--yellow);">收回為草稿</button>`;
     return `
-      <div class="session-item" id="session-card-${s.id}" style="border-left-color:${borderColor};">
+      <div class="session-item${isDraft ? ' is-draft' : ''}" id="session-card-${s.id}" style="border-left-color:${isDraft ? '#b58900' : borderColor};">
         <div class="session-header" onclick="toggleSessionCard('${s.id}')">
           <div class="session-date-box">
             <span class="session-month">${d.getMonth()+1}月</span>
-            <span class="session-day" style="color:${borderColor};">${d.getDate()}</span>
+            <span class="session-day" style="color:${isDraft ? '#b58900' : borderColor};">${d.getDate()}</span>
           </div>
           <div class="session-info">
             <div class="session-name">
               <span class="session-name-text">${esc(s.name)}</span>
               <span class="course-badge" style="background:var(--surface);color:${borderColor};border-color:${borderColor};flex-shrink:0;">${esc(s.courseType||'神鼓陣')}</span>
+              ${statusBadge}
             </div>
             <div class="session-meta-row">
               <span class="session-sub">${s.timeStart}～${s.timeEnd}</span>
             </div>
           </div>
           <div class="session-header-actions">
+            ${togglePubBtn}
             <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();copySessionResult('${s.id}')" title="查看通知訊息與出席結果"><i class="fa-regular fa-copy" style="margin-right:3px;"></i>查看詳情</button>
             <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editSession('${s.id}')">編輯</button>
             <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();duplicateSession('${s.id}')">複製</button>
@@ -2641,6 +2691,7 @@ function renderSessions() {
           <button class="session-more-btn" onclick="event.stopPropagation();toggleSessionPopover(event,'spop-${s.id}')" aria-label="更多操作">⋯</button>
           <span class="session-toggle-icon session-toggle-mobile">&#9660;</span>
           <div class="session-popover" id="spop-${s.id}">
+            ${togglePubPopBtn}
             <button class="session-popover-btn copy" onclick="closeAllSessionPopovers();copySessionResult('${s.id}')">查看詳情</button>
             <button class="session-popover-btn edit" onclick="closeAllSessionPopovers();editSession('${s.id}')">編輯</button>
             <button class="session-popover-btn copy" onclick="closeAllSessionPopovers();duplicateSession('${s.id}')">複製</button>
@@ -2658,7 +2709,18 @@ function renderSessions() {
           </div>
         </div>
       </div>`;
-  }).join('');
+  }
+
+  let html = '';
+  if (published.length) {
+    html += `<div class="session-section-title">已發佈活動（${published.length}）</div>`;
+    html += published.map(buildSessionCard).join('');
+  }
+  if (drafts.length) {
+    html += `<div class="session-section-title" style="color:var(--yellow);">草稿（${drafts.length}）— 不顯示於自律打卡</div>`;
+    html += drafts.map(buildSessionCard).join('');
+  }
+  list.innerHTML = html;
 }
 
 function renderGoogleCalendarGrid(sessions) {
@@ -2850,13 +2912,14 @@ async function saveSession() {
       timeEnd:   document.getElementById('s-time-end').value,
       courseType, color,
       helper: document.getElementById('s-helper').value.trim(),
-      note:   document.getElementById('s-note').value.trim()
+      note:   document.getElementById('s-note').value.trim(),
+      published: false
     });
     await saveDB(); closeModal('modal-session');
     currentSessionYear  = new Date(date).getFullYear();
     currentSessionMonth = new Date(date).getMonth() + 1;
     renderSessions();
-    showToast('活動建立成功');
+    showToast('活動已建立（草稿）— 請在活動清單按「發佈」才會顯示於自律打卡');
   }
 }
 
@@ -2882,6 +2945,21 @@ function deleteSession(id) {
     delete DB.records[id];
     await saveDB(); renderSessions(); showToast('活動已刪除');
   }, '刪除活動');
+}
+
+async function toggleSessionPublish(id) {
+  const idx = DB.sessions.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const s = DB.sessions[idx];
+  const wasDraft = s.published === false;
+  DB.sessions[idx].published = wasDraft;  // draft(false) → true；published(true) → false
+  await saveDB();
+  renderSessions();
+  if (wasDraft) {
+    showToast(`✅「${s.name}」已發佈，自律打卡可見`);
+  } else {
+    showToast(`「${s.name}」已收回為草稿`);
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -2911,9 +2989,10 @@ function getWeekNumber(d) {
 function renderAttendanceSelector() {
   const filterVal = document.getElementById('att-month-filter').value;
   const [year, month] = filterVal.split('-').map(Number);
+  // 只顯示已發佈的活動（published !== false）
   const monthSessions = DB.sessions.filter(s => {
     const d = new Date(s.date);
-    return d.getFullYear() === year && (d.getMonth()+1) === month;
+    return d.getFullYear() === year && (d.getMonth()+1) === month && s.published !== false;
   }).sort((a,b) => new Date(a.date) - new Date(b.date));
 
   const sel = document.getElementById('att-session-select');
