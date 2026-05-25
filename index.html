@@ -1794,17 +1794,20 @@ async function syncSharedCalendar() {
   const setDocFn  = window._firestoreSetDoc;
   if (!sharedRef || !setDocFn || !DB.sessions) return;
   try {
-    const sharedSessions = DB.sessions.map(s => ({
-      id:         s.id,
-      name:       s.name,
-      date:       s.date,
-      timeStart:  s.timeStart  || '',
-      timeEnd:    s.timeEnd    || '',
-      courseType: s.courseType || '神鼓陣',
-      color:      s.color      || '#2c5234',
-      helper:     s.helper     || '',
-      note:       s.note       || ''
-    }));
+    // 只同步已發佈的活動（草稿不寫入自律打卡）
+    const sharedSessions = DB.sessions
+      .filter(s => s.published !== false)
+      .map(s => ({
+        id:         s.id,
+        name:       s.name,
+        date:       s.date,
+        timeStart:  s.timeStart  || '',
+        timeEnd:    s.timeEnd    || '',
+        courseType: s.courseType || '神鼓陣',
+        color:      s.color      || '#2c5234',
+        helper:     s.helper     || '',
+        note:       s.note       || ''
+      }));
     await setDocFn(sharedRef, {
       sessions:  sharedSessions,
       updatedAt: Date.now(),
