@@ -1678,17 +1678,20 @@ async function saveDB() {
     // 2. 同時寫入共用行事曆路徑，供自律打卡 App 讀取
     const sharedRef = window._firestoreSharedRef;
     if (sharedRef) {
-      const sharedSessions = DB.sessions.map(s => ({
-        id:         s.id,
-        name:       s.name,
-        date:       s.date,
-        timeStart:  s.timeStart  || '',
-        timeEnd:    s.timeEnd    || '',
-        courseType: s.courseType || '神鼓陣',
-        color:      s.color      || '#2c5234',
-        helper:     s.helper     || '',
-        note:       s.note       || ''
-      }));
+      // 只同步已發佈的活動（草稿 published===false 不寫入自律打卡）
+      const sharedSessions = DB.sessions
+        .filter(s => s.published !== false)
+        .map(s => ({
+          id:         s.id,
+          name:       s.name,
+          date:       s.date,
+          timeStart:  s.timeStart  || '',
+          timeEnd:    s.timeEnd    || '',
+          courseType: s.courseType || '神鼓陣',
+          color:      s.color      || '#2c5234',
+          helper:     s.helper     || '',
+          note:       s.note       || ''
+        }));
       
       console.log('[saveDB] 📤 準備寫入共用行事曆:');
       console.log('   - Sessions 數量:', sharedSessions.length);
