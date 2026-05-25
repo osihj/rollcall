@@ -13,7 +13,6 @@ const DEVICES_COL   = () => collection(window.firebaseDB, 'devices');
 
 const APPS_SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbyrd2uQNkjTCHSn3XTNvGcuqMMgJn5bJ-0Mhs6hXk5GFNqqIERz_H8syK7CzE0aHJsb/exec';
 const APPS_SCRIPT_SECRET = 'drum2024';
-const VAPID_KEY          = 'BM_r6z7-dGtDamxfNqJq5-9RhW8pFzcUIVJxK9EJyNDCLXQdA1oHEXLPw5nDwM_fpKiJDxHEp5sJGDMr_dL-IpQ';
 
 // ── FCM 推播（唯一出口）──────────────────────────────
 async function callFCM(title, message) {
@@ -27,36 +26,6 @@ async function callFCM(title, message) {
     console.log('[FCM] ✅ 推送結果:', result);
   } catch (err) {
     console.warn('[FCM] ❌ 推送失敗:', err.message);
-  }
-}
-
-// ── 平台偵測 ─────────────────────────────────────────
-function getPlatform() {
-  const ua = navigator.userAgent.toLowerCase();
-  if (ua.includes('edg'))    return 'edge';
-  if (ua.includes('chrome')) return 'chrome';
-  if (ua.includes('safari') && !ua.includes('chrome')) return 'safari';
-  if (ua.includes('firefox')) return 'firefox';
-  return 'unknown';
-}
-
-// ── 向 Firestore 註冊裝置 token ──────────────────────
-async function registerDeviceToken(token) {
-  try {
-    const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-    const user = getAuth().currentUser;
-    if (!user) { console.warn('[Device] 使用者未登入'); return; }
-
-    const deviceId = `web_${user.uid}_${getPlatform()}`;
-    await setDoc(doc(window.firebaseDB, 'devices', deviceId), {
-      token, userId: user.uid, userEmail: user.email,
-      type: 'web', platform: getPlatform(),
-      userAgent: navigator.userAgent,
-      registeredAt: new Date(), lastSeen: new Date()
-    }, { merge: true });
-    console.log('[Device] ✅ Token 已註冊:', deviceId);
-  } catch (err) {
-    console.error('[Device] 註冊失敗:', err);
   }
 }
 
@@ -85,33 +54,6 @@ export async function initNotifications() {
       console.warn('[Notif] 使用者拒絕通知授權');
       return false;
     }
-  }
-
-  // ── FCM Token（正確寫法：import getToken / onTokenRefresh 函式）──
-  try {
-    const { getMessaging, getToken, onTokenRefresh } =
-      await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js");
-
-    const messaging = getMessaging();
-    const swReg = await navigator.serviceWorker.ready;
-
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-    if (token) {
-      console.log('[FCM] ✅ Token 已獲取');
-      await registerDeviceToken(token);
-    }
-
-    onTokenRefresh(messaging, async () => {
-      try {
-        const newToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-        if (newToken) await registerDeviceToken(newToken);
-        console.log('[FCM] ✅ Token 已刷新');
-      } catch (err) {
-        console.warn('[FCM] Token 刷新失敗:', err);
-      }
-    });
-  } catch (err) {
-    console.warn('[FCM] Token 初始化失敗（非阻塞）:', err.message);
   }
 
   listenAndSync();
