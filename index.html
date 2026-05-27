@@ -1362,49 +1362,15 @@
     </button>
   </div>
 
-  <!-- ── 區塊 3：管理員設定（Google Apps Script Proxy） ── -->
+  <!-- ── 區塊 3：Google Calendar 同步狀態（管理員） ── -->
   <div class="card">
-    <div class="card-title"><div class="title-text-wrapper">Google Calendar 設定（管理員）</div></div>
-    <p style="color:var(--text2); font-size:13px; margin-bottom:16px; line-height:1.7">
-      使用 <strong>Google Apps Script</strong> 作為免費代理，不需要後端伺服器。<br>
-      請先依照下方步驟部署，再把網址貼到①欄位。
-    </p>
-
-    <div class="form-group">
-      <label>① Google Apps Script 網址（部署後取得）</label>
-      <input type="text" id="gcal-proxy-url"
-        placeholder="https://script.google.com/macros/s/xxxxxx/exec"
-        style="font-family:monospace; font-size:12px;">
+    <div class="card-title"><div class="title-text-wrapper">Google Calendar 同步狀態</div></div>
+    <div style="font-size:13px; color:var(--text2); line-height:1.8; margin-bottom:12px">
+      活動新增或編輯後，系統會自動同步到以下行事曆：<br>
+      <code style="background:var(--surface2); padding:2px 8px; border-radius:4px; font-size:12px">tjmfamilyc0@gmail.com</code>
     </div>
-
-    <div class="form-group">
-      <label>② Calendar ID（共用行事曆的 ID，用於產生訂閱連結）</label>
-      <input type="text" id="gcal-calendar-id"
-        placeholder="tjmfamilyc0@gmail.com 或 xxxxxxxx@group.calendar.google.com"
-        style="font-family:monospace; font-size:12px;">
-    </div>
-
-    <div id="gcal-config-msg" style="margin-top:4px; margin-bottom:10px; font-size:13px; display:none;"></div>
-
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="saveGCalConfig()">儲存設定</button>
-      <button class="btn btn-secondary" onclick="testGCalConnection()">測試連線</button>
-    </div>
-
-    <details style="margin-top:16px">
-      <summary style="font-size:13px; font-weight:500; cursor:pointer; color:var(--text2)">
-        📋 如何取得 Apps Script 網址？（點此展開）
-      </summary>
-      <ol style="font-size:13px; color:var(--text2); margin-top:10px; padding-left:20px; line-height:2.2">
-        <li>開啟 <a href="https://script.google.com" target="_blank" style="color:var(--blue)">script.google.com</a> → 「新增專案」</li>
-        <li>把 <strong>GoogleAppsScript_Proxy.js</strong> 的內容全部貼入編輯器（取代預設內容）</li>
-        <li>確認第 18 行的 Calendar ID 是 <code style="background:var(--surface2);padding:1px 5px;border-radius:3px">tjmfamilyc0@gmail.com</code></li>
-        <li>點上方「部署」→「新增部署作業」</li>
-        <li>類型：<strong>網頁應用程式</strong>；執行身分：<strong>我</strong>；存取權：<strong>所有人</strong></li>
-        <li>點「部署」→ Google 要求授權時點「允許」</li>
-        <li>複製「網頁應用程式 URL」貼到上方①欄位，按「儲存設定」</li>
-      </ol>
-    </details>
+    <div id="gcal-config-msg" style="margin-bottom:10px; font-size:13px; display:none;"></div>
+    <button class="btn btn-secondary" onclick="testGCalConnection()">測試連線</button>
   </div>
 </div>
 
@@ -4231,26 +4197,19 @@ window.addEventListener('DOMContentLoaded', function(){
 /* ──────────────────────────────────────────────────────────
    Google Calendar 同步模組 v2（Apps Script Proxy 版）
    架構：前端 → Google Apps Script URL → Google Calendar
-   不需要後端伺服器，不需要 Service Account JSON 檔案
    ────────────────────────────────────────────────────────── */
 
-// ── 讀取已儲存的 Google Calendar 設定 ──
+// ── 固定設定（寫死在程式碼，自動同步到指定行事曆）──
+const GCAL_PROXY_URL   = 'https://script.google.com/macros/s/AKfycbxGrH-hVvnh_4WVceQpRRWMOTIVC0PPAGGxBZquXLQNOQXvRk2wFvZ4T-8jS-aR8fqeIA/exec';
+const GCAL_CALENDAR_ID = 'tjmfamilyc0@gmail.com';
+
 function getGCalConfig() {
-  try {
-    const raw = localStorage.getItem('gcal_config_v2');
-    return raw ? JSON.parse(raw) : {};
-  } catch(e) { return {}; }
+  return { proxyUrl: GCAL_PROXY_URL, calendarId: GCAL_CALENDAR_ID };
 }
 
+// 保留供通知頁按鈕呼叫，不會破壞 UI
 function saveGCalConfig() {
-  const proxyUrl   = (document.getElementById('gcal-proxy-url')?.value   || '').trim();
-  const calendarId = (document.getElementById('gcal-calendar-id')?.value || '').trim();
-  if (!proxyUrl) { showGCalMsg('請填入 Google Apps Script 網址', 'error'); return; }
-  if (!proxyUrl.includes('script.google.com')) {
-    showGCalMsg('網址格式不正確，應為 script.google.com 開頭', 'error'); return;
-  }
-  localStorage.setItem('gcal_config_v2', JSON.stringify({ proxyUrl, calendarId }));
-  showGCalMsg('✅ 設定已儲存', 'ok');
+  showGCalMsg('✅ 設定已內建於程式碼，無需手動填寫', 'ok');
 }
 
 function showGCalMsg(msg, type) {
