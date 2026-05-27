@@ -1800,15 +1800,22 @@ function deleteSession(id) {
 }
 
 async function toggleSessionPublish(id) {
-  const idx=DB.sessions.findIndex(x=>x.id===id); if (idx===-1) return;
-  const s=DB.sessions[idx], wasDraft=s.published===false;
-  DB.sessions[idx].published=wasDraft;
+  const idx = DB.sessions.findIndex(x => x.id === id); if (idx === -1) return;
+  const s = DB.sessions[idx], wasDraft = s.published === false;
+  DB.sessions[idx].published = wasDraft;
   await saveDB(); renderSessions();
   if (wasDraft) {
     showToast(`✅「${s.name}」已發佈，自律打卡可見`);
-    syncSessionToGoogleCalendar(DB.sessions[idx]).catch(e=>console.warn('[GCal] 發佈同步失敗:', e.message));
+    syncSessionToGoogleCalendar(DB.sessions[idx]).catch(e => console.warn('[GCal] 發佈同步失敗:', e.message));
   } else {
     showToast(`「${s.name}」已收回為草稿`);
+    // 收回時同步刪除 Google Calendar 事件
+    if (s.gcalEventId) {
+      await deleteGCalEvent(s.gcalEventId);
+      // 清除 gcalEventId，下次重新發佈時會重新建立
+      DB.sessions[idx].gcalEventId = null;
+      await saveDB();
+    }
   }
 }
 
