@@ -2293,17 +2293,23 @@ window.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
-<!-- ════════════ Google Calendar 整合（修正版，單一 syncSessionToGoogleCalendar） ════════════ -->
+<!-- ════════════ Google Calendar 整合 ════════════ -->
 <script>
-/* ──────────────────────────────────────────────────────────
-   Google Calendar 同步模組
-   架構：前端 → Google Apps Script Proxy → Google Calendar
-   ────────────────────────────────────────────────────────── */
-
-const GCAL_PROXY_URL   = 'https://script.google.com/macros/s/AKfycbzmoBktgbMCb_-lOyvyGItNNPjuENE0AcE2b74dqXXC5SEzIiSVUNCirzhkIh1YIAbT/exec';
+const GCAL_PROXY_URL   = 'https://script.google.com/macros/s/AKfycbx-l48bqKHMf7WPr3AmQzHJ2ecSMa9u7qLDLwiWvb0O2zdhHZlKpiJ2Pci6CV28CWdj/exec';
 const GCAL_CALENDAR_ID = 'tjmfamilyc0@gmail.com';
 
-// ── 將單一 session 同步至 Google Calendar ──
+// ── 呼叫 Apps Script 的共用函數 ──
+async function callGCalProxy(payload) {
+  const res = await fetch(GCAL_PROXY_URL, {
+    method:   'POST',
+    redirect: 'follow',
+    headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
+    body:     JSON.stringify(payload)
+  });
+  return res.json().catch(() => ({}));
+}
+
+// ── 新增或更新 session 至 Google Calendar ──
 async function syncSessionToGoogleCalendar(session) {
   if (!GCAL_PROXY_URL) {
     console.warn('[GCal] 尚未設定 Apps Script URL，略過同步');
@@ -2322,34 +2328,40 @@ async function syncSessionToGoogleCalendar(session) {
     session.note       ? `備註：${session.note}`            : '',
   ].filter(Boolean).join('\n');
 
-  const payload = {
-    action: 'create',
-    calendarId: GCAL_CALENDAR_ID,
-    event: {
-      summary:     session.name,
-      description: description || '點名活動',
-      start: { dateTime: startISO, timeZone: 'Asia/Taipei' },
-      end:   { dateTime: endISO,   timeZone: 'Asia/Taipei' },
-      reminders: {
-        useDefault: false,
-        overrides: [{ method: 'popup', minutes: 30 }]
-      }
-    }
+  const eventPayload = {
+    summary:     session.name,
+    description: description || '點名活動',
+    start: { dateTime: startISO, timeZone: 'Asia/Taipei' },
+    end:   { dateTime: endISO,   timeZone: 'Asia/Taipei' },
   };
 
   try {
-    const res = await fetch(GCAL_PROXY_URL, {
-      method:   'POST',
-      mode:     'cors',
-      redirect: 'follow',
-      headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
-      body:     JSON.stringify(payload)
-    });
+    let result;
 
-    const result = await res.json().catch(() => ({}));
+    // 已有 gcalEventId → 更新；否則 → 新增
+    if (session.gcalEventId) {
+      result = await callGCalProxy({
+        action:     'update',
+        calendarId: GCAL_CALENDAR_ID,
+        eventId:    session.gcalEventId,
+        event:      eventPayload
+      });
+    } else {
+      result = await callGCalProxy({
+        action:     'create',
+        calendarId: GCAL_CALENDAR_ID,
+        event:      eventPayload
+      });
+    }
 
     if (result.success) {
-      console.log('[GCal] ✅ 活動已寫入 Google Calendar:', session.name);
+      // 把 gcalEventId 存回 session
+      const idx = DB.sessions.findIndex(s => s.id === session.id);
+      if (idx !== -1 && result.eventId) {
+        DB.sessions[idx].gcalEventId = result.eventId;
+        await saveDB();
+      }
+      console.log('[GCal] ✅ 同步成功:', session.name);
       updateGCalSyncStatus(true, session.name);
       return result;
     } else {
@@ -2361,6 +2373,43 @@ async function syncSessionToGoogleCalendar(session) {
     throw e;
   }
 }
+
+// ── 刪除 Google Calendar 上的事件 ──
+async function deleteGCalEvent(gcalEventId) {
+  if (!gcalEventId) return;
+  try {
+    const result = await callGCalProxy({
+      action:     'delete',
+      calendarId: GCAL_CALENDAR_ID,
+      eventId:    gcalEventId
+    });
+    if (result.success) {
+      console.log('[GCal] ✅ 事件已從 Google Calendar 刪除');
+    } else {
+      console.warn('[GCal] 刪除回傳失敗:', result.error);
+    }
+  } catch (e) {
+    console.warn('[GCal] ❌ 刪除失敗:', e.message);
+  }
+}
+
+// ── 覆寫 deleteSession，加入 GCal 刪除 ──
+const _originalDeleteSession = deleteSession;
+window.deleteSession = function(id) {
+  const s = DB.sessions.find(x => x.id === id);
+  if (!s) { showToast('找不到此活動'); return; }
+  showConfirm(`確認刪除「${s.name}」及其點名紀錄？`, async () => {
+    // 同步刪除 Google Calendar 事件
+    if (s.gcalEventId) {
+      await deleteGCalEvent(s.gcalEventId);
+    }
+    DB.sessions = DB.sessions.filter(x => x.id !== id);
+    delete DB.records[id];
+    await saveDB();
+    renderSessions();
+    showToast('活動已刪除');
+  }, '刪除活動');
+};
 
 // ── 同步狀態顯示 ──
 function updateGCalSyncStatus(success, name) {
@@ -2396,14 +2445,12 @@ async function testGCalConnection() {
   const el = document.getElementById('gcal-config-msg');
   if (el) { el.style.display='block'; el.style.color='var(--text2)'; el.textContent='測試中…'; }
   try {
-    const res = await fetch(GCAL_PROXY_URL, {
-      method: 'POST', mode: 'cors', redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'test', calendarId: GCAL_CALENDAR_ID })
+    const result = await callGCalProxy({
+      action:     'test',
+      calendarId: GCAL_CALENDAR_ID
     });
-    const result = await res.json().catch(() => ({}));
     if (result.success) {
-      if (el) { el.style.color='var(--accent)'; el.textContent=`✅ 連線成功！行事曆：${result.calendarName||GCAL_CALENDAR_ID}`; }
+      if (el) { el.style.color='var(--accent)'; el.textContent=`✅ 連線成功！行事曆：${result.calendarName || GCAL_CALENDAR_ID}`; }
       showToast('✅ Google Calendar 連線正常');
     } else {
       throw new Error(result.error || '連線失敗');
@@ -2427,6 +2474,7 @@ function copyCalendarLink() {
     showToast('請手動複製上方連結');
   });
 }
+
 function openCalendarLink() {
   window.open(`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(GCAL_CALENDAR_ID)}`, '_blank');
 }
@@ -2440,7 +2488,4 @@ function initNotificationsPage() {
   }
 }
 </script>
-
-</body>
-</html>
 
