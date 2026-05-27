@@ -4200,7 +4200,7 @@ window.addEventListener('DOMContentLoaded', function(){
    ────────────────────────────────────────────────────────── */
 
 // ── 固定設定（寫死在程式碼，自動同步到指定行事曆）──
-const GCAL_PROXY_URL   = 'https://script.google.com/macros/s/AKfycbxw5ArCXOz9Lp2JfIO_BzUIsw9BrStI9xx4MK4rvM3mRjCos0LKOUo_26BMKP_KmgdI/exec';
+const GCAL_PROXY_URL   = 'https://script.google.com/macros/s/AKfycbwewOrU5AwkLWufFCAKYr9XmSZMctZg_LvFqJP0igHStVtGyhvf6HUXVwB6KKQK5IeT/exec';
 const GCAL_CALENDAR_ID = 'tjmfamilyc0@gmail.com';
 
 function getGCalConfig() {
@@ -4253,11 +4253,15 @@ async function syncSessionToGoogleCalendar(session) {
   };
 
   // Apps Script 不支援 CORS 預檢，用 text/plain 避免觸發 OPTIONS
-  const res = await fetch(cfg.proxyUrl, {
-    method:  'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body:    JSON.stringify(payload)
-  });
+ const res = await fetch(cfg.proxyUrl, {
+  method: 'POST',
+  mode: 'cors',
+  redirect: 'follow',
+  headers: {
+    'Content-Type': 'text/plain;charset=utf-8'
+  },
+  body: JSON.stringify(payload)
+});
 
   const result = await res.json().catch(() => ({}));
   if (result.success) {
@@ -4307,11 +4311,15 @@ async function testGCalConnection() {
   }
   showGCalMsg('測試中…', 'ok');
   try {
-    const res = await fetch(cfg.proxyUrl, {
-      method:  'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body:    JSON.stringify({ action: 'test' })
-    });
+ const res = await fetch(cfg.proxyUrl, {
+  method: 'POST',
+  mode: 'cors',
+  redirect: 'follow',
+  headers: {
+    'Content-Type': 'text/plain;charset=utf-8'
+  },
+  body: JSON.stringify(payload)
+});
     const result = await res.json().catch(() => ({}));
     if (result.success) {
       showGCalMsg(`✅ 連線成功！行事曆：${result.calendarName}`, 'ok');
