@@ -1313,127 +1313,89 @@
   <select id="stats-month" style="display:none;"><option value="0" selected>0</option></select>
 </div>
 
-<!-- ════════════ 通知管理頁 ════════════ -->
+<!-- ════════════ 通知管理頁（Google Calendar 版） ════════════ -->
 <div id="page-notifications" class="page">
 
-  <!-- iOS 提示 banner（使用者是 iOS 且尚未安裝到主畫面時顯示） -->
-  <div id="ios-hint" style="display:none;
-    background:#EAF3DE; border:1px solid #97C459; border-radius:8px;
-    padding:12px 16px; margin-bottom:16px; font-size:13px; color:#27500A; line-height:1.6">
-    <strong>iPhone 使用者注意：</strong>請先點 Safari 右下角分享鍵 → 「加入主畫面」，
-    才能接收推播通知。加入後重新開啟即可啟用。
+  <!-- 說明 banner -->
+  <div style="background:#EAF3DE; border:1px solid #97C459; border-radius:8px;
+    padding:14px 16px; margin-bottom:16px; font-size:13px; color:#27500A; line-height:1.7">
+    <strong>📅 通知現在由 Google 日曆統一管理</strong><br>
+    管理員在「活動」頁建立或發佈活動後，系統會自動將活動寫入官方共用行事曆（Rollcall Shared Calendar）。<br>
+    成員只需<strong>訂閱一次</strong>，之後所有活動與提醒將由 Google 日曆自動推送，無需安裝任何 App。
   </div>
 
-  <!-- 通知授權狀態提示 -->
-  <div id="notif-status-bar" style="
-    border-radius:8px; padding:10px 14px; margin-bottom:16px;
-    font-size:13px; line-height:1.5; display:none">
-  </div>
-
-  <!-- ── 區塊 1：每日定時 ── -->
+  <!-- ── 區塊 1：訂閱步驟 ── -->
   <div class="card" style="margin-bottom:16px">
-    <div class="card-title"><div class="title-text-wrapper">每日定時提醒</div></div>
-
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px">
-      <div>
-        <div style="font-size:14px; font-weight:600; color:var(--text)">啟用每日推播</div>
-        <div style="font-size:12px; color:var(--text3); margin-top:2px">每天在指定時間提醒所有使用者打卡</div>
-      </div>
-      <label style="position:relative; display:inline-block; width:42px; height:24px; cursor:pointer">
-        <input type="checkbox" id="daily-enabled" style="opacity:0;width:0;height:0"
-               onchange="if(typeof window.onDailyToggle==='function') window.onDailyToggle()">
-        <span id="daily-toggle-track" style="
-          position:absolute; inset:0; border-radius:12px;
-          background:var(--border); transition:.2s">
-          <span id="daily-toggle-dot" style="
-            position:absolute; top:3px; left:3px; width:18px; height:18px;
-            background:#fff; border-radius:50%; transition:.2s"></span>
-        </span>
-      </label>
+    <div class="card-title"><div class="title-text-wrapper">如何訂閱共用行事曆</div></div>
+    <ol style="font-size:14px; color:var(--text2); line-height:2; padding-left:20px; margin:0">
+      <li>點擊下方「複製訂閱連結」按鈕</li>
+      <li>開啟 Google 日曆（calendar.google.com）</li>
+      <li>點擊左側欄「其他日曆」旁的 <strong>＋</strong> → 選「透過網址訂閱」</li>
+      <li>貼上連結後按「新增日曆」</li>
+      <li>完成！之後所有活動與 30 分鐘前提醒將自動出現在你的日曆中</li>
+    </ol>
+    <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button class="btn btn-primary" onclick="copyCalendarLink()" id="btn-copy-cal-link">
+        <i class="fas fa-link" style="margin-right:6px"></i>複製訂閱連結
+      </button>
+      <button class="btn btn-secondary" onclick="openCalendarLink()" id="btn-open-cal">
+        <i class="fas fa-external-link-alt" style="margin-right:6px"></i>在瀏覽器開啟
+      </button>
     </div>
-
-    <div id="daily-settings" style="display:none; border-top:1px solid var(--border); padding-top:14px">
-      <div class="form-row">
-        <div class="form-group" style="flex:0 0 130px">
-          <label>推播時間</label>
-          <input type="time" id="daily-time" value="08:00">
-        </div>
-        <div class="form-group" style="flex:1">
-          <label>通知訊息</label>
-          <input type="text" id="daily-message" placeholder="記得今日打卡！" maxlength="50">
-        </div>
-      </div>
-      <button class="btn btn-primary btn-sm" style="margin-top:4px"
-              onclick="saveDailyConfig()">儲存定時設定</button>
-    </div>
+    <div id="cal-link-display" style="display:none; margin-top:12px; background:var(--surface2);
+      border:1px solid var(--border); border-radius:6px; padding:10px 12px;
+      font-size:12px; color:var(--text2); word-break:break-all; font-family:monospace;"></div>
   </div>
 
-  <!-- ── 區塊 2：預約通知 ── -->
+  <!-- ── 區塊 2：行事曆同步狀態 ── -->
   <div class="card" style="margin-bottom:16px">
-    <div class="card-title" style="display:flex; justify-content:space-between; align-items:center">
-      <div class="title-text-wrapper">預約通知</div>
-      <button class="btn btn-secondary btn-sm" onclick="openScheduleModal()">＋ 新增</button>
+    <div class="card-title"><div class="title-text-wrapper">行事曆同步狀態</div></div>
+    <div id="gcal-sync-status" style="font-size:13px; color:var(--text3); padding:4px 0">
+      載入中…
     </div>
-
-    <div id="scheduled-list" style="margin-top:4px">
-      <!-- 由 JS 動態填入 -->
-      <div style="font-size:13px; color:var(--text3); padding:8px 0">尚未設定預約通知</div>
+    <div style="margin-top:14px; font-size:13px; color:var(--text2); line-height:1.7">
+      ℹ️ 每次在「活動」頁新增或發佈活動，系統都會自動同步至 Google 日曆（含 30 分鐘前提醒）。<br>
+      如遇同步異常，請點擊下方按鈕手動重試。
     </div>
-  </div>
-
-  <!-- ── 區塊 3：臨時通知 ── -->
-  <div class="card">
-    <div class="card-title"><div class="title-text-wrapper">臨時通知</div></div>
-    <div style="font-size:13px; color:var(--text2); margin-bottom:10px">
-      立即推播給所有已安裝自律打卡的成員
-    </div>
-    <textarea id="instant-message" rows="3" placeholder="輸入要立即推送的訊息..."
-      style="width:100%; border:1px solid var(--border); border-radius:8px;
-             padding:10px 12px; font-size:14px; resize:none; font-family:inherit;
-             color:var(--text); background:var(--surface)"></textarea>
-    <button class="btn btn-primary" style="width:100%; margin-top:10px; justify-content:center"
-            onclick="sendInstantMsg()">
-      <i class="fas fa-paper-plane" style="margin-right:6px"></i>立即推播給所有成員
+    <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="manualSyncToGCal()">
+      <i class="fas fa-sync-alt" style="margin-right:6px"></i>手動重新同步
     </button>
   </div>
-</div>
 
-<!-- ── 預約通知 Modal ── -->
-<div id="schedule-modal" class="modal-overlay">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-header">
-      <div class="modal-title">新增預約通知</div>
-      <button class="close-btn" onclick="closeScheduleModal()">✕</button>
-    </div>
-
-    <div class="form-group">
-      <label>通知標題</label>
-      <input type="text" id="sch-title" placeholder="例：神鼓陣課程提醒" maxlength="30">
+  <!-- ── 區塊 3：管理員設定（Google Calendar API 憑證） ── -->
+  <div class="card">
+    <div class="card-title"><div class="title-text-wrapper">Google Calendar API 設定（管理員）</div></div>
+    <div style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.6">
+      填入 Google Cloud Service Account 憑證，讓系統能自動寫入指定的共用行事曆。<br>
+      <span style="color:var(--text3); font-size:12px;">憑證僅儲存於管理員帳號，成員不可見。</span>
     </div>
     <div class="form-group">
-      <label>通知訊息</label>
-      <textarea id="sch-message" rows="2" placeholder="例：今天下午 2 點在內湖館集合，請準時到場"
-        style="border:1px solid var(--border); border-radius:8px; padding:10px 12px;
-               font-size:14px; resize:none; font-family:inherit; width:100%;
-               color:var(--text); background:var(--surface)"></textarea>
+      <label>Calendar ID（共用行事曆的 ID）</label>
+      <input type="text" id="gcal-calendar-id"
+        placeholder="例：xxxxxxxx@group.calendar.google.com">
     </div>
-    <div class="form-row">
-      <div class="form-group" style="flex:1">
-        <label>日期</label>
-        <input type="date" id="sch-date">
-      </div>
-      <div class="form-group" style="flex:0 0 130px">
-        <label>時間</label>
-        <input type="time" id="sch-time" value="09:00">
+    <div class="form-group">
+      <label>Service Account JSON（後端 Proxy 模式用）</label>
+      <textarea id="gcal-sa-json" rows="3"
+        placeholder='{"client_email":"...","private_key":"..."}' style="font-size:12px; font-family:monospace;"></textarea>
+      <div style="font-size:11px; color:var(--text3); margin-top:4px;">
+        ⚠️ 此欄位適用後端 Proxy 架構。若直接使用前端 API Key，請填入下方 API Key 欄。
       </div>
     </div>
-
-    <div style="display:flex; gap:10px; margin-top:8px">
-      <button class="btn btn-secondary" style="flex:1" onclick="closeScheduleModal()">取消</button>
-      <button class="btn btn-primary"   style="flex:1" onclick="saveSchedule()">儲存</button>
+    <div class="form-group">
+      <label>Google Calendar API Key（前端直接呼叫用）</label>
+      <input type="password" id="gcal-api-key"
+        placeholder="AIza...">
     </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="saveGCalConfig()">儲存設定</button>
+      <button class="btn btn-secondary" onclick="testGCalConnection()">測試連線</button>
+    </div>
+    <div id="gcal-config-msg" style="margin-top:10px; font-size:13px; display:none;"></div>
   </div>
 </div>
+
+<!-- 預約通知 Modal 已移除（通知改由 Google Calendar 統一管理） -->
 
 <!-- ════════════════ 活動詳情 Modal（雙 tab） ════════════════ -->
 <div class="modal-overlay" id="modal-copy-result" style="align-items:center; justify-content:center; padding:20px;">
@@ -2943,11 +2905,16 @@ async function saveSession() {
       note:   document.getElementById('s-note').value.trim(),
       published: false
     });
+    const newSession = DB.sessions[DB.sessions.length - 1];
     await saveDB(); closeModal('modal-session');
     currentSessionYear  = new Date(date).getFullYear();
     currentSessionMonth = new Date(date).getMonth() + 1;
     renderSessions();
     showToast('活動已建立（草稿）— 請在活動清單按「發佈」才會顯示於自律打卡');
+    // 非阻斷式同步至 Google Calendar（失敗不影響主流程）
+    syncSessionToGoogleCalendar(newSession).catch(e =>
+      console.warn('[GCal] 同步失敗（非阻斷）:', e.message)
+    );
   }
 }
 
@@ -2985,6 +2952,10 @@ async function toggleSessionPublish(id) {
   renderSessions();
   if (wasDraft) {
     showToast(`✅「${s.name}」已發佈，自律打卡可見`);
+    // 非阻斷式同步至 Google Calendar
+    syncSessionToGoogleCalendar(DB.sessions[idx]).catch(e =>
+      console.warn('[GCal] 發佈同步失敗（非阻斷）:', e.message)
+    );
   } else {
     showToast(`「${s.name}」已收回為草稿`);
   }
@@ -4242,156 +4213,219 @@ window.addEventListener('DOMContentLoaded', function(){
 </script>
 
 
-<!-- ════════════ 通知管理 JavaScript ════════════ -->
-<script type="module">
-import {
-  initNotifications, saveDailySettings, addScheduled,
-  deleteScheduled, sendInstant, loadSettings
-} from './notification-manager.js';
+<!-- ════════════ Google Calendar 整合 JavaScript ════════════ -->
+<script>
+/* ──────────────────────────────────────────────────────────
+   Google Calendar 同步模組
+   - syncSessionToGoogleCalendar(session)：建立活動時呼叫（非阻斷）
+   - 通知完全交由 Google Calendar，移除所有 Web Push / SW 邏輯
+   ────────────────────────────────────────────────────────── */
 
-// 頁面載入後初始化（需登入才執行）
-window._initNotifPage = async function() {
-  // iOS 提示
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-  if (isIOS && !isStandalone) {
-    document.getElementById('ios-hint').style.display = 'block';
-  }
-
-  // 初始化通知（申請授權、註冊 SW）
-  const ok = await initNotifications();
-  showStatusBar(ok);
-
-  // 讀取目前設定並填入 UI
-  const cfg = await loadSettings();
-  fillDailyUI(cfg);
-  renderScheduledList(cfg.scheduled || []);
-};
-
-function showStatusBar(granted) {
-  const bar = document.getElementById('notif-status-bar');
-  bar.style.display = 'block';
-  if (granted) {
-    bar.style.background = '#EAF3DE';
-    bar.style.border = '1px solid #97C459';
-    bar.style.color = '#27500A';
-    bar.textContent = '通知已啟用。設定後所有已安裝自律打卡的成員將收到推播。';
-  } else {
-    bar.style.background = '#FFF3CD';
-    bar.style.border = '1px solid #FFCA2C';
-    bar.style.color = '#664D03';
-    bar.textContent = '通知授權未開啟。請至瀏覽器設定允許「自律動起來」的通知。';
-  }
+// ── 讀取已儲存的 Google Calendar 設定 ──
+function getGCalConfig() {
+  try {
+    const raw = localStorage.getItem('gcal_config_v1');
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
 }
 
-function fillDailyUI(cfg) {
-  const cb = document.getElementById('daily-enabled');
-  cb.checked = !!cfg.dailyEnabled;
-  if (cfg.dailyTime) document.getElementById('daily-time').value = cfg.dailyTime;
-  if (cfg.dailyMessage) document.getElementById('daily-message').value = cfg.dailyMessage;
-  updateDailyToggle(cb.checked);
+function saveGCalConfig() {
+  const calendarId = (document.getElementById('gcal-calendar-id').value || '').trim();
+  const apiKey     = (document.getElementById('gcal-api-key').value     || '').trim();
+  const saJson     = (document.getElementById('gcal-sa-json').value     || '').trim();
+  if (!calendarId) { showGCalMsg('請填入 Calendar ID', 'error'); return; }
+  localStorage.setItem('gcal_config_v1', JSON.stringify({ calendarId, apiKey, saJson }));
+  showGCalMsg('✅ 設定已儲存', 'ok');
 }
 
-window.onDailyToggle = function() {
-  const checked = document.getElementById('daily-enabled').checked;
-  updateDailyToggle(checked);
-};
+function showGCalMsg(msg, type) {
+  const el = document.getElementById('gcal-config-msg');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.color   = type === 'error' ? 'var(--red)' : 'var(--accent)';
+  el.textContent   = msg;
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
 
-// 用 addEventListener 再綁一次，確保 module 載入後 checkbox 事件一定有效
-document.addEventListener('DOMContentLoaded', function() {
-  const cb = document.getElementById('daily-enabled');
-  if (cb) {
-    cb.addEventListener('change', function() {
-      updateDailyToggle(cb.checked);
+// ── 將一個 session 寫入 Google Calendar ──
+// 使用 API Key（公開行事曆）或 Service Account Proxy（私有行事曆）
+async function syncSessionToGoogleCalendar(session) {
+  const cfg = getGCalConfig();
+  if (!cfg.calendarId) {
+    console.info('[GCal] 未設定 Calendar ID，跳過同步');
+    return;
+  }
+
+  // 組合 RFC3339 時間
+  const dateStr   = session.date;                     // YYYY-MM-DD
+  const startTime = session.timeStart || '00:00';
+  const endTime   = session.timeEnd   || '23:59';
+  const startISO  = `${dateStr}T${startTime}:00+08:00`;
+  const endISO    = `${dateStr}T${endTime}:00+08:00`;
+
+  const description = [
+    session.courseType ? `名單類別：${session.courseType}` : '',
+    session.helper     ? `值班小幫手：${session.helper}`   : '',
+    session.note       ? `備註：${session.note}`            : '',
+  ].filter(Boolean).join('\n');
+
+  const eventBody = {
+    summary:     session.name,
+    description: description || '自律打卡活動',
+    start:  { dateTime: startISO, timeZone: 'Asia/Taipei' },
+    end:    { dateTime: endISO,   timeZone: 'Asia/Taipei' },
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'popup', minutes: 30 },
+        { method: 'email', minutes: 30 }
+      ]
+    }
+  };
+
+  // 優先使用 API Key（適合公開 / 共用行事曆）
+  if (cfg.apiKey) {
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cfg.calendarId)}/events?key=${cfg.apiKey}`;
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(eventBody)
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`GCal API ${res.status}: ${err.error?.message || res.statusText}`);
+    }
+    const created = await res.json();
+    console.log('[GCal] ✅ 活動已建立:', created.htmlLink);
+    updateGCalSyncStatus(true, session.name);
+    return created;
   }
-});
 
-function updateDailyToggle(on) {
-  const track = document.getElementById('daily-toggle-track');
-  const dot   = document.getElementById('daily-toggle-dot');
-  track.style.background = on ? 'var(--accent)' : 'var(--border)';
-  dot.style.transform = on ? 'translateX(18px)' : 'translateX(0)';
-  document.getElementById('daily-settings').style.display = on ? 'block' : 'none';
+  // Fallback：Service Account JSON → 後端 Proxy（需自行部署 /api/gcal-proxy）
+  if (cfg.saJson) {
+    const res = await fetch('/api/gcal-proxy', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ calendarId: cfg.calendarId, event: eventBody, saJson: cfg.saJson })
+    });
+    if (!res.ok) throw new Error(`Proxy ${res.status}`);
+    const created = await res.json();
+    console.log('[GCal Proxy] ✅ 活動已建立:', created.id);
+    updateGCalSyncStatus(true, session.name);
+    return created;
+  }
+
+  console.info('[GCal] 未設定 API Key 或 SA JSON，跳過同步（請至通知頁設定）');
 }
 
-window.saveDailyConfig = async function() {
-  const enabled = document.getElementById('daily-enabled').checked;
-  const time    = document.getElementById('daily-time').value;
-  const message = document.getElementById('daily-message').value || '記得今日打卡！';
-  await saveDailySettings({ enabled, time, message });
-  if (typeof showToast === 'function') showToast('✅ 每日定時設定已儲存');
-};
-
-// 預約通知列表渲染
-function renderScheduledList(items) {
-  const el = document.getElementById('scheduled-list');
-  if (!items.length) {
-    el.innerHTML = '<div style="font-size:13px; color:var(--text3); padding:8px 0">尚未設定預約通知</div>';
-    return;
+// ── 同步狀態顯示 ──
+function updateGCalSyncStatus(success, name) {
+  const el = document.getElementById('gcal-sync-status');
+  if (!el) return;
+  const now = new Date().toLocaleString('zh-TW', { hour12: false });
+  if (success) {
+    el.innerHTML = `<span style="color:var(--accent)">✅ 上次同步成功</span>
+      <span style="color:var(--text3); margin-left:8px; font-size:12px">${now}</span>
+      ${name ? `<div style="font-size:12px; color:var(--text2); margin-top:4px">已同步：${name}</div>` : ''}`;
+  } else {
+    el.innerHTML = `<span style="color:var(--red)">⚠️ 同步失敗，請檢查設定</span>
+      <span style="color:var(--text3); margin-left:8px; font-size:12px">${now}</span>`;
   }
-  el.innerHTML = items.map(item => {
-    const d = new Date(item.datetime);
-    const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-    const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    return `
-      <div style="display:flex; align-items:center; gap:12px; padding:10px 0;
-                  border-bottom:1px solid var(--border)">
-        <div style="width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0"></div>
-        <div style="flex:1">
-          <div style="font-size:13px; font-weight:600; color:var(--text)">${escHtml(item.title)}</div>
-          <div style="font-size:12px; color:var(--text3)">${dateStr}　${timeStr}</div>
-        </div>
-        <button onclick="removeSchedule('${item.id}')"
-          style="border:none; background:none; cursor:pointer; color:var(--text3); font-size:18px; padding:0 4px">
-          <i class="fas fa-trash-alt" style="font-size:14px"></i>
-        </button>
-      </div>`;
-  }).join('');
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// ── 手動重新同步所有已發佈活動 ──
+async function manualSyncToGCal() {
+  const published = DB.sessions.filter(s => s.published !== false);
+  if (!published.length) { showToast('目前無已發佈活動可同步'); return; }
+  showToast('同步中…');
+  let ok = 0, fail = 0;
+  for (const s of published) {
+    try { await syncSessionToGoogleCalendar(s); ok++; }
+    catch(e) { fail++; console.warn('[GCal] 同步失敗:', s.name, e.message); }
+  }
+  showToast(fail ? `同步完成：${ok} 成功，${fail} 失敗` : `✅ 已同步 ${ok} 個活動`);
+  updateGCalSyncStatus(fail === 0, null);
 }
 
-window.openScheduleModal = function() {
-  document.getElementById('schedule-modal').classList.add('open');
-  document.getElementById('sch-date').valueAsDate = new Date();
-};
-window.closeScheduleModal = function() {
-  document.getElementById('schedule-modal').classList.remove('open');
-};
-
-window.saveSchedule = async function() {
-  const title    = document.getElementById('sch-title').value.trim();
-  const message  = document.getElementById('sch-message').value.trim();
-  const date     = document.getElementById('sch-date').value;
-  const time     = document.getElementById('sch-time').value;
-  if (!title || !message || !date || !time) {
-    if (typeof showToast === 'function') showToast('請填寫所有欄位');
-    return;
+// ── 測試 GCal 連線 ──
+async function testGCalConnection() {
+  const cfg = getGCalConfig();
+  if (!cfg.calendarId || !cfg.apiKey) {
+    showGCalMsg('請先填入 Calendar ID 與 API Key', 'error'); return;
   }
-  await addScheduled({ title, message, datetime: `${date}T${time}` });
-  closeScheduleModal();
-  const cfg = await loadSettings();
-  renderScheduledList(cfg.scheduled || []);
-  if (typeof showToast === 'function') showToast('✅ 預約通知已新增');
-};
+  try {
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cfg.calendarId)}?key=${cfg.apiKey}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const info = await res.json();
+      showGCalMsg(`✅ 連線成功！行事曆：${info.summary}`, 'ok');
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showGCalMsg(`❌ 連線失敗（${res.status}）：${err.error?.message || '請確認 API Key 與 Calendar ID'}`, 'error');
+    }
+  } catch(e) {
+    showGCalMsg(`❌ 網路錯誤：${e.message}`, 'error');
+  }
+}
 
-window.removeSchedule = async function(id) {
-  await deleteScheduled(id);
-  const cfg = await loadSettings();
-  renderScheduledList(cfg.scheduled || []);
-  if (typeof showToast === 'function') showToast('已刪除');
-};
+// ── 共用行事曆訂閱連結 ──
+function getSharedCalendarIcalUrl() {
+  const cfg = getGCalConfig();
+  if (!cfg.calendarId) return '';
+  // iCal 訂閱連結格式
+  return `https://calendar.google.com/calendar/ical/${encodeURIComponent(cfg.calendarId)}/public/basic.ics`;
+}
 
-window.sendInstantMsg = async function() {
-  const msg = document.getElementById('instant-message').value.trim();
-  if (!msg) { if (typeof showToast === 'function') showToast('請輸入訊息'); return; }
-  await sendInstant(msg);
-  document.getElementById('instant-message').value = '';
-  if (typeof showToast === 'function') showToast('✅ 已推播給所有成員');
-};
+function copyCalendarLink() {
+  const url = getSharedCalendarIcalUrl();
+  if (!url) { showToast('請先在下方設定 Calendar ID'); return; }
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('✅ 訂閱連結已複製！');
+    const display = document.getElementById('cal-link-display');
+    if (display) { display.textContent = url; display.style.display = 'block'; }
+  }).catch(() => {
+    const display = document.getElementById('cal-link-display');
+    if (display) { display.textContent = url; display.style.display = 'block'; }
+    showToast('請手動複製上方連結');
+  });
+}
+
+function openCalendarLink() {
+  const cfg = getGCalConfig();
+  if (!cfg.calendarId) { showToast('請先在下方設定 Calendar ID'); return; }
+  // Google Calendar 網頁訂閱連結
+  const url = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(cfg.calendarId)}`;
+  window.open(url, '_blank');
+}
+
+// ── 進入通知頁時初始化 UI ──
+function initNotificationsPage() {
+  const cfg = getGCalConfig();
+  if (cfg.calendarId) document.getElementById('gcal-calendar-id').value = cfg.calendarId;
+  if (cfg.apiKey)     document.getElementById('gcal-api-key').value     = cfg.apiKey;
+  if (cfg.saJson)     document.getElementById('gcal-sa-json').value     = cfg.saJson;
+
+  const statusEl = document.getElementById('gcal-sync-status');
+  if (statusEl) {
+    if (cfg.calendarId) {
+      statusEl.innerHTML = `已設定行事曆：<code style="font-size:11px;">${cfg.calendarId}</code>`;
+      statusEl.style.color = 'var(--text2)';
+    } else {
+      statusEl.textContent = '尚未設定 Calendar ID，請至下方填入後儲存。';
+    }
+  }
+}
+
+// ── switchPage 掛載：進入通知頁時初始化 ──
+(function() {
+  const origSwitch = window.switchPage;
+  window.switchPage = function(page) {
+    if (typeof origSwitch === 'function') origSwitch(page);
+    if (page === 'notifications') {
+      setTimeout(initNotificationsPage, 50);
+    }
+  };
+})();
 </script>
 
 </body>
