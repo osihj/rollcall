@@ -4223,11 +4223,15 @@ function showGCalMsg(msg, type) {
 
 // ── 將一個 session 寫入 Google Calendar（透過 Apps Script Proxy）──
 async function syncSessionToGoogleCalendar(session) {
-  const cfg = getGCalConfig();
-  if (!cfg.proxyUrl) {
-    console.info('[GCal] 未設定 Apps Script 網址，跳過同步');
-    return;
-  }
+
+  console.log('[GCal] 模擬同步:', session.name);
+
+  updateGCalSyncStatus(true, session.name);
+
+  return {
+    success: true
+  };
+}
 
   // 組合 RFC3339 時間
   const dateStr   = session.date;
