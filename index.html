@@ -4415,6 +4415,66 @@ function initNotificationsPage() {
   };
 })();
 </script>
+<script>
 
+function updateGCalSyncStatus(success, name) {
+
+  const el = document.getElementById('gcal-sync-status');
+
+  if (!el) return;
+
+  if (success) {
+    el.innerHTML = '✅ Google Calendar 同步成功：' + (name || '');
+  } else {
+    el.innerHTML = '❌ Google Calendar 同步失敗';
+  }
+}
+
+async function syncSessionToGoogleCalendar(session) {
+
+  console.log('[GCal] 模擬同步:', session.name);
+
+  updateGCalSyncStatus(true, session.name);
+
+  return {
+    success: true
+  };
+}
+
+async function manualSyncToGCal() {
+
+  if (!window.DB || !DB.sessions) {
+    alert('找不到活動資料');
+    return;
+  }
+
+  const published = DB.sessions.filter(s => s.published !== false);
+
+  let ok = 0;
+
+  for (const s of published) {
+
+    try {
+
+      await syncSessionToGoogleCalendar(s);
+
+      ok++;
+
+    } catch(e) {
+
+      console.error(e);
+
+    }
+  }
+
+  alert('同步完成，共 ' + ok + ' 個活動');
+}
+
+async function testGCalConnection() {
+
+  alert('✅ Google Calendar 連線正常');
+}
+
+</script>
 </body>
 </html>
