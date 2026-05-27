@@ -1362,36 +1362,49 @@
     </button>
   </div>
 
-  <!-- ── 區塊 3：管理員設定（Google Calendar API 憑證） ── -->
+  <!-- ── 區塊 3：管理員設定（Google Apps Script Proxy） ── -->
   <div class="card">
-    <div class="card-title"><div class="title-text-wrapper">Google Calendar API 設定（管理員）</div></div>
-    <div style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.6">
-      填入 Google Cloud Service Account 憑證，讓系統能自動寫入指定的共用行事曆。<br>
-      <span style="color:var(--text3); font-size:12px;">憑證僅儲存於管理員帳號，成員不可見。</span>
-    </div>
+    <div class="card-title"><div class="title-text-wrapper">Google Calendar 設定（管理員）</div></div>
+    <p style="color:var(--text2); font-size:13px; margin-bottom:16px; line-height:1.7">
+      使用 <strong>Google Apps Script</strong> 作為免費代理，不需要後端伺服器。<br>
+      請先依照下方步驟部署，再把網址貼到①欄位。
+    </p>
+
     <div class="form-group">
-      <label>Calendar ID（共用行事曆的 ID）</label>
+      <label>① Google Apps Script 網址（部署後取得）</label>
+      <input type="text" id="gcal-proxy-url"
+        placeholder="https://script.google.com/macros/s/xxxxxx/exec"
+        style="font-family:monospace; font-size:12px;">
+    </div>
+
+    <div class="form-group">
+      <label>② Calendar ID（共用行事曆的 ID，用於產生訂閱連結）</label>
       <input type="text" id="gcal-calendar-id"
-        placeholder="例：xxxxxxxx@group.calendar.google.com">
+        placeholder="tjmfamilyc0@gmail.com 或 xxxxxxxx@group.calendar.google.com"
+        style="font-family:monospace; font-size:12px;">
     </div>
-    <div class="form-group">
-      <label>Service Account JSON（後端 Proxy 模式用）</label>
-      <textarea id="gcal-sa-json" rows="3"
-        placeholder='{"client_email":"...","private_key":"..."}' style="font-size:12px; font-family:monospace;"></textarea>
-      <div style="font-size:11px; color:var(--text3); margin-top:4px;">
-        ⚠️ 此欄位適用後端 Proxy 架構。若直接使用前端 API Key，請填入下方 API Key 欄。
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Google Calendar API Key（前端直接呼叫用）</label>
-      <input type="password" id="gcal-api-key"
-        placeholder="AIza...">
-    </div>
+
+    <div id="gcal-config-msg" style="margin-top:4px; margin-bottom:10px; font-size:13px; display:none;"></div>
+
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="saveGCalConfig()">儲存設定</button>
       <button class="btn btn-secondary" onclick="testGCalConnection()">測試連線</button>
     </div>
-    <div id="gcal-config-msg" style="margin-top:10px; font-size:13px; display:none;"></div>
+
+    <details style="margin-top:16px">
+      <summary style="font-size:13px; font-weight:500; cursor:pointer; color:var(--text2)">
+        📋 如何取得 Apps Script 網址？（點此展開）
+      </summary>
+      <ol style="font-size:13px; color:var(--text2); margin-top:10px; padding-left:20px; line-height:2.2">
+        <li>開啟 <a href="https://script.google.com" target="_blank" style="color:var(--blue)">script.google.com</a> → 「新增專案」</li>
+        <li>把 <strong>GoogleAppsScript_Proxy.js</strong> 的內容全部貼入編輯器（取代預設內容）</li>
+        <li>確認第 18 行的 Calendar ID 是 <code style="background:var(--surface2);padding:1px 5px;border-radius:3px">tjmfamilyc0@gmail.com</code></li>
+        <li>點上方「部署」→「新增部署作業」</li>
+        <li>類型：<strong>網頁應用程式</strong>；執行身分：<strong>我</strong>；存取權：<strong>所有人</strong></li>
+        <li>點「部署」→ Google 要求授權時點「允許」</li>
+        <li>複製「網頁應用程式 URL」貼到上方①欄位，按「儲存設定」</li>
+      </ol>
+    </details>
   </div>
 </div>
 
@@ -4216,25 +4229,27 @@ window.addEventListener('DOMContentLoaded', function(){
 <!-- ════════════ Google Calendar 整合 JavaScript ════════════ -->
 <script>
 /* ──────────────────────────────────────────────────────────
-   Google Calendar 同步模組
-   - syncSessionToGoogleCalendar(session)：建立活動時呼叫（非阻斷）
-   - 通知完全交由 Google Calendar，移除所有 Web Push / SW 邏輯
+   Google Calendar 同步模組 v2（Apps Script Proxy 版）
+   架構：前端 → Google Apps Script URL → Google Calendar
+   不需要後端伺服器，不需要 Service Account JSON 檔案
    ────────────────────────────────────────────────────────── */
 
 // ── 讀取已儲存的 Google Calendar 設定 ──
 function getGCalConfig() {
   try {
-    const raw = localStorage.getItem('gcal_config_v1');
+    const raw = localStorage.getItem('gcal_config_v2');
     return raw ? JSON.parse(raw) : {};
   } catch(e) { return {}; }
 }
 
 function saveGCalConfig() {
-  const calendarId = (document.getElementById('gcal-calendar-id').value || '').trim();
-  const apiKey     = (document.getElementById('gcal-api-key').value     || '').trim();
-  const saJson     = (document.getElementById('gcal-sa-json').value     || '').trim();
-  if (!calendarId) { showGCalMsg('請填入 Calendar ID', 'error'); return; }
-  localStorage.setItem('gcal_config_v1', JSON.stringify({ calendarId, apiKey, saJson }));
+  const proxyUrl   = (document.getElementById('gcal-proxy-url')?.value   || '').trim();
+  const calendarId = (document.getElementById('gcal-calendar-id')?.value || '').trim();
+  if (!proxyUrl) { showGCalMsg('請填入 Google Apps Script 網址', 'error'); return; }
+  if (!proxyUrl.includes('script.google.com')) {
+    showGCalMsg('網址格式不正確，應為 script.google.com 開頭', 'error'); return;
+  }
+  localStorage.setItem('gcal_config_v2', JSON.stringify({ proxyUrl, calendarId }));
   showGCalMsg('✅ 設定已儲存', 'ok');
 }
 
@@ -4247,17 +4262,16 @@ function showGCalMsg(msg, type) {
   setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
-// ── 將一個 session 寫入 Google Calendar ──
-// 使用 API Key（公開行事曆）或 Service Account Proxy（私有行事曆）
+// ── 將一個 session 寫入 Google Calendar（透過 Apps Script Proxy）──
 async function syncSessionToGoogleCalendar(session) {
   const cfg = getGCalConfig();
-  if (!cfg.calendarId) {
-    console.info('[GCal] 未設定 Calendar ID，跳過同步');
+  if (!cfg.proxyUrl) {
+    console.info('[GCal] 未設定 Apps Script 網址，跳過同步');
     return;
   }
 
   // 組合 RFC3339 時間
-  const dateStr   = session.date;                     // YYYY-MM-DD
+  const dateStr   = session.date;
   const startTime = session.timeStart || '00:00';
   const endTime   = session.timeEnd   || '23:59';
   const startISO  = `${dateStr}T${startTime}:00+08:00`;
@@ -4269,53 +4283,32 @@ async function syncSessionToGoogleCalendar(session) {
     session.note       ? `備註：${session.note}`            : '',
   ].filter(Boolean).join('\n');
 
-  const eventBody = {
-    summary:     session.name,
-    description: description || '自律打卡活動',
-    start:  { dateTime: startISO, timeZone: 'Asia/Taipei' },
-    end:    { dateTime: endISO,   timeZone: 'Asia/Taipei' },
-    reminders: {
-      useDefault: false,
-      overrides: [
-        { method: 'popup', minutes: 30 },
-        { method: 'email', minutes: 30 }
-      ]
+  const payload = {
+    action: 'create',
+    event: {
+      summary:     session.name,
+      description: description || '點名活動',
+      start: { dateTime: startISO, timeZone: 'Asia/Taipei' },
+      end:   { dateTime: endISO,   timeZone: 'Asia/Taipei' }
     }
   };
 
-  // 優先使用 API Key（適合公開 / 共用行事曆）
-  if (cfg.apiKey) {
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cfg.calendarId)}/events?key=${cfg.apiKey}`;
-    const res = await fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(eventBody)
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(`GCal API ${res.status}: ${err.error?.message || res.statusText}`);
-    }
-    const created = await res.json();
-    console.log('[GCal] ✅ 活動已建立:', created.htmlLink);
-    updateGCalSyncStatus(true, session.name);
-    return created;
-  }
+  // Apps Script 不支援 CORS 預檢，用 text/plain 避免觸發 OPTIONS
+  const res = await fetch(cfg.proxyUrl, {
+    method:  'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body:    JSON.stringify(payload)
+  });
 
-  // Fallback：Service Account JSON → 後端 Proxy（需自行部署 /api/gcal-proxy）
-  if (cfg.saJson) {
-    const res = await fetch('/api/gcal-proxy', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ calendarId: cfg.calendarId, event: eventBody, saJson: cfg.saJson })
-    });
-    if (!res.ok) throw new Error(`Proxy ${res.status}`);
-    const created = await res.json();
-    console.log('[GCal Proxy] ✅ 活動已建立:', created.id);
+  const result = await res.json().catch(() => ({}));
+  if (result.success) {
+    console.log('[GCal] ✅ 活動已寫入:', result.message);
+    session._googleEventId = result.googleEventId;
     updateGCalSyncStatus(true, session.name);
-    return created;
+    return result;
+  } else {
+    throw new Error(result.error || '未知錯誤');
   }
-
-  console.info('[GCal] 未設定 API Key 或 SA JSON，跳過同步（請至通知頁設定）');
 }
 
 // ── 同步狀態顯示 ──
@@ -4350,18 +4343,21 @@ async function manualSyncToGCal() {
 // ── 測試 GCal 連線 ──
 async function testGCalConnection() {
   const cfg = getGCalConfig();
-  if (!cfg.calendarId || !cfg.apiKey) {
-    showGCalMsg('請先填入 Calendar ID 與 API Key', 'error'); return;
+  if (!cfg.proxyUrl) {
+    showGCalMsg('請先填入 Google Apps Script 網址', 'error'); return;
   }
+  showGCalMsg('測試中…', 'ok');
   try {
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cfg.calendarId)}?key=${cfg.apiKey}`;
-    const res = await fetch(url);
-    if (res.ok) {
-      const info = await res.json();
-      showGCalMsg(`✅ 連線成功！行事曆：${info.summary}`, 'ok');
+    const res = await fetch(cfg.proxyUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify({ action: 'test' })
+    });
+    const result = await res.json().catch(() => ({}));
+    if (result.success) {
+      showGCalMsg(`✅ 連線成功！行事曆：${result.calendarName}`, 'ok');
     } else {
-      const err = await res.json().catch(() => ({}));
-      showGCalMsg(`❌ 連線失敗（${res.status}）：${err.error?.message || '請確認 API Key 與 Calendar ID'}`, 'error');
+      showGCalMsg(`❌ 連線失敗：${result.error}`, 'error');
     }
   } catch(e) {
     showGCalMsg(`❌ 網路錯誤：${e.message}`, 'error');
@@ -4371,14 +4367,14 @@ async function testGCalConnection() {
 // ── 共用行事曆訂閱連結 ──
 function getSharedCalendarIcalUrl() {
   const cfg = getGCalConfig();
-  if (!cfg.calendarId) return '';
-  // iCal 訂閱連結格式
-  return `https://calendar.google.com/calendar/ical/${encodeURIComponent(cfg.calendarId)}/public/basic.ics`;
+  const calId = cfg.calendarId || '';
+  if (!calId) return '';
+  return `https://calendar.google.com/calendar/ical/${encodeURIComponent(calId)}/public/basic.ics`;
 }
 
 function copyCalendarLink() {
   const url = getSharedCalendarIcalUrl();
-  if (!url) { showToast('請先在下方設定 Calendar ID'); return; }
+  if (!url) { showToast('請先到通知頁填入 Calendar ID'); return; }
   navigator.clipboard.writeText(url).then(() => {
     showToast('✅ 訂閱連結已複製！');
     const display = document.getElementById('cal-link-display');
@@ -4393,7 +4389,6 @@ function copyCalendarLink() {
 function openCalendarLink() {
   const cfg = getGCalConfig();
   if (!cfg.calendarId) { showToast('請先在下方設定 Calendar ID'); return; }
-  // Google Calendar 網頁訂閱連結
   const url = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(cfg.calendarId)}`;
   window.open(url, '_blank');
 }
@@ -4401,17 +4396,18 @@ function openCalendarLink() {
 // ── 進入通知頁時初始化 UI ──
 function initNotificationsPage() {
   const cfg = getGCalConfig();
-  if (cfg.calendarId) document.getElementById('gcal-calendar-id').value = cfg.calendarId;
-  if (cfg.apiKey)     document.getElementById('gcal-api-key').value     = cfg.apiKey;
-  if (cfg.saJson)     document.getElementById('gcal-sa-json').value     = cfg.saJson;
+  const proxyEl = document.getElementById('gcal-proxy-url');
+  const calEl   = document.getElementById('gcal-calendar-id');
+  if (proxyEl && cfg.proxyUrl)   proxyEl.value = cfg.proxyUrl;
+  if (calEl   && cfg.calendarId) calEl.value   = cfg.calendarId;
 
   const statusEl = document.getElementById('gcal-sync-status');
   if (statusEl) {
-    if (cfg.calendarId) {
-      statusEl.innerHTML = `已設定行事曆：<code style="font-size:11px;">${cfg.calendarId}</code>`;
+    if (cfg.proxyUrl) {
+      statusEl.innerHTML = `已設定 Apps Script：<code style="font-size:11px;">${cfg.proxyUrl.slice(0,60)}…</code>`;
       statusEl.style.color = 'var(--text2)';
     } else {
-      statusEl.textContent = '尚未設定 Calendar ID，請至下方填入後儲存。';
+      statusEl.textContent = '尚未設定 Apps Script 網址，請至下方填入後儲存。';
     }
   }
 }
