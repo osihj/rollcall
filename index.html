@@ -4200,7 +4200,7 @@ window.addEventListener('DOMContentLoaded', function(){
    ────────────────────────────────────────────────────────── */
 
 // ── 固定設定（寫死在程式碼，自動同步到指定行事曆）──
-const GCAL_PROXY_URL   = 'https://script.google.com/macros/s/AKfycbwewOrU5AwkLWufFCAKYr9XmSZMctZg_LvFqJP0igHStVtGyhvf6HUXVwB6KKQK5IeT/exec';
+const GCAL_PROXY_URL   = 'https://script.google.com/macros/s/AKfycbyg29oM8eHT8WBQKnQ7dEL0lQtfHvupyIHAqNs1q0LK1PIDA0TBCirm9NXentL8vKGr/exec';
 const GCAL_CALENDAR_ID = 'tjmfamilyc0@gmail.com';
 
 function getGCalConfig() {
@@ -4306,28 +4306,51 @@ async function manualSyncToGCal() {
 // ── 測試 GCal 連線 ──
 async function testGCalConnection() {
   const cfg = getGCalConfig();
+
   if (!cfg.proxyUrl) {
-    showGCalMsg('請先填入 Google Apps Script 網址', 'error'); return;
+    showGCalMsg('請先填入 Google Apps Script 網址', 'error');
+    return;
   }
+
   showGCalMsg('測試中…', 'ok');
+
   try {
- const res = await fetch(cfg.proxyUrl, {
-  method: 'POST',
-  mode: 'cors',
-  redirect: 'follow',
-  headers: {
-    'Content-Type': 'text/plain;charset=utf-8'
-  },
-  body: JSON.stringify(payload)
-});
+
+    const res = await fetch(cfg.proxyUrl, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action: 'test'
+      })
+    });
+
     const result = await res.json().catch(() => ({}));
+
     if (result.success) {
-      showGCalMsg(`✅ 連線成功！行事曆：${result.calendarName}`, 'ok');
+
+      showGCalMsg(
+        `✅ 連線成功！行事曆：${result.calendarName}`,
+        'ok'
+      );
+
     } else {
-      showGCalMsg(`❌ 連線失敗：${result.error}`, 'error');
+
+      showGCalMsg(
+        `❌ 連線失敗：${result.error}`,
+        'error'
+      );
     }
+
   } catch(e) {
-    showGCalMsg(`❌ 網路錯誤：${e.message}`, 'error');
+
+    showGCalMsg(
+      `❌ 網路錯誤：${e.message}`,
+      'error'
+    );
   }
 }
 
