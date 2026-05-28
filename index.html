@@ -948,59 +948,98 @@
 </div>
 
 <!-- 組員 Modal -->
+<!-- 組員 Modal -->
 <div class="modal-overlay" id="modal-member">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="modal-member-title">組員資料填寫</div>
       <button class="close-btn" onclick="closeModal('modal-member')">✕</button>
     </div>
-    <input type="hidden" id="edit-member-id">
-    <div class="form-row" style="align-items:flex-end;">
-      <div class="form-group" style="flex:1 1 0;"><label>姓名 *</label><input type="text" id="m-name"></div>
-      <div class="form-group" style="flex:1 1 0;">
-        <label>性別 *</label>
-        <div class="radio-group" style="padding:0; gap:12px; height:45px; align-items:center;">
-          <label class="radio-label"><input type="radio" name="m-gender" value="女" checked> 女</label>
-          <label class="radio-label"><input type="radio" name="m-gender" value="男"> 男</label>
+
+    <!-- Tab 切換（新增組員時顯示，編輯時隱藏） -->
+    <div style="display:flex; border-bottom:2px solid var(--border); margin-bottom:20px;" id="member-modal-tabs">
+      <button class="member-subtab active" id="mtab-manual" onclick="switchMemberModalTab('manual')">手動新增</button>
+      <button class="member-subtab" id="mtab-pick" onclick="switchMemberModalTab('pick')">從現有名單選入</button>
+    </div>
+
+    <!-- Tab 1：手動新增 -->
+    <div id="mtab-panel-manual">
+      <input type="hidden" id="edit-member-id">
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="form-group" style="flex:1 1 0;"><label>姓名 *</label><input type="text" id="m-name"></div>
+        <div class="form-group" style="flex:1 1 0;">
+          <label>性別 *</label>
+          <div class="radio-group" style="padding:0; gap:12px; height:45px; align-items:center;">
+            <label class="radio-label"><input type="radio" name="m-gender" value="女" checked> 女</label>
+            <label class="radio-label"><input type="radio" name="m-gender" value="男"> 男</label>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group" style="flex:1 1 0;"><label>研修代號</label><input type="text" id="m-id" inputmode="numeric"></div>
-      <div class="form-group" style="flex:1 1 0;">
-        <label>館別</label>
-        <select id="m-hall">
-          <option value="">— 未設定 —</option>
-          <option value="內湖">內湖</option><option value="南港">南港</option><option value="古亭">古亭</option>
-          <option value="大安">大安</option><option value="樹林">樹林</option><option value="桃園">桃園</option>
-          <option value="中壢">中壢</option><option value="環北">環北</option><option value="新竹">新竹</option>
-          <option value="竹北">竹北</option><option value="苗栗">苗栗</option><option value="台中">台中</option>
-          <option value="虎尾">虎尾</option><option value="嘉義">嘉義</option><option value="台南">台南</option>
-          <option value="高雄">高雄</option><option value="屏東">屏東</option><option value="宜蘭">宜蘭</option>
-        </select>
+      <div class="form-row">
+        <div class="form-group" style="flex:1 1 0;"><label>研修代號</label><input type="text" id="m-id" inputmode="numeric"></div>
+        <div class="form-group" style="flex:1 1 0;">
+          <label>館別</label>
+          <select id="m-hall">
+            <option value="">— 未設定 —</option>
+            <option value="內湖">內湖</option><option value="南港">南港</option><option value="古亭">古亭</option>
+            <option value="大安">大安</option><option value="樹林">樹林</option><option value="桃園">桃園</option>
+            <option value="中壢">中壢</option><option value="環北">環北</option><option value="新竹">新竹</option>
+            <option value="竹北">竹北</option><option value="苗栗">苗栗</option><option value="台中">台中</option>
+            <option value="虎尾">虎尾</option><option value="嘉義">嘉義</option><option value="台南">台南</option>
+            <option value="高雄">高雄</option><option value="屏東">屏東</option><option value="宜蘭">宜蘭</option>
+          </select>
+        </div>
       </div>
-    </div>
-    <div class="form-group" id="m-bindings-section" style="background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:16px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text2); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-        <i class="fas fa-link" style="font-size:12px; color:var(--accent);"></i>
-        名單類別綁定
-        <span style="color:var(--text3);font-size:11px;font-weight:400;">（各類別角色可分別設定）</span>
+      <div class="form-group" id="m-bindings-section" style="background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:16px;">
+        <div style="font-size:13px; font-weight:600; color:var(--text2); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+          <i class="fas fa-link" style="font-size:12px; color:var(--accent);"></i>
+          名單類別綁定
+          <span style="color:var(--text3);font-size:11px;font-weight:400;">（各類別角色可分別設定）</span>
+        </div>
+        <div id="m-bindings-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
+        <div style="display:grid; grid-template-columns:1fr auto auto; gap:6px; align-items:center;" id="m-add-binding-row">
+          <select id="m-add-binding-ct" style="min-width:0;"></select>
+          <select id="m-add-binding-role" style="width:76px; padding-right:28px;">
+            <option value="組員">組員</option>
+            <option value="窗口">窗口</option>
+            <option value="輔導">輔導</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" style="white-space:nowrap; padding:8px 12px;" onclick="addBindingFromModal()">＋ 新增</button>
+        </div>
       </div>
-      <div id="m-bindings-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
-      <div style="display:grid; grid-template-columns:1fr auto auto; gap:6px; align-items:center;" id="m-add-binding-row">
-        <select id="m-add-binding-ct" style="min-width:0;"></select>
-        <select id="m-add-binding-role" style="width:76px; padding-right:28px;">
+      <input type="hidden" id="m-course-type" value="">
+      <input type="hidden" id="m-role" value="組員">
+      <div class="form-group"><label>備註</label><input type="text" id="m-note"></div>
+      <button class="btn btn-primary btn-block" onclick="saveMember()">確認儲存</button>
+    </div>
+
+    <!-- Tab 2：從現有名單選入 -->
+    <div id="mtab-panel-pick" style="display:none;">
+      <div style="font-size:13px; color:var(--text2); margin-bottom:12px; background:var(--accent-light); border:1px solid rgba(44,82,52,0.15); border-radius:var(--radius); padding:10px 14px;">
+        將把勾選的組員批次綁定至「<strong><span id="pick-target-ct">—</span></strong>」名單類別。<br>
+        <span style="font-size:12px; color:var(--text3);">目標類別由左側「名單類別綁定」的下拉選單決定。</span>
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
+        <input type="text" id="pick-search" placeholder="搜尋姓名或研修代號…"
+          oninput="renderPickList()"
+          style="flex:1; padding:9px 12px; font-size:14px; border:1.5px solid var(--border); border-radius:6px; outline:none;">
+        <select id="pick-role" style="width:90px; padding:9px 8px; font-size:13px; border:1px solid var(--border); border-radius:6px;">
           <option value="組員">組員</option>
           <option value="窗口">窗口</option>
           <option value="輔導">輔導</option>
         </select>
-        <button class="btn btn-secondary btn-sm" style="white-space:nowrap; padding:8px 12px;" onclick="addBindingFromModal()">＋ 新增</button>
       </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span id="pick-selected-count" style="font-size:13px; color:var(--text2); font-weight:500;">已選 0 人</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="pickSelectAll()">全選可選</button>
+          <button class="btn btn-secondary btn-sm" onclick="pickClearAll()">清除</button>
+        </div>
+      </div>
+      <div id="pick-member-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:14px;"></div>
+      <button class="btn btn-primary btn-block" onclick="confirmPickMembers()">確認綁定所選組員</button>
     </div>
-    <input type="hidden" id="m-course-type" value="">
-    <input type="hidden" id="m-role" value="組員">
-    <div class="form-group"><label>備註</label><input type="text" id="m-note"></div>
-    <button class="btn btn-primary btn-block" onclick="saveMember()">確認儲存</button>
+
   </div>
 </div>
 
@@ -1460,6 +1499,9 @@ function setMemberFilter(type) { activeMemberFilter = type; renderMembers(); }
 function openMemberModal() {
   document.getElementById('edit-member-id').value = '';
   document.getElementById('modal-member-title').textContent = '手動新增組員';
+  // 顯示兩個 Tab，切到手動新增
+  document.getElementById('member-modal-tabs').style.display = 'flex';
+  switchMemberModalTab('manual');
   document.getElementById('m-name').value = '';
   document.querySelector('input[name="m-gender"][value="女"]').checked = true;
   document.getElementById('m-id').value = '';
@@ -1476,6 +1518,10 @@ function editMember(id) {
   const m = DB.members.find(x => x.id===id); if (!m) return;
   document.getElementById('edit-member-id').value = id;
   document.getElementById('modal-member-title').textContent = '編輯組員資料';
+  // 編輯時隱藏 Tab，只顯示手動新增面板
+  document.getElementById('member-modal-tabs').style.display = 'none';
+  document.getElementById('mtab-panel-manual').style.display = '';
+  document.getElementById('mtab-panel-pick').style.display = 'none';
   document.getElementById('m-name').value = m.name;
   document.querySelector(`input[name="m-gender"][value="${m.gender==='男'?'男':'女'}"]`).checked = true;
   document.getElementById('m-id').value   = m.memberId||'';
@@ -2176,6 +2222,119 @@ function toggleSessionDetail(sid) {
   panel.innerHTML=`<div class="sdp-header"><div><div class="sdp-title">${esc(session.name)}</div><div class="sdp-meta">${dateStr}　${session.timeStart||''}${session.timeEnd?' – '+session.timeEnd:''}</div></div><div class="sdp-stats"><span class="sdp-badge present">出席 ${presentCount}</span><span class="sdp-badge leave">請假 ${leaveCount}</span>${noRecord?'<span style="font-size:12px;color:var(--text3);">（尚未點名）</span>':''}</div></div>${rows.map(({m,isPresent,idx})=>`<div class="sdp-row"><div class="num-badge">${idx+1}</div><div class="sdp-row-name">${esc(m.name)}</div><div class="sdp-row-meta">${esc(m.courseType||'神鼓陣')}</div><span class="sdp-badge ${isPresent?'present':'leave'}">${isPresent?'出席':'請假'}</span></div>`).join('')}`;
   setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
 }
+
+/* ══ 組員 Modal Tab 切換 ══ */
+let _pickSelected = new Set();
+
+function switchMemberModalTab(tab) {
+  document.getElementById('mtab-manual').classList.toggle('active', tab === 'manual');
+  document.getElementById('mtab-pick').classList.toggle('active', tab === 'pick');
+  document.getElementById('mtab-panel-manual').style.display = tab === 'manual' ? '' : 'none';
+  document.getElementById('mtab-panel-pick').style.display   = tab === 'pick'   ? '' : 'none';
+  if (tab === 'pick') {
+    _pickSelected.clear();
+    const ctSel = document.getElementById('m-add-binding-ct');
+    const targetCt = ctSel ? ctSel.value : (DB.courseTypes[0] || '神鼓陣');
+    document.getElementById('pick-target-ct').textContent = targetCt || '（請先在手動新增頁選擇目標類別）';
+    document.getElementById('pick-search').value = '';
+    renderPickList();
+  }
+}
+
+function renderPickList() {
+  const ctSel    = document.getElementById('m-add-binding-ct');
+  const targetCt = ctSel ? ctSel.value : '';
+  const q        = (document.getElementById('pick-search').value || '').trim().toLowerCase();
+  const list     = document.getElementById('pick-member-list');
+
+  const alreadyBound = new Set(
+    DB.memberMappings.filter(mp => mp.courseType === targetCt).map(mp => mp.rowId)
+  );
+
+  const members = DB.members.filter(m =>
+    !q || m.name.toLowerCase().includes(q) || (m.memberId || '').includes(q)
+  );
+
+  if (!members.length) {
+    list.innerHTML = '<div class="empty-state">查無符合組員</div>';
+    updatePickCount();
+    return;
+  }
+
+  list.innerHTML = members.map(m => {
+    const bound   = alreadyBound.has(m.id);
+    const checked = _pickSelected.has(m.id);
+    const cts     = getCourseTypesByMember(m.id);
+    return `<div style="display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--border); ${bound ? 'opacity:0.4;' : 'cursor:pointer;'}"
+      onclick="${bound ? '' : `pickToggle('${m.id}')`}">
+      <input type="checkbox" ${checked ? 'checked' : ''} ${bound ? 'disabled' : ''}
+        onclick="event.stopPropagation(); pickToggle('${m.id}')"
+        style="width:16px; height:16px; flex-shrink:0; accent-color:var(--accent); cursor:pointer;">
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          ${esc(m.name)}
+          <span style="font-size:11px; color:var(--text3); font-weight:normal;">${m.gender || '女'}</span>
+          ${bound ? '<span style="font-size:11px; color:var(--text3); background:var(--surface2); padding:1px 6px; border-radius:4px; border:1px solid var(--border);">已在此類別</span>' : ''}
+        </div>
+        <div style="font-size:12px; color:var(--text3); margin-top:2px;">
+          ${m.memberId ? esc(m.memberId) : ''}${m.hall ? ' · ' + esc(m.hall) : ''}
+          ${cts.length ? ' · ' + cts.map(ct => `<span style="background:var(--accent-light);color:var(--accent);padding:1px 5px;border-radius:3px;font-size:11px;">${esc(ct)}</span>`).join(' ') : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  updatePickCount();
+}
+
+function pickToggle(id) {
+  if (_pickSelected.has(id)) _pickSelected.delete(id);
+  else _pickSelected.add(id);
+  renderPickList();
+}
+
+function pickSelectAll() {
+  const ctSel    = document.getElementById('m-add-binding-ct');
+  const targetCt = ctSel ? ctSel.value : '';
+  const alreadyBound = new Set(
+    DB.memberMappings.filter(mp => mp.courseType === targetCt).map(mp => mp.rowId)
+  );
+  const q = (document.getElementById('pick-search').value || '').trim().toLowerCase();
+  DB.members
+    .filter(m => !alreadyBound.has(m.id) && (!q || m.name.toLowerCase().includes(q) || (m.memberId||'').includes(q)))
+    .forEach(m => _pickSelected.add(m.id));
+  renderPickList();
+}
+
+function pickClearAll() {
+  _pickSelected.clear();
+  renderPickList();
+}
+
+function updatePickCount() {
+  const el = document.getElementById('pick-selected-count');
+  if (el) el.textContent = `已選 ${_pickSelected.size} 人`;
+}
+
+async function confirmPickMembers() {
+  const ctSel    = document.getElementById('m-add-binding-ct');
+  const targetCt = ctSel ? ctSel.value : '';
+  const role     = document.getElementById('pick-role').value || '組員';
+  if (!targetCt)          { showToast('請先在「手動新增」頁的名單類別綁定選好目標類別'); return; }
+  if (!_pickSelected.size){ showToast('請至少勾選一位組員'); return; }
+  let count = 0;
+  _pickSelected.forEach(rowId => {
+    const m = DB.members.find(x => x.id === rowId);
+    if (!m) return;
+    const added = bindMemberToCourseType(rowId, m.memberId || '', targetCt, role);
+    if (added) count++;
+  });
+  if (count === 0) { showToast('所選組員皆已在此類別中'); return; }
+  await saveDB();
+  closeModal('modal-member');
+  renderMembers();
+  showToast(`✅ 已將 ${count} 位組員綁定至「${targetCt}」`);
+}
 </script>
 </div>
 
@@ -2497,4 +2656,3 @@ function initNotificationsPage() {
   }
 }
 </script>
-
