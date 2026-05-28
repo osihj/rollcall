@@ -1013,11 +1013,12 @@
       <button class="btn btn-primary btn-block" onclick="saveMember()">確認儲存</button>
     </div>
 
-    <!-- Tab 2：從現有名單選入 -->
+    <!-- Tab 2：從現有名單選入（A 方案：自己選目標類別） -->
     <div id="mtab-panel-pick" style="display:none;">
-      <div style="font-size:13px; color:var(--text2); margin-bottom:12px; background:var(--accent-light); border:1px solid rgba(44,82,52,0.15); border-radius:var(--radius); padding:10px 14px;">
-        將把勾選的組員批次綁定至「<strong><span id="pick-target-ct">—</span></strong>」名單類別。<br>
-        <span style="font-size:12px; color:var(--text3);">目標類別由左側「名單類別綁定」的下拉選單決定。</span>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>目標名單類別 *</label>
+        <select id="pick-target-ct-select" onchange="renderPickList()" style="width:100%;">
+        </select>
       </div>
       <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
         <input type="text" id="pick-search" placeholder="搜尋姓名或研修代號…"
@@ -1036,7 +1037,8 @@
           <button class="btn btn-secondary btn-sm" onclick="pickClearAll()">清除</button>
         </div>
       </div>
-      <div id="pick-member-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:14px;"></div>
+      <div style="font-size:12px; color:var(--text3); margin-bottom:6px;">灰色為已在此類別的組員（不可選）</div>
+      <div id="pick-member-list" style="max-height:280px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:14px;"></div>
       <button class="btn btn-primary btn-block" onclick="confirmPickMembers()">確認綁定所選組員</button>
     </div>
 
@@ -2233,19 +2235,25 @@ function switchMemberModalTab(tab) {
   document.getElementById('mtab-panel-pick').style.display   = tab === 'pick'   ? '' : 'none';
   if (tab === 'pick') {
     _pickSelected.clear();
-    const ctSel = document.getElementById('m-add-binding-ct');
-    const targetCt = ctSel ? ctSel.value : (DB.courseTypes[0] || '神鼓陣');
-    document.getElementById('pick-target-ct').textContent = targetCt || '（請先在手動新增頁選擇目標類別）';
+    // 填充目標名單類別下拉
+    const sel = document.getElementById('pick-target-ct-select');
+    sel.innerHTML = DB.courseTypes.map(ct => `<option value="${esc(ct)}">${esc(ct)}</option>`).join('');
     document.getElementById('pick-search').value = '';
     renderPickList();
   }
 }
 
 function renderPickList() {
-  const ctSel    = document.getElementById('m-add-binding-ct');
-  const targetCt = ctSel ? ctSel.value : '';
+  const sel      = document.getElementById('pick-target-ct-select');
+  const targetCt = sel ? sel.value : '';
   const q        = (document.getElementById('pick-search').value || '').trim().toLowerCase();
   const list     = document.getElementById('pick-member-list');
+
+  if (!targetCt) {
+    list.innerHTML = '<div class="empty-state">請先選擇目標名單類別</div>';
+    updatePickCount();
+    return;
+  }
 
   const alreadyBound = new Set(
     DB.memberMappings.filter(mp => mp.courseType === targetCt).map(mp => mp.rowId)
@@ -2294,8 +2302,8 @@ function pickToggle(id) {
 }
 
 function pickSelectAll() {
-  const ctSel    = document.getElementById('m-add-binding-ct');
-  const targetCt = ctSel ? ctSel.value : '';
+  const sel      = document.getElementById('pick-target-ct-select');
+  const targetCt = sel ? sel.value : '';
   const alreadyBound = new Set(
     DB.memberMappings.filter(mp => mp.courseType === targetCt).map(mp => mp.rowId)
   );
@@ -2317,10 +2325,10 @@ function updatePickCount() {
 }
 
 async function confirmPickMembers() {
-  const ctSel    = document.getElementById('m-add-binding-ct');
-  const targetCt = ctSel ? ctSel.value : '';
+  const sel      = document.getElementById('pick-target-ct-select');
+  const targetCt = sel ? sel.value : '';
   const role     = document.getElementById('pick-role').value || '組員';
-  if (!targetCt)          { showToast('請先在「手動新增」頁的名單類別綁定選好目標類別'); return; }
+  if (!targetCt)          { showToast('請先選擇目標名單類別'); return; }
   if (!_pickSelected.size){ showToast('請至少勾選一位組員'); return; }
   let count = 0;
   _pickSelected.forEach(rowId => {
