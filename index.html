@@ -595,14 +595,16 @@
       <span style="font-size:12px;color:#aaa;">或</span>
       <div style="flex:1;height:1px;background:#e5e5e5;"></div>
     </div>
-    <input type="email" id="login-email" placeholder="Email"
-      style="width:100%;padding:12px 14px;border:1.5px solid #e5e5e5;border-radius:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box;font-family:inherit;outline:none;">
-    <input type="password" id="login-password" placeholder="密碼"
-      style="width:100%;padding:12px 14px;border:1.5px solid #e5e5e5;border-radius:10px;font-size:14px;margin-bottom:12px;box-sizing:border-box;font-family:inherit;outline:none;">
-    <button onclick="emailLogin()" id="btn-email-login"
-      style="width:100%;padding:13px;border:none;border-radius:10px;background:#1a73e8;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">
-      Email 登入
-    </button>
+ <form onsubmit="event.preventDefault(); emailLogin();">
+  <input type="email" id="login-email" placeholder="Email"
+    style="width:100%;padding:12px 14px;border:1.5px solid #e5e5e5;border-radius:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box;font-family:inherit;outline:none;">
+  <input type="password" id="login-password" placeholder="密碼"
+    style="width:100%;padding:12px 14px;border:1.5px solid #e5e5e5;border-radius:10px;font-size:14px;margin-bottom:12px;box-sizing:border-box;font-family:inherit;outline:none;">
+  <button type="submit" id="btn-email-login"
+    style="width:100%;padding:13px;border:none;border-radius:10px;background:#1a73e8;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">
+    Email 登入
+  </button>
+</form>
     <button onclick="resetPassword()"
       style="background:none;border:none;color:#999;font-size:12px;cursor:pointer;text-decoration:underline;">
       忘記密碼？寄送重設信
