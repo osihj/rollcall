@@ -2454,15 +2454,38 @@ function loadFromCache() {
 
 function loadFullDataFromUID(uid, sharedData) {
   try {
+    // 管理员本人正在儲存的過程中，不要被自己剛寫入 sharedCalendar 觸發的
+    // onSnapshot 回呼覆寫本地資料（否則新建的草稿會在儲存瞬間被「閹割版」資料蓋掉）
+    if (window.isAdminUser && window._isSaving) return;
+
     const cached = localStorage.getItem('attendance_smart_v4_cache') || localStorage.getItem('attendance_smart_v4');
     if (cached) {
       const parsed = JSON.parse(cached);
-      // 使用本地的完整数据，但 sessions 从 sharedCalendar 更新
       DB.members = Array.isArray(parsed.members) ? parsed.members : [];
       DB.memberMappings = Array.isArray(parsed.memberMappings) ? parsed.memberMappings : [];
-      DB.sessions = sharedData.sessions || [];
       DB.records = (parsed.records && typeof parsed.records === 'object') ? parsed.records : {};
       DB.courseTypes = Array.isArray(parsed.courseTypes) ? parsed.courseTypes : ['神鼓陣'];
+
+      const localSessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+      const sharedSessions = Array.isArray(sharedData.sessions) ? sharedData.sessions : [];
+
+      if (window.isAdminUser) {
+        // 管理员：以本地完整資料為主（保留草稿），用 sharedCalendar 的內容
+        // 更新「已發佈」活動的最新狀態，不讓草稿被整批換掉
+        const sharedMap = new Map(sharedSessions.map(s => [s.id, s]));
+        const merged = localSessions.map(s => {
+          if (s.published === false) return s; // 草稿一律保留本地版本
+          const remote = sharedMap.get(s.id);
+          return remote ? { ...s, ...remote, published: s.published } : s;
+        });
+        const localIds = new Set(localSessions.map(s => s.id));
+        sharedSessions.forEach(s => { if (!localIds.has(s.id)) merged.push({ ...s, published: true }); });
+        DB.sessions = merged;
+      } else {
+        // 非管理员（自律打卡等）：只看得到已發佈活動，直接採用 sharedCalendar 資料即可
+        DB.sessions = sharedSessions;
+      }
+
       if (typeof renderSessions === 'function') renderSessions();
       if (typeof renderMembers === 'function') renderMembers();
     }
