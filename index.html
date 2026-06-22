@@ -1120,6 +1120,23 @@ let DB = {
 
 window._isSaving = false;
 
+// 遞迴清除物件/陣列中所有 undefined 值（Firestore setDoc 不允許 undefined）
+function stripUndefined(value) {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefined);
+  }
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    const out = {};
+    Object.keys(value).forEach(key => {
+      const v = value[key];
+      if (v === undefined) return; // 直接捨棄該 key，而不是寫入 undefined
+      out[key] = stripUndefined(v);
+    });
+    return out;
+  }
+  return value;
+}
+
 async function saveDB() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch(e) {}
 
@@ -1140,10 +1157,16 @@ async function saveDB() {
   window._isSaving = true;
   try {
     // 嘗試保存用戶完整數據到 adminData/{uid}
+    const safeMembers = stripUndefined(DB.members);
+    const safeMappings = stripUndefined(DB.memberMappings || []);
+    const safeSessions = stripUndefined(DB.sessions);
+    const safeRecords  = stripUndefined(DB.records);
+    const safeCourseTypes = stripUndefined(DB.courseTypes);
+
     await window._firestoreSetDoc(docRef, {
-      members: DB.members, memberMappings: DB.memberMappings || [],
-      sessions: DB.sessions, records: DB.records,
-      courseTypes: DB.courseTypes, updatedAt: Date.now()
+      members: safeMembers, memberMappings: safeMappings,
+      sessions: safeSessions, records: safeRecords,
+      courseTypes: safeCourseTypes, updatedAt: Date.now()
     }).catch(err => {
       // 如果權限被拒，忽略（仍然會保存到 sharedCalendar）
       if (err.code === 'permission-denied') {
@@ -1156,17 +1179,17 @@ async function saveDB() {
     // 保存公開的 sessions 到 sharedCalendar（重要）
     const sharedRef = window._firestoreSharedRef;
     if (sharedRef) {
-      const sharedSessions = DB.sessions
+      const sharedSessions = safeSessions
         .filter(s => s.published !== false)
         .map(s => ({ id:s.id, name:s.name, date:s.date, timeStart:s.timeStart||'', timeEnd:s.timeEnd||'', courseType:s.courseType||'神鼓陣', color:s.color||'#2c5234', helper:s.helper||'', note:s.note||'' }));
-      await window._firestoreSetDoc(sharedRef, { sessions:sharedSessions, updatedAt:Date.now(), syncedAt:new Date().toISOString() }).catch(err => {
+      await window._firestoreSetDoc(sharedRef, { sessions: stripUndefined(sharedSessions), updatedAt:Date.now(), syncedAt:new Date().toISOString() }).catch(err => {
         console.error('[saveDB] 保存到 sharedCalendar 失敗:', err);
         throw err;
       });
     }
   } catch (err) {
     console.error('[saveDB] 寫入失敗:', err);
-    showToast('⚠️ 雲端儲存失敗，請確認網路連線');
+    showToast('⚠️ 雲端儲存失敗：' + (err.message || err.code || '請確認網路連線'));
   } finally {
     setTimeout(() => { window._isSaving = false; }, 800);
   }
