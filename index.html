@@ -1139,18 +1139,30 @@ async function saveDB() {
 
   window._isSaving = true;
   try {
+    // 嘗試保存用戶完整數據到 adminData/{uid}
     await window._firestoreSetDoc(docRef, {
       members: DB.members, memberMappings: DB.memberMappings || [],
       sessions: DB.sessions, records: DB.records,
       courseTypes: DB.courseTypes, updatedAt: Date.now()
+    }).catch(err => {
+      // 如果權限被拒，忽略（仍然會保存到 sharedCalendar）
+      if (err.code === 'permission-denied') {
+        console.warn('[saveDB] 無法保存用戶數據（權限不足），但會保存到共享日曆');
+      } else {
+        throw err;
+      }
     });
 
+    // 保存公開的 sessions 到 sharedCalendar（重要）
     const sharedRef = window._firestoreSharedRef;
     if (sharedRef) {
       const sharedSessions = DB.sessions
         .filter(s => s.published !== false)
         .map(s => ({ id:s.id, name:s.name, date:s.date, timeStart:s.timeStart||'', timeEnd:s.timeEnd||'', courseType:s.courseType||'神鼓陣', color:s.color||'#2c5234', helper:s.helper||'', note:s.note||'' }));
-      await window._firestoreSetDoc(sharedRef, { sessions:sharedSessions, updatedAt:Date.now(), syncedAt:new Date().toISOString() });
+      await window._firestoreSetDoc(sharedRef, { sessions:sharedSessions, updatedAt:Date.now(), syncedAt:new Date().toISOString() }).catch(err => {
+        console.error('[saveDB] 保存到 sharedCalendar 失敗:', err);
+        throw err;
+      });
     }
   } catch (err) {
     console.error('[saveDB] 寫入失敗:', err);
@@ -2384,30 +2396,77 @@ getRedirectResult(auth).then(result => {
 });
 
 let _unsubscribeSnapshot = null;
+let _fallbackToCache = false;
 
 function startRealtimeSync(uid) {
   if (_unsubscribeSnapshot) { _unsubscribeSnapshot(); _unsubscribeSnapshot = null; }
+  
+  // 首先尝试从 adminData/sharedCalendar 读取公开数据
+  const sharedRef = doc(db, 'adminData', 'sharedCalendar');
+  
+  _unsubscribeSnapshot = onSnapshot(sharedRef, (snap) => {
+    // 如果 sharedCalendar 有数据，则使用
+    if (snap.exists() && snap.data().sessions) {
+      _fallbackToCache = false;
+      const data = snap.data();
+      // 从 sharedCalendar 读取的是公开数据，需要加载完整数据
+      loadFullDataFromUID(uid, data);
+    }
+  }, (err) => {
+    console.error('[onSnapshot] 监听失败:', err.code);
+    _fallbackToCache = true;
+    // 权限错误时，尝试从本地缓存加载
+    loadFromCache();
+  });
+  
+  // 同时监听用户自己的数据（adminData/{uid}）作为备份
   const docRef = doc(db, 'adminData', uid);
   window._firestoreDocRef = docRef;
   window.currentUserUID   = uid;
-  _unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
-    if (snap.exists()) {
+  
+  onSnapshot(docRef, (snap) => {
+    if (snap.exists() && !_fallbackToCache) {
       if (window._isSaving) return;
       if (typeof applyRemoteData === 'function') applyRemoteData(snap.data());
-    } else {
-      try {
-        const cached = localStorage.getItem('attendance_smart_v4_cache') || localStorage.getItem('attendance_smart_v4');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          setDoc(docRef, { members:parsed.members||[], memberMappings:parsed.memberMappings||[], sessions:parsed.sessions||[], records:parsed.records||{}, courseTypes:parsed.courseTypes||['神鼓陣'], updatedAt:Date.now() })
-            .then(() => { if (typeof showToast === 'function') showToast('✅ 本地資料已同步至雲端'); });
-        }
-      } catch(e) { console.warn('[Firebase] 本地快取遷移失敗', e); }
     }
   }, (err) => {
-    console.error('[onSnapshot] 監聽失敗:', err);
-    if (typeof showToast === 'function') showToast('⚠️ 雲端連線中斷，目前顯示本地快取');
+    // 如果用户数据权限错误，忽略，继续使用 sharedCalendar
+    console.warn('[onSnapshot] 用户数据读取失败（预期行为）:', err.code);
   });
+}
+
+function loadFromCache() {
+  try {
+    const cached = localStorage.getItem('attendance_smart_v4_cache') || localStorage.getItem('attendance_smart_v4');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      DB.members = Array.isArray(parsed.members) ? parsed.members : [];
+      DB.memberMappings = Array.isArray(parsed.memberMappings) ? parsed.memberMappings : [];
+      DB.sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+      DB.records = (parsed.records && typeof parsed.records === 'object') ? parsed.records : {};
+      DB.courseTypes = Array.isArray(parsed.courseTypes) ? parsed.courseTypes : ['神鼓陣'];
+      if (typeof renderSessions === 'function') renderSessions();
+      if (typeof renderMembers === 'function') renderMembers();
+      console.log('[Cache] 已加载本地缓存数据');
+    }
+  } catch(e) { console.warn('[loadFromCache] 缓存加载失败:', e); }
+}
+
+function loadFullDataFromUID(uid, sharedData) {
+  try {
+    const cached = localStorage.getItem('attendance_smart_v4_cache') || localStorage.getItem('attendance_smart_v4');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      // 使用本地的完整数据，但 sessions 从 sharedCalendar 更新
+      DB.members = Array.isArray(parsed.members) ? parsed.members : [];
+      DB.memberMappings = Array.isArray(parsed.memberMappings) ? parsed.memberMappings : [];
+      DB.sessions = sharedData.sessions || [];
+      DB.records = (parsed.records && typeof parsed.records === 'object') ? parsed.records : {};
+      DB.courseTypes = Array.isArray(parsed.courseTypes) ? parsed.courseTypes : ['神鼓陣'];
+      if (typeof renderSessions === 'function') renderSessions();
+      if (typeof renderMembers === 'function') renderMembers();
+    }
+  } catch(e) { console.warn('[loadFullDataFromUID] 数据加载失败:', e); }
 }
 
 function _isIosPwa(){return /iphone|ipad|ipod/i.test(navigator.userAgent)&&window.navigator.standalone===true;}
