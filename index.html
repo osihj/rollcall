@@ -327,6 +327,15 @@
     border: 1px solid rgba(44,82,52,0.2); white-space: nowrap; flex-shrink: 0; letter-spacing: 0.03em;
   }
   .session-item.is-draft { opacity: 0.72; }
+  .session-item.is-past {
+    opacity: 0.5;
+    filter: grayscale(0.35);
+  }
+  .session-item.is-past:hover { opacity: 0.7; }
+  .session-item.is-past .session-date-box,
+  .session-item.is-past .session-month,
+  .session-item.is-past .session-day { background: var(--surface2) !important; color: var(--text3) !important; }
+  .session-item.is-past .session-name-text { color: var(--text2); }
   .session-section-title {
     font-size: 13px; font-weight: 700; color: var(--text2);
     letter-spacing: 0.06em; margin: 20px 0 8px;
@@ -368,6 +377,9 @@
   .holiday-label { font-size: 9px; color: var(--red); font-weight: 500; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; text-align: center; }
   .calendar-day-cell.other-month { background: #fafaf9 !important; }
   .calendar-day-cell.other-month .calendar-day-num { color: var(--text3) !important; font-weight: normal; }
+  .calendar-day-cell.day-past { background: #fafaf9; }
+  .calendar-day-cell.day-past .calendar-day-num { color: var(--text3) !important; }
+  .calendar-day-cell.day-past.has-events { opacity: 0.55; }
   .calendar-day-cell.today .calendar-day-num { background: var(--accent); color: #fff !important; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
   .calendar-day-num { font-size: 13px; font-weight: 500; font-family: 'Roboto', sans-serif; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
   .calendar-events-container { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
@@ -844,6 +856,9 @@
       <select id="stats-course-type" onchange="renderStats()" style="flex:1; min-width:120px;">
         <option value="ALL">全部名單類別</option>
       </select>
+      <button class="btn btn-primary btn-sm" onclick="exportStatsToExcel()" style="flex-shrink:0;">
+        <i class="fas fa-file-excel" style="margin-right:6px;"></i>匯出 Excel
+      </button>
     </div>
   </div>
   <div class="card" style="padding:16px 20px; margin-bottom:16px;">
@@ -1728,6 +1743,8 @@ function renderSessions() {
 
   function buildSessionCard(s) {
     const d=new Date(s.date), borderColor=s.color||'#2c5234', isDraft=s.published===false;
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const isPast = d.getTime() < todayStart.getTime();
     const statusBadge = isDraft ? `<span class="draft-badge">草稿</span>` : `<span class="published-badge">已發佈</span>`;
     const togglePubBtn = isDraft
       ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();toggleSessionPublish('${s.id}')">發佈</button>`
@@ -1735,7 +1752,7 @@ function renderSessions() {
     const togglePubPopBtn = isDraft
       ? `<button class="session-popover-btn pub" onclick="closeAllSessionPopovers();toggleSessionPublish('${s.id}')">發佈至自律打卡</button>`
       : `<button class="session-popover-btn pub" onclick="closeAllSessionPopovers();toggleSessionPublish('${s.id}')" style="color:var(--yellow);">收回為草稿</button>`;
-    return `<div class="session-item${isDraft?' is-draft':''}" id="session-card-${s.id}" style="border-left-color:${isDraft?'#b58900':borderColor};">
+    return `<div class="session-item${isDraft?' is-draft':''}${isPast?' is-past':''}" id="session-card-${s.id}" style="border-left-color:${isDraft?'#b58900':borderColor};">
       <div class="session-header" onclick="toggleSessionCard('${s.id}')">
         <div class="session-date-box"><span class="session-month">${d.getMonth()+1}月</span><span class="session-day" style="color:${isDraft?'#b58900':borderColor};">${d.getDate()}</span></div>
         <div class="session-info">
@@ -1790,6 +1807,8 @@ function renderGoogleCalendarGrid(sessions) {
     const dow=new Date(currentSessionYear,currentSessionMonth-1,day).getDay();
     if (dow===0) cell.classList.add('sun-cell'); if (dow===6) cell.classList.add('sat-cell');
     if (isCurMonth&&today.getDate()===day) cell.classList.add('today');
+    if (isCurMonth&&day<today.getDate()) cell.classList.add('day-past');
+    else if (!isCurMonth && new Date(currentSessionYear,currentSessionMonth-1,day) < new Date(today.getFullYear(),today.getMonth(),today.getDate())) cell.classList.add('day-past');
     const ms=String(currentSessionMonth).padStart(2,'0'), ds=String(day).padStart(2,'0');
     const sk=`${ms}-${ds}`, dk=`${currentSessionYear}-${ms}-${ds}`;
     const hn=TAIWAN_HOLIDAYS[sk]||DYNAMIC_HOLIDAYS_2026[dk]||'';
@@ -2198,6 +2217,59 @@ function renderStats() {
     const sessionCells=sortedSessions.map(s=>{const status=r.sessionStatuses[s.id];if(status==='present')return`<td class="td-attend present-cell">✓</td>`;if(status==='leave')return`<td class="td-attend absent-cell">✕</td>`;if(status==='diff-type')return`<td class="td-attend nodata-cell" style="font-size:10px;color:var(--border);">╌</td>`;return`<td class="td-attend nodata-cell">—</td>`;}).join('');
     return `<tr class="clickable-row" onclick="toggleRowHighlight(this)"><td class="col-stats-seq" style="text-align:center;"><span class="num-badge" style="margin:0 auto;">${r.sequence}</span></td><td class="col-stats-name stats-cell-center"><span class="stats-name-cell"><strong>${esc(r.m.name)}</strong><span class="gender-tag">(${esc(r.m.gender||'女')})</span></span></td><td class="col-stats-id stats-cell-center" style="color:var(--text3);font-size:13px;">${r.m.memberId?esc(r.m.memberId):'<span style="color:var(--border)">—</span>'}</td><td class="col-stats-hall stats-cell-center" style="color:var(--text3);font-size:13px;">${r.m.hall?esc(r.m.hall):'<span style="color:var(--border)">—</span>'}</td><td class="col-stats-course stats-cell-center"><span class="course-badge">${esc(r.m.courseType||'神鼓陣')}</span></td><td class="col-stats-role stats-cell-center"><span class="${roleClass[r.m.role]||'role-badge role-badge-member'}">${esc(r.m.role||'組員')}</span></td>${sessionCells}<td class="col-stats-rate ${rateBgClass}" style="text-align:center;padding:10px 5px !important;"><span class="rate-cell-val ${rateClass}">${r.denom>0?r.rate+'%':'—'}</span><span class="rate-cell-sub">${r.denom>0?`(${r.p}/${r.denom})`:''}</span></td></tr>`;
   }).join('');
+}
+
+/* ══ 匯出 Excel ══ */
+function exportStatsToExcel() {
+  const table = document.getElementById('stats-table');
+  const tbody = document.getElementById('stats-tbody');
+  if (!table || !tbody || !tbody.children.length || tbody.querySelector('td[colspan]')) {
+    showToast('⚠️ 目前查詢區間內無資料可匯出');
+    return;
+  }
+
+  // 將表格上的符號／徽章文字轉換成 Excel 友善的純文字，避免符號跑掉或不易閱讀
+  const clone = table.cloneNode(true);
+  clone.querySelectorAll('.sort-indicator').forEach(el => el.remove()); // 移除表頭排序箭頭符號
+  clone.querySelectorAll('td.present-cell').forEach(td => td.textContent = '出席');
+  clone.querySelectorAll('td.absent-cell').forEach(td => td.textContent = '請假');
+  clone.querySelectorAll('td.nodata-cell').forEach(td => { td.textContent = td.textContent.trim()==='╌' ? '非本類別' : '未點名'; });
+  clone.querySelectorAll('.gender-tag').forEach(el => { el.textContent = ''; }); // 性別已併入姓名欄旁，匯出時簡化
+  clone.querySelectorAll('.rate-cell-sub').forEach(el => { el.textContent = ' ' + el.textContent; }); // 出席率括號比例保留為文字附註
+
+  const ws = XLSX.utils.table_to_sheet(clone, { raw: false });
+
+  // 設定合理欄寬：序/姓名/代號/館別/類別/角色 固定寬，其餘活動日期欄與出席率欄統一寬度
+  const headerCells = table.querySelectorAll('#stats-thead th');
+  const fixedWidths = [6, 12, 12, 10, 12, 10];
+  const cols = Array.from(headerCells).map((th, i) => {
+    if (i < fixedWidths.length) return { wch: fixedWidths[i] };
+    if (i === headerCells.length - 1) return { wch: 12 }; // 出席率欄
+    return { wch: 9 }; // 各場活動日期欄
+  });
+  ws['!cols'] = cols;
+
+  // 凍結首列（標題列），方便往下捲動時仍看得到欄位名稱
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+  ws['!view'] = [{ state: 'frozen', ySplit: 1 }];
+
+  const wb = XLSX.utils.book_new();
+  const year = document.getElementById('stats-year').value;
+  const monthLabel = statsMonth === 0 ? '全年' : `${statsMonth}月`;
+  const sheetName = `${year}年${monthLabel}出席報表`.slice(0, 31); // Excel 工作表名稱長度限制
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  const courseTypeFilter = document.getElementById('stats-course-type') ? document.getElementById('stats-course-type').value : 'ALL';
+  const ctLabel = courseTypeFilter === 'ALL' ? '全部類別' : courseTypeFilter;
+  const filename = `出席報表_${year}年${monthLabel}_${ctLabel}_${new Date().toISOString().slice(0,10)}.xlsx`;
+
+  try {
+    XLSX.writeFile(wb, filename);
+    showToast('✅ Excel 報表已下載');
+  } catch (e) {
+    console.error('[exportStatsToExcel]', e);
+    showToast('⚠️ 匯出失敗，請重試');
+  }
 }
 
 /* ══ 查看詳情 ══ */
