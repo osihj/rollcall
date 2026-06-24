@@ -3,6 +3,9 @@
 <head><link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#b8621d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="活動行事曆">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>點名活動行事曆</title>
@@ -590,6 +593,9 @@
       style="width:100%;padding:14px;border:none;border-radius:10px;background:#2c5234;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;">
       使用 Google 登入
     </button>
+    <div id="ios-pwa-hint" style="display:none;margin-bottom:16px;padding:10px 12px;background:#fff8e1;border:1px solid #ffe08a;border-radius:8px;font-size:12px;color:#7a5c00;line-height:1.6;text-align:left;">
+      ⚠️ 「加入主畫面」模式下 iOS 限制無法使用 Google 登入。請改用下方 Email／密碼登入；若帳號原本只用 Google 登入、尚未設定過密碼，請在下方輸入該 Google 帳號的 Email，再點選「忘記密碼？寄送重設信」設定一個密碼即可。
+    </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
       <div style="flex:1;height:1px;background:#e5e5e5;"></div>
       <span style="font-size:12px;color:#aaa;">或</span>
@@ -2520,10 +2526,23 @@ function _showLoginError(msg){const el=document.getElementById('login-error');if
 function _showLoginMsg(msg){const el=document.getElementById('login-msg');if(el){el.textContent=msg;el.style.display='block';}const er=document.getElementById('login-error');if(er)er.style.display='none';}
 function _hideLoginFeedback(){['login-error','login-msg'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
 
+// iOS「加入主畫面」的 standalone 模式下，Safari 會把每個 PWA 的儲存空間隔離，
+// 導致 Google 登入的 signInWithRedirect / signInWithPopup 重新導向回來後 Firebase
+// 拿不到登入結果（getRedirectResult 回傳 null），畫面看起來像「登入失敗、卡在登入畫面」。
+// 這是 iOS WebKit 已知限制，並非程式邏輯錯誤，因此改為提示用戶改用 Email 登入。
+if (_isIosPwa()) {
+  const hintEl = document.getElementById('ios-pwa-hint');
+  if (hintEl) hintEl.style.display = 'block';
+}
+
 window.googleLogin = async function() {
   const provider=new GoogleAuthProvider(),btn=document.getElementById('btn-google-login');
-  if(btn){btn.textContent='登入中...';btn.disabled=true;}_hideLoginFeedback();
-  if(_isIosPwa()){try{await signInWithRedirect(auth,provider);}catch(err){_showLoginError('登入失敗，請重試');if(btn){btn.textContent='使用 Google 登入';btn.disabled=false;}}return;}
+  _hideLoginFeedback();
+  if(_isIosPwa()){
+    _showLoginError('「加入主畫面」模式下 iOS 不支援 Google 登入，請使用下方 Email／密碼登入；若尚未設定密碼，可輸入該 Google 帳號的 Email 後點選「忘記密碼？寄送重設信」設定密碼。');
+    return;
+  }
+  if(btn){btn.textContent='登入中...';btn.disabled=true;}
   try{await signInWithPopup(auth,provider);}catch(err){
     if(err.code==='auth/popup-blocked'||err.code==='auth/popup-closed-by-user'){try{await signInWithRedirect(auth,provider);}catch(e){_showLoginError('登入失敗，請重試');if(btn){btn.textContent='使用 Google 登入';btn.disabled=false;}}}
     else{_showLoginError('Google 登入失敗：'+(err.message||err.code));if(btn){btn.textContent='使用 Google 登入';btn.disabled=false;}}
