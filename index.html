@@ -859,6 +859,12 @@
       <button class="btn btn-primary btn-sm" onclick="exportStatsToExcel()" style="flex-shrink:0;">
         <i class="fas fa-file-excel" style="margin-right:6px;"></i>匯出 Excel
       </button>
+      <button class="btn btn-secondary btn-sm" onclick="syncStatsToGoogleSheet()" id="btn-sync-gsheet" style="flex-shrink:0;">
+        <i class="fas fa-cloud-upload-alt" style="margin-right:6px;"></i>同步到 Google Sheet
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="openGSheetSettings()" id="btn-gsheet-settings" style="flex-shrink:0; display:none;" title="設定 Google Sheet 同步網址">
+        <i class="fas fa-gear"></i>
+      </button>
     </div>
   </div>
   <div class="card" style="padding:16px 20px; margin-bottom:16px;">
@@ -1083,6 +1089,37 @@
   </div>
 </div>
 
+<!-- Google Sheet 同步設定 Modal -->
+<div class="modal-overlay" id="modal-gsheet-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Google Sheet 同步設定</div>
+      <button class="close-btn" onclick="closeModal('modal-gsheet-settings')">✕</button>
+    </div>
+    <div style="font-size:13px; color:var(--text2); line-height:1.8; margin-bottom:14px; background:var(--surface2); border-radius:8px; padding:12px 14px;">
+      📋 報表會透過 Apps Script 寫入<strong>管理員指定的同一份 Google Sheet</strong>，所有人看到的都是同一份資料，不需要各自登入 Google 帳號。
+      <br><br>設定步驟：
+      <ol style="padding-left:18px; margin:6px 0 0;">
+        <li>開啟你要用來存報表的 Google Sheet</li>
+        <li>選單「擴充功能」→「Apps Script」</li>
+        <li>貼上提供的程式碼（請向開發者索取 <code>Code.gs</code>），儲存</li>
+        <li>右上角「部署」→「新增部署作業」→ 類型選「網頁應用程式」</li>
+        <li>「執行身分」選「我」，「具有存取權的使用者」選「任何人」，按部署</li>
+        <li>複製產生的網址（結尾是 <code>/exec</code>），貼到下方欄位</li>
+      </ol>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label style="font-size:13px; font-weight:500; color:var(--text2); display:block; margin-bottom:6px;">Apps Script 網頁應用程式網址</label>
+      <input type="text" id="gsheet-webhook-url" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <div id="gsheet-settings-msg" style="font-size:13px; margin-bottom:12px; display:none;"></div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-secondary" onclick="testGSheetConnection()" style="flex:1;">測試連線</button>
+      <button class="btn btn-primary" onclick="saveGSheetSettings()" style="flex:1;">儲存設定</button>
+    </div>
+  </div>
+</div>
+
 <!-- 活動 Modal -->
 <div class="modal-overlay" id="modal-session">
   <div class="modal">
@@ -1136,7 +1173,7 @@
 const STORAGE_KEY = 'attendance_smart_v4_cache';
 
 let DB = {
-  members: [], memberMappings: [], sessions: [], records: {}, courseTypes: ['神鼓陣']
+  members: [], memberMappings: [], sessions: [], records: {}, courseTypes: ['神鼓陣'], settings: {}
 };
 
 window._isSaving = false;
@@ -1183,11 +1220,12 @@ async function saveDB() {
     const safeSessions = stripUndefined(DB.sessions);
     const safeRecords  = stripUndefined(DB.records);
     const safeCourseTypes = stripUndefined(DB.courseTypes);
+    const safeSettings = stripUndefined(DB.settings || {});
 
     await window._firestoreSetDoc(docRef, {
       members: safeMembers, memberMappings: safeMappings,
       sessions: safeSessions, records: safeRecords,
-      courseTypes: safeCourseTypes, updatedAt: Date.now()
+      courseTypes: safeCourseTypes, settings: safeSettings, updatedAt: Date.now()
     }).catch(err => {
       // 如果權限被拒，忽略（仍然會保存到 sharedCalendar）
       if (err.code === 'permission-denied') {
@@ -1223,6 +1261,7 @@ function applyRemoteData(data) {
   DB.records     = (data.records && typeof data.records === 'object') ? data.records : {};
   DB.courseTypes = Array.isArray(data.courseTypes) ? data.courseTypes : ['神鼓陣'];
   DB.memberMappings = Array.isArray(data.memberMappings) ? data.memberMappings : [];
+  DB.settings    = (data.settings && typeof data.settings === 'object') ? data.settings : {};
 
   if (!DB.courseTypes.length) DB.courseTypes = ['神鼓陣'];
   DB.courseTypes = DB.courseTypes.filter(t => t !== '常態班');
@@ -2272,6 +2311,132 @@ function exportStatsToExcel() {
   }
 }
 
+/* ══ 同步到管理員的 Google Sheet ══ */
+// 透過 Apps Script Web App 作為代理：管理員在自己的 Sheet 部署一次 Apps Script，
+// 之後前端只需 fetch POST 資料過去，不需要任何使用者各自登入 Google 授權，
+// 也不受 iOS PWA 對 Google OAuth 的限制影響（與既有 Google 日曆同步用的是同一種架構）。
+
+function openGSheetSettings() {
+  if (!window.isAdminUser) { showToast('僅管理員可設定'); return; }
+  const input = document.getElementById('gsheet-webhook-url');
+  if (input) input.value = (DB.settings && DB.settings.sheetWebhookUrl) || '';
+  const msgEl = document.getElementById('gsheet-settings-msg'); if (msgEl) msgEl.style.display = 'none';
+  openModal('modal-gsheet-settings');
+}
+
+async function saveGSheetSettings() {
+  const url = (document.getElementById('gsheet-webhook-url').value || '').trim();
+  if (url && !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)) {
+    const msgEl = document.getElementById('gsheet-settings-msg');
+    if (msgEl) { msgEl.style.display = 'block'; msgEl.style.color = 'var(--red)'; msgEl.textContent = '⚠️ 網址格式不正確，請確認是以 /exec 結尾的部署網址'; }
+    return;
+  }
+  DB.settings = DB.settings || {};
+  DB.settings.sheetWebhookUrl = url;
+  await saveDB();
+  closeModal('modal-gsheet-settings');
+  showToast('✅ 已儲存 Google Sheet 同步設定');
+}
+
+async function callGSheetProxy(payload) {
+  const url = DB.settings && DB.settings.sheetWebhookUrl;
+  if (!url) return { success: false, error: 'NO_URL' };
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    return await res.json().catch(() => ({ success: true }));
+  } catch (e) {
+    console.error('[callGSheetProxy]', e);
+    return { success: false, error: e.message };
+  }
+}
+
+async function testGSheetConnection() {
+  const url = (document.getElementById('gsheet-webhook-url').value || '').trim();
+  const msgEl = document.getElementById('gsheet-settings-msg');
+  if (!url) { if (msgEl) { msgEl.style.display='block'; msgEl.style.color='var(--red)'; msgEl.textContent='請先輸入網址'; } return; }
+  if (msgEl) { msgEl.style.display='block'; msgEl.style.color='var(--text3)'; msgEl.textContent='測試連線中…'; }
+  try {
+    const res = await fetch(url, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'ping' })
+    });
+    const result = await res.json().catch(() => null);
+    if (result && result.success) {
+      if (msgEl) { msgEl.style.color='var(--accent)'; msgEl.textContent='✅ 連線成功！'+(result.sheetName?`試算表：${result.sheetName}`:''); }
+    } else {
+      if (msgEl) { msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ 連線失敗，請確認網址與部署設定（執行身分需為「我」、存取權需為「任何人」）'; }
+    }
+  } catch (e) {
+    console.error('[testGSheetConnection]', e);
+    if (msgEl) { msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ 連線失敗：'+e.message; }
+  }
+}
+
+async function syncStatsToGoogleSheet() {
+  if (!window.isAdminUser) { showToast('僅管理員可同步'); return; }
+  if (!DB.settings || !DB.settings.sheetWebhookUrl) {
+    showToast('⚠️ 尚未設定 Google Sheet 同步網址，請先點齒輪按鈕設定');
+    openGSheetSettings();
+    return;
+  }
+  const table = document.getElementById('stats-table');
+  const tbody = document.getElementById('stats-tbody');
+  if (!table || !tbody || !tbody.children.length || tbody.querySelector('td[colspan]')) {
+    showToast('⚠️ 目前查詢區間內無資料可同步');
+    return;
+  }
+
+  const btn = document.getElementById('btn-sync-gsheet');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>同步中...'; }
+
+  // 把表格轉成乾淨的二維陣列（表頭 + 每列資料），與 Excel 匯出共用同一套符號轉換邏輯
+  const headerCells = Array.from(table.querySelectorAll('#stats-thead th'));
+  const headerRow = headerCells.map(th => {
+    const clone = th.cloneNode(true);
+    clone.querySelectorAll('.sort-indicator').forEach(el => el.remove());
+    return clone.textContent.trim();
+  });
+
+  const bodyRows = Array.from(tbody.querySelectorAll('tr')).map(tr => {
+    return Array.from(tr.children).map(td => {
+      if (td.classList.contains('present-cell')) return '出席';
+      if (td.classList.contains('absent-cell'))  return '請假';
+      if (td.classList.contains('nodata-cell'))   return td.textContent.trim()==='╌' ? '非本類別' : '未點名';
+      const clone = td.cloneNode(true);
+      clone.querySelectorAll('.gender-tag').forEach(el => el.textContent = '');
+      return clone.textContent.replace(/\s+/g,' ').trim();
+    });
+  });
+
+  const year = document.getElementById('stats-year').value;
+  const monthLabel = statsMonth === 0 ? '全年' : `${statsMonth}月`;
+  const courseTypeFilter = document.getElementById('stats-course-type') ? document.getElementById('stats-course-type').value : 'ALL';
+  const ctLabel = courseTypeFilter === 'ALL' ? '全部類別' : courseTypeFilter;
+  const sheetTitle = `${year}年${monthLabel}_${ctLabel}`.slice(0, 90);
+
+  const result = await callGSheetProxy({
+    action: 'syncStats',
+    sheetTitle,
+    header: headerRow,
+    rows: bodyRows,
+    syncedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+  });
+
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-upload-alt" style="margin-right:6px;"></i>同步到 Google Sheet'; }
+
+  if (result && result.success) {
+    showToast('✅ 已同步到 Google Sheet');
+  } else {
+    showToast('⚠️ 同步失敗：' + (result && result.error ? result.error : '請確認設定是否正確'));
+  }
+}
+
 /* ══ 查看詳情 ══ */
 function switchResultTab(tab) {
   const isNotify=tab==='notify';
@@ -2546,6 +2711,7 @@ function loadFromCache() {
       DB.sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
       DB.records = (parsed.records && typeof parsed.records === 'object') ? parsed.records : {};
       DB.courseTypes = Array.isArray(parsed.courseTypes) ? parsed.courseTypes : ['神鼓陣'];
+      DB.settings = (parsed.settings && typeof parsed.settings === 'object') ? parsed.settings : {};
       if (typeof renderSessions === 'function') renderSessions();
       if (typeof renderMembers === 'function') renderMembers();
       console.log('[Cache] 已加载本地缓存数据');
@@ -2566,6 +2732,7 @@ function loadFullDataFromUID(uid, sharedData) {
       DB.memberMappings = Array.isArray(parsed.memberMappings) ? parsed.memberMappings : [];
       DB.records = (parsed.records && typeof parsed.records === 'object') ? parsed.records : {};
       DB.courseTypes = Array.isArray(parsed.courseTypes) ? parsed.courseTypes : ['神鼓陣'];
+      DB.settings = (parsed.settings && typeof parsed.settings === 'object') ? parsed.settings : {};
 
       const localSessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
       const sharedSessions = Array.isArray(sharedData.sessions) ? sharedData.sessions : [];
@@ -2650,6 +2817,7 @@ onAuthStateChanged(auth, (user) => {
   document.getElementById("user-name").textContent=user.displayName||user.email;
   const isAdmin=user.email===ADMIN_EMAIL;
   window.isAdminUser=isAdmin;
+  if(isAdmin){const gsBtn=document.getElementById('btn-gsheet-settings');if(gsBtn)gsBtn.style.display='';}
   if(!isAdmin){["nav-members","nav-attendance","nav-lottery","nav-stats"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display="none";});["page-members","page-attendance","page-lottery","page-stats"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display="none";});if(typeof switchPage==="function")switchPage("sessions");}
   startRealtimeSync(user.uid);
 });
