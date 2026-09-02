@@ -1148,6 +1148,12 @@
       </div>
     </div>
     <input type="hidden" id="s-color" value="#2c5234">
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="s-no-attendance" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent);cursor:pointer;">
+        <span>本活動不需要點名（僅顯示於行事曆，不會出現在點名頁面）</span>
+      </label>
+    </div>
     <div class="form-group"><label>值班小幫手</label><input type="text" id="s-helper" placeholder="例：小西瓜、大蕃茄"></div>
     <div class="form-group"><label>備註</label><input type="text" id="s-note" placeholder="例：加練、場地異動…"></div>
     <button class="btn btn-primary btn-block" onclick="saveSession()">確認儲存</button>
@@ -1240,7 +1246,7 @@ async function saveDB() {
     if (sharedRef) {
       const sharedSessions = safeSessions
         .filter(s => s.published !== false)
-        .map(s => ({ id:s.id, name:s.name, date:s.date, timeStart:s.timeStart||'', timeEnd:s.timeEnd||'', courseType:s.courseType||'神鼓陣', color:s.color||'#2c5234', helper:s.helper||'', note:s.note||'' }));
+        .map(s => ({ id:s.id, name:s.name, date:s.date, timeStart:s.timeStart||'', timeEnd:s.timeEnd||'', courseType:s.courseType||'神鼓陣', color:s.color||'#2c5234', helper:s.helper||'', note:s.note||'', noAttendance:!!s.noAttendance }));
       await window._firestoreSetDoc(sharedRef, { sessions: stripUndefined(sharedSessions), updatedAt:Date.now(), syncedAt:new Date().toISOString() }).catch(err => {
         console.error('[saveDB] 保存到 sharedCalendar 失敗:', err);
         throw err;
@@ -1308,7 +1314,7 @@ async function syncSharedCalendar() {
   try {
     const sharedSessions = DB.sessions
       .filter(s => s.published !== false)
-      .map(s => ({ id:s.id, name:s.name, date:s.date, timeStart:s.timeStart||'', timeEnd:s.timeEnd||'', courseType:s.courseType||'神鼓陣', color:s.color||'#2c5234', helper:s.helper||'', note:s.note||'' }));
+      .map(s => ({ id:s.id, name:s.name, date:s.date, timeStart:s.timeStart||'', timeEnd:s.timeEnd||'', courseType:s.courseType||'神鼓陣', color:s.color||'#2c5234', helper:s.helper||'', note:s.note||'', noAttendance:!!s.noAttendance }));
     await setDocFn(sharedRef, { sessions:sharedSessions, updatedAt:Date.now(), syncedAt:new Date().toISOString() });
   } catch(e) { console.warn('[syncSharedCalendar] 同步失敗:', e.message); }
 }
@@ -1408,7 +1414,15 @@ function lotteryMemberHasCourse(member, courseType) {
 }
 
 const TAIWAN_HOLIDAYS = { '01-01':'元旦','02-28':'和平紀念日','04-04':'兒童節','04-05':'清明節','05-01':'勞動節','10-10':'國慶日' };
-const DYNAMIC_HOLIDAYS_2026 = { '2026-02-16':'春節除夕','2026-02-17':'春節初一','2026-02-18':'春節初二','2026-02-19':'春節初三','2026-06-19':'端午節','2026-09-25':'中秋節' };
+/* 農曆節日（春節/端午/中秋）每年國曆日期都不同，需逐年列出正確日期。
+   目前涵蓋 2026–2030 年，之後若要延伸年份，補上對應年份的除夕/初一/初二/初三/端午/中秋日期即可。 */
+const LUNAR_HOLIDAYS = {
+  '2026-02-16':'春節除夕','2026-02-17':'春節初一','2026-02-18':'春節初二','2026-02-19':'春節初三','2026-06-19':'端午節','2026-09-25':'中秋節',
+  '2027-02-05':'春節除夕','2027-02-06':'春節初一','2027-02-07':'春節初二','2027-02-08':'春節初三','2027-06-09':'端午節','2027-09-15':'中秋節',
+  '2028-01-25':'春節除夕','2028-01-26':'春節初一','2028-01-27':'春節初二','2028-01-28':'春節初三','2028-05-28':'端午節','2028-10-03':'中秋節',
+  '2029-02-12':'春節除夕','2029-02-13':'春節初一','2029-02-14':'春節初二','2029-02-15':'春節初三','2029-06-16':'端午節','2029-09-22':'中秋節',
+  '2030-02-02':'春節除夕','2030-02-03':'春節初一','2030-02-04':'春節初二','2030-02-05':'春節初三','2030-06-05':'端午節','2030-09-12':'中秋節'
+};
 
 window.onload = function() {
   const now = new Date();
@@ -1785,6 +1799,7 @@ function renderSessions() {
     const todayStart = new Date(); todayStart.setHours(0,0,0,0);
     const isPast = d.getTime() < todayStart.getTime();
     const statusBadge = isDraft ? `<span class="draft-badge">草稿</span>` : `<span class="published-badge">已發佈</span>`;
+    const noAttBadge = s.noAttendance ? `<span class="draft-badge" style="background:var(--surface2);color:var(--text2);border-color:var(--border);">免點名</span>` : '';
     const togglePubBtn = isDraft
       ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();toggleSessionPublish('${s.id}')">發佈</button>`
       : `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();toggleSessionPublish('${s.id}')" style="color:var(--yellow);border-color:var(--yellow);">收回</button>`;
@@ -1795,7 +1810,7 @@ function renderSessions() {
       <div class="session-header" onclick="toggleSessionCard('${s.id}')">
         <div class="session-date-box"><span class="session-month">${d.getMonth()+1}月</span><span class="session-day" style="color:${isDraft?'#b58900':borderColor};">${d.getDate()}</span></div>
         <div class="session-info">
-          <div class="session-name"><span class="session-name-text">${esc(s.name)}</span><span class="course-badge" style="background:var(--surface);color:${borderColor};border-color:${borderColor};flex-shrink:0;">${esc(s.courseType||'神鼓陣')}</span>${statusBadge}</div>
+          <div class="session-name"><span class="session-name-text">${esc(s.name)}</span><span class="course-badge" style="background:var(--surface);color:${borderColor};border-color:${borderColor};flex-shrink:0;">${esc(s.courseType||'神鼓陣')}</span>${statusBadge}${noAttBadge}</div>
           <div class="session-meta-row"><span class="session-sub">${s.timeStart}～${s.timeEnd}</span></div>
         </div>
         <div class="session-header-actions">
@@ -1850,7 +1865,7 @@ function renderGoogleCalendarGrid(sessions) {
     else if (!isCurMonth && new Date(currentSessionYear,currentSessionMonth-1,day) < new Date(today.getFullYear(),today.getMonth(),today.getDate())) cell.classList.add('day-past');
     const ms=String(currentSessionMonth).padStart(2,'0'), ds=String(day).padStart(2,'0');
     const sk=`${ms}-${ds}`, dk=`${currentSessionYear}-${ms}-${ds}`;
-    const hn=TAIWAN_HOLIDAYS[sk]||DYNAMIC_HOLIDAYS_2026[dk]||'';
+    const hn=TAIWAN_HOLIDAYS[sk]||LUNAR_HOLIDAYS[dk]||'';
     if (hn) cell.classList.add('holiday-cell');
     cell.innerHTML=`<div class="calendar-day-num">${day}</div>${hn?`<div class="holiday-label">${esc(hn)}</div>`:''}<div class="calendar-events-container" id="cal-events-${day}"></div>`;
     if (dayEventsMap[day]) { cell.classList.add('has-events'); cell.onclick=()=>scrollToSessionCard(dayEventsMap[day][0].id); }
@@ -1897,6 +1912,7 @@ function openSessionModal() {
   document.getElementById('s-color').value='#2c5234';
   document.querySelectorAll('.color-opt').forEach((el,i)=>el.classList.toggle('selected',i===0));
   document.getElementById('s-helper').value=''; document.getElementById('s-note').value='';
+  document.getElementById('s-no-attendance').checked=false;
   openModal('modal-session');
 }
 
@@ -1909,6 +1925,7 @@ function editSession(id) {
   const savedColor=s.color||'#2c5234'; document.getElementById('s-color').value=savedColor;
   document.querySelectorAll('.color-opt').forEach(el=>el.classList.toggle('selected',el.dataset.color===savedColor));
   document.getElementById('s-helper').value=s.helper||''; document.getElementById('s-note').value=s.note||'';
+  document.getElementById('s-no-attendance').checked=!!s.noAttendance;
   openModal('modal-session');
 }
 
@@ -1916,16 +1933,17 @@ async function saveSession() {
   const name=document.getElementById('s-name').value.trim(), date=document.getElementById('s-date').value;
   if (!name||!date) { showToast('請填寫完整資訊'); return; }
   const courseType=document.getElementById('s-course-type').value||'神鼓陣', color=document.getElementById('s-color').value||'#2c5234';
+  const noAttendance=document.getElementById('s-no-attendance').checked;
   const editId=document.getElementById('edit-session-id').value;
   if (editId) {
     const idx=DB.sessions.findIndex(s=>s.id===editId);
     if (idx!==-1) {
-      DB.sessions[idx]={...DB.sessions[idx],name,date,timeStart:document.getElementById('s-time-start').value,timeEnd:document.getElementById('s-time-end').value,courseType,color,helper:document.getElementById('s-helper').value.trim(),note:document.getElementById('s-note').value.trim()};
+      DB.sessions[idx]={...DB.sessions[idx],name,date,timeStart:document.getElementById('s-time-start').value,timeEnd:document.getElementById('s-time-end').value,courseType,color,helper:document.getElementById('s-helper').value.trim(),note:document.getElementById('s-note').value.trim(),noAttendance};
       await saveDB(); closeModal('modal-session'); currentSessionYear=new Date(date).getFullYear(); currentSessionMonth=new Date(date).getMonth()+1; renderSessions(); showToast('活動已更新');
       syncSessionToGoogleCalendar(DB.sessions[idx]).catch(e=>console.warn('[GCal] 更新同步失敗:', e.message));
     }
   } else {
-    const newSession={id:'s_'+Date.now(),name,date,timeStart:document.getElementById('s-time-start').value,timeEnd:document.getElementById('s-time-end').value,courseType,color,helper:document.getElementById('s-helper').value.trim(),note:document.getElementById('s-note').value.trim(),published:false};
+    const newSession={id:'s_'+Date.now(),name,date,timeStart:document.getElementById('s-time-start').value,timeEnd:document.getElementById('s-time-end').value,courseType,color,helper:document.getElementById('s-helper').value.trim(),note:document.getElementById('s-note').value.trim(),noAttendance,published:false};
     DB.sessions.push(newSession);
     await saveDB(); closeModal('modal-session'); currentSessionYear=new Date(date).getFullYear(); currentSessionMonth=new Date(date).getMonth()+1; renderSessions();
     showToast('活動已建立（草稿）— 請按「發佈」才會顯示於自律打卡');
@@ -1936,7 +1954,7 @@ async function duplicateSession(id) {
   const target=DB.sessions.find(s=>s.id===id); if (!target) return;
   const d=new Date(target.date); d.setDate(d.getDate()+7);
   const nextDate=d.toISOString().split('T')[0];
-  DB.sessions.push({id:'s_'+Date.now()+'_'+Math.random().toString(36).substr(2,3),name:target.name,date:nextDate,timeStart:target.timeStart,timeEnd:target.timeEnd,courseType:target.courseType||'神鼓陣',color:target.color||'#2c5234',published:false});
+  DB.sessions.push({id:'s_'+Date.now()+'_'+Math.random().toString(36).substr(2,3),name:target.name,date:nextDate,timeStart:target.timeStart,timeEnd:target.timeEnd,courseType:target.courseType||'神鼓陣',color:target.color||'#2c5234',noAttendance:!!target.noAttendance,published:false});
   await saveDB(); currentSessionYear=d.getFullYear(); currentSessionMonth=d.getMonth()+1; renderSessions();
   showToast(`已複製建立「${target.name}」至 ${nextDate}`);
 }
@@ -1983,7 +2001,7 @@ function getWeekNumber(d) {
 
 function renderAttendanceSelector() {
   const filterVal=document.getElementById('att-month-filter').value, [year,month]=filterVal.split('-').map(Number);
-  const monthSessions=DB.sessions.filter(s=>{const d=new Date(s.date);return d.getFullYear()===year&&(d.getMonth()+1)===month&&s.published!==false;}).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const monthSessions=DB.sessions.filter(s=>{const d=new Date(s.date);return d.getFullYear()===year&&(d.getMonth()+1)===month&&s.published!==false&&!s.noAttendance;}).sort((a,b)=>new Date(a.date)-new Date(b.date));
   const sel=document.getElementById('att-session-select'), prev=sel.value;
   sel.innerHTML='<option value="">— 請選擇當週要點名的活動 —</option>';
   const groups={};
