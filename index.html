@@ -1151,7 +1151,7 @@
     <div class="form-group">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
         <input type="checkbox" id="s-no-attendance" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent);cursor:pointer;">
-        <span>本活動不需要點名（僅顯示於行事曆，不會出現在點名頁面）</span>
+        <span>本活動不需要點名</span>
       </label>
     </div>
     <div class="form-group"><label>值班小幫手</label><input type="text" id="s-helper" placeholder="例：小西瓜、大蕃茄"></div>
@@ -2202,7 +2202,7 @@ function renderStats() {
   const courseTypeFilter=document.getElementById('stats-course-type')?document.getElementById('stats-course-type').value:'ALL';
   buildStatsMonthBtns();
   ['seq','name','id','hall','course','role','rate'].forEach(k=>{const el=document.getElementById('sort-'+k);if(el)el.textContent=statsSort.key===k?(statsSort.dir===1?'↑':'↓'):'⇅';});
-  const sessions=DB.sessions.filter(s=>{const d=new Date(s.date);if(d.getFullYear()!==year)return false;if(month!==0&&(d.getMonth()+1)!==month)return false;if(courseTypeFilter!=='ALL'&&(s.courseType||'神鼓陣')!==courseTypeFilter)return false;return true;});
+  const sessions=DB.sessions.filter(s=>{const d=new Date(s.date);if(d.getFullYear()!==year)return false;if(month!==0&&(d.getMonth()+1)!==month)return false;if(courseTypeFilter!=='ALL'&&(s.courseType||'神鼓陣')!==courseTypeFilter)return false;if(s.noAttendance)return false;return true;});
   const summaryEl=document.getElementById('stats-summary'), tbody=document.getElementById('stats-tbody'), thead=document.getElementById('stats-thead');
   if(!sessions.length){
     summaryEl.innerHTML='';summaryEl.style.gridTemplateColumns='';
