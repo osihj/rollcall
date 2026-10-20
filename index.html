@@ -736,6 +736,7 @@
       </div>
       <div style="display:flex; gap:6px;">
         <button class="btn btn-secondary btn-sm" onclick="changeSessionMonth(-1)" style="padding:5px 14px; font-size:15px;">‹</button>
+        <button class="btn btn-secondary btn-sm" onclick="goToTodaySession()" style="padding:5px 14px; font-size:13px;">今日</button>
         <button class="btn btn-secondary btn-sm" onclick="changeSessionMonth(1)" style="padding:5px 14px; font-size:15px;">›</button>
       </div>
     </div>
@@ -1902,6 +1903,11 @@ function changeSessionMonth(delta) {
   if (currentSessionMonth>12) { currentSessionMonth=1; currentSessionYear++; }
   if (currentSessionMonth<1)  { currentSessionMonth=12; currentSessionYear--; }
   renderSessions(); setTimeout(()=>{window._monthSwitching=false;},400);
+}
+function goToTodaySession() {
+  const now=new Date();
+  currentSessionYear=now.getFullYear(); currentSessionMonth=now.getMonth()+1;
+  renderSessions();
 }
 
 function openSessionModal() {
