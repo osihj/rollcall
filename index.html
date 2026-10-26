@@ -1173,6 +1173,20 @@
   </div>
 </div>
 
+<!-- 組員退出對話框 -->
+<div class="modal-overlay" id="modal-leave">
+  <div class="modal" style="max-width:400px; padding:28px 24px 24px;">
+    <div style="font-size:16px; font-weight:700; margin-bottom:10px;">組員退出</div>
+    <input type="hidden" id="leave-member-id">
+    <div style="font-size:14px; color:var(--text2); margin-bottom:14px; line-height:1.6;">「<span id="leave-member-name"></span>」退出後，歷史點名紀錄會保留；退出日期之後的活動不再計入其出席統計。</div>
+    <div class="form-group" style="margin-bottom:20px;"><label>退出日期（當日含以前的活動仍計入）</label><input type="date" id="leave-date"></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-leave')">取消</button>
+      <button class="btn btn-primary" onclick="confirmLeaveMember()">確認退出</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ══════════════════════════════════════════
    資料層
@@ -1321,9 +1335,36 @@ async function syncSharedCalendar() {
 }
 
 /* ══ 多對多關聯輔助 ══ */
-function getMembersByCourseType(courseType) {
+function getMembersRawByCourseType(courseType) {
   return DB.memberMappings.filter(mp => mp.courseType === courseType)
     .map(mp => DB.members.find(x => x.id === mp.rowId)).filter(Boolean);
+}
+/* 依日期取得名單成員：已退出者僅在其退出日期（含）以前的活動中計入；未帶日期時只回傳在籍者 */
+function getMembersByCourseType(courseType, asOfDate) {
+  return getMembersRawByCourseType(courseType).filter(m => isMemberCountedOn(m, asOfDate));
+}
+/* ══ 組員退出／在籍輔助（leaves: [{left:'YYYY-MM-DD', back:'YYYY-MM-DD'|null}]） ══ */
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function isMemberLeft(m) {
+  const lv = m && m.leaves;
+  return !!(lv && lv.length && !lv[lv.length-1].back);
+}
+function getMemberLeftDate(m) {
+  const lv = m && m.leaves;
+  return (lv && lv.length) ? (lv[lv.length-1].left || '') : '';
+}
+function isMemberCountedOn(m, dateStr) {
+  const lv = m && m.leaves;
+  if (!lv || !lv.length) return true;
+  if (!dateStr) return !isMemberLeft(m);
+  const d = String(dateStr).slice(0,10);
+  return !lv.some(pr => d > pr.left && (!pr.back || d < pr.back));
+}
+function restoreMemberActive(m) {
+  if (isMemberLeft(m)) m.leaves[m.leaves.length-1].back = todayStr();
 }
 function getCourseTypesByMember(memberId) {
   return DB.memberMappings.filter(mp => mp.rowId === memberId).map(mp => mp.courseType);
@@ -1353,7 +1394,7 @@ function updateMappingsMemberId(rowId, newMemberId) {
 }
 
 function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
-  let newCount = 0, bindCount = 0, skipCount = 0;
+  let newCount = 0, bindCount = 0, skipCount = 0, restoreCount = 0;
   const normalize = s => { if (!s) return ''; return s.trim().replace(/　/g,'').replace(/\s+/g,''); };
   const baseTs = Date.now(); let _idCounter = 0;
   const batchSeenNames = new Map(); const batchSeenExact = new Map();
@@ -1372,10 +1413,12 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
       if (!existingMember && batchSeenExact.has(exactKey)) existingMember = DB.members.find(m => m.id === batchSeenExact.get(exactKey));
     }
     if (existingMember) {
+      const wasLeft = isMemberLeft(existingMember);
+      if (wasLeft) { restoreMemberActive(existingMember); restoreCount++; }
       const added = bindMemberToCourseType(existingMember.id, memberId||existingMember.memberId||'', courseType, defaultRole);
       if (added && defaultHall && !existingMember.hall) existingMember.hall = defaultHall;
       if (memberId && !existingMember.memberId) { existingMember.memberId = memberId; updateMappingsMemberId(existingMember.id, memberId); }
-      if (added) bindCount++; else skipCount++;
+      if (added) bindCount++; else if (!wasLeft) skipCount++;
     } else {
       const rowId = 'm_' + baseTs + '_' + (++_idCounter) + '_' + Math.random().toString(36).substr(2,4);
       DB.members.push({ id:rowId, name, gender:'女', memberId:memberId||'', hall:defaultHall||'', courseType, role:defaultRole, note:'' });
@@ -1385,7 +1428,7 @@ function smartImportPipeline(parsed, courseType, defaultRole, defaultHall) {
       newCount++;
     }
   });
-  return { newCount, bindCount, skipCount };
+  return { newCount, bindCount, skipCount, restoreCount };
 }
 
 function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
@@ -1402,6 +1445,7 @@ function showConfirm(msg, onOk, title='確認操作') {
 let currentSessionYear  = new Date().getFullYear();
 let currentSessionMonth = new Date().getMonth() + 1;
 let activeMemberFilter  = 'ALL';
+let showLeftMembers     = false;
 let memberSort = { key: 'seq', dir: 1 };
 let activeMemberTab = 'import';
 let statsSort = { key: 'seq', dir: 1 };
@@ -1555,12 +1599,15 @@ function updateSortChips() {
 function renderMembers() {
   const filterWrap = document.getElementById('member-course-filters');
   const types = DB.courseTypes;
-  let html = `<button class="filter-tab ${activeMemberFilter==='ALL'?'active':''}" onclick="setMemberFilter('ALL')">全部 (${DB.members.length})</button>`;
-  types.forEach(t => { const cnt = getMemberCountByCourseType(t); html += `<button class="filter-tab ${activeMemberFilter===t?'active':''}" onclick="setMemberFilter('${esc(t)}')">${esc(t)} (${cnt})</button>`; });
+  const leftTotal = DB.members.filter(isMemberLeft).length;
+  let html = `<button class="filter-tab ${activeMemberFilter==='ALL'?'active':''}" onclick="setMemberFilter('ALL')">全部 (${DB.members.length-leftTotal})</button>`;
+  types.forEach(t => { const cnt = getMembersRawByCourseType(t).filter(m => !isMemberLeft(m)).length; html += `<button class="filter-tab ${activeMemberFilter===t?'active':''}" onclick="setMemberFilter('${esc(t)}')">${esc(t)} (${cnt})</button>`; });
+  if (leftTotal>0 || showLeftMembers) html += `<button class="filter-tab ${showLeftMembers?'active':''}" onclick="toggleShowLeft()" style="margin-left:auto;">顯示已退出 (${leftTotal})</button>`;
   filterWrap.innerHTML = html;
   updateSortChips();
   const list = document.getElementById('member-list');
-  let filtered = activeMemberFilter==='ALL' ? [...DB.members] : getMembersByCourseType(activeMemberFilter);
+  let filtered = activeMemberFilter==='ALL' ? [...DB.members] : getMembersRawByCourseType(activeMemberFilter);
+  if (!showLeftMembers) filtered = filtered.filter(m => !isMemberLeft(m));
   if (!filtered.length) { list.innerHTML = '<div class="empty-state"><div class="empty-dot"></div><br>此類別暫無組員資料</div>'; return; }
   const roleOrder = { '輔導':0,'窗口':1,'組員':2 };
   const origIndex = new Map(DB.members.map((m,i) => [m.id,i]));
@@ -1585,21 +1632,28 @@ function renderMembers() {
         ? memberCourseTypes.map(ct => { const r=getMemberRoleInCourse(m.id,ct); return `<span class="course-badge" style="margin-right:2px;">${esc(ct)}</span><span class="${roleClass[r]||'role-badge role-badge-member'}" style="margin-right:4px;">${esc(r)}</span>`; }).join('')
         : `<span class="course-badge">${esc(m.courseType||'神鼓陣')}</span><span class="${roleClass[m.role]||'role-badge role-badge-member'}">${esc(m.role||'組員')}</span>`;
     }
-    return `<div class="member-item">
+    const left = isMemberLeft(m);
+    if (left) courseRoleBadges = `<span class="role-badge role-badge-member" style="margin-right:4px;">已退出 ${esc(getMemberLeftDate(m))}</span>` + courseRoleBadges;
+    const multiUnbind = activeMemberFilter!=='ALL' && memberCourseTypes.length>1;
+    const desktopBtns = left
+      ? `<button class="btn btn-secondary btn-sm" onclick="rejoinMember('${m.id}')">恢復</button><button class="btn btn-danger btn-sm" onclick="purgeMember('${m.id}')">永久刪除</button>`
+      : `<button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button><button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">${multiUnbind?'從此移除':'退出'}</button>`;
+    const mobileBtns = left
+      ? `<button class="member-popover-btn" onclick="closeAllPopovers();rejoinMember('${m.id}')">恢復在籍</button><button class="member-popover-btn" onclick="closeAllPopovers();purgeMember('${m.id}')">永久刪除</button>`
+      : `<button class="member-popover-btn" onclick="closeAllPopovers();editMember('${m.id}')">編輯</button><button class="member-popover-btn" onclick="closeAllPopovers();deleteMember('${m.id}')">${multiUnbind?'從此類別移除':'退出'}</button>`;
+    return `<div class="member-item"${left?' style="opacity:.6;"':''}>
       <div class="num-badge">${i+1}</div>
       <div class="member-info member-desktop-only"><div class="member-name">${esc(m.name)}<span class="gender-tag">(${esc(m.gender||'女')})</span></div>${m.note?`<div class="member-meta">${esc(m.note)}</div>`:''}</div>
       <div style="flex:1.1;display:flex;align-items:center;min-width:0;" class="member-desktop-only"><div><span style="font-size:12px;color:var(--text3);font-family:'Roboto','Noto Sans TC',sans-serif;">${m.memberId?esc(m.memberId):'—'}</span>${m.hall?`<span style="font-size:11px;color:var(--text3);margin-left:4px;">${esc(m.hall)}</span>`:''}</div></div>
       <div style="flex:1.6;display:flex;align-items:center;min-width:0;flex-wrap:wrap;gap:2px;" class="member-desktop-only">${courseRoleBadges}</div>
       <div style="width:140px;flex-shrink:0;display:flex;gap:4px;justify-content:flex-end;margin-left:auto;" class="member-desktop-only">
-        <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">編輯</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">${activeMemberFilter!=='ALL'&&getCourseTypesByMember(m.id).length>1?'從此移除':'刪除'}</button>
+        ${desktopBtns}
       </div>
       <div class="member-mobile-only">
         <div class="member-item-main"><span class="member-item-name">${esc(m.name)}</span><span class="member-item-meta">(${esc(m.gender||'女')})${m.memberId?' '+esc(m.memberId):''}${m.hall?' '+esc(m.hall):''}</span><div class="member-item-badges">${courseRoleBadges}</div></div>
         <button class="member-more-btn" onclick="toggleMemberPopover(event,'popover-${m.id}')">⋯</button>
         <div class="member-popover" id="popover-${m.id}">
-          <button class="member-popover-btn" onclick="closeAllPopovers();editMember('${m.id}')">編輯</button>
-          <button class="member-popover-btn" onclick="closeAllPopovers();deleteMember('${m.id}')">${activeMemberFilter!=='ALL'&&getCourseTypesByMember(m.id).length>1?'從此類別移除':'刪除'}</button>
+          ${mobileBtns}
         </div>
       </div>
     </div>`;
@@ -1607,6 +1661,7 @@ function renderMembers() {
 }
 
 function setMemberFilter(type) { activeMemberFilter = type; renderMembers(); }
+function toggleShowLeft() { showLeftMembers = !showLeftMembers; renderMembers(); }
 
 function openMemberModal() {
   document.getElementById('edit-member-id').value = '';
@@ -1729,9 +1784,43 @@ function deleteMember(id) {
     }, `從「${ct}」移除`);
     return;
   }
-  showConfirm(`確認要永久刪除組員「${m.name}」嗎？所有名單綁定及點名紀錄都將一併移除，且無法復原。`, async () => {
-    DB.members = DB.members.filter(x => x.id!==id); removeAllMappingsForMember(id);
-    await saveDB(); switchMemberTab('list'); showToast('組員已刪除');
+  openLeaveModal(id);
+}
+
+function openLeaveModal(id) {
+  const m = DB.members.find(x => x.id===id); if (!m) return;
+  document.getElementById('leave-member-id').value = id;
+  document.getElementById('leave-member-name').textContent = m.name;
+  document.getElementById('leave-date').value = todayStr();
+  openModal('modal-leave');
+}
+
+async function confirmLeaveMember() {
+  const id = document.getElementById('leave-member-id').value;
+  const date = document.getElementById('leave-date').value;
+  const m = DB.members.find(x => x.id===id); if (!m) return;
+  if (!date) { showToast('請選擇退出日期'); return; }
+  if (isMemberLeft(m)) { closeModal('modal-leave'); return; }
+  if (!Array.isArray(m.leaves)) m.leaves = [];
+  m.leaves.push({ left: date, back: null });
+  await saveDB(); closeModal('modal-leave'); renderMembers();
+  showToast(`「${m.name}」已退出，歷史紀錄保留`);
+}
+
+async function rejoinMember(id) {
+  const m = DB.members.find(x => x.id===id); if (!m) return;
+  restoreMemberActive(m);
+  await saveDB(); renderMembers(); showToast(`「${m.name}」已恢復在籍`);
+}
+
+function purgeMember(id) {
+  const m = DB.members.find(x => x.id===id); if (!m) return;
+  showConfirm(`確認要永久刪除組員「${m.name}」嗎？所有名單綁定及點名紀錄都將一併移除，且無法復原。`, () => {
+    showConfirm(`再次確認：永久刪除「${m.name}」後，其歷史出席資料將完全消失，確定要刪除嗎？`, async () => {
+      DB.members = DB.members.filter(x => x.id!==id); removeAllMappingsForMember(id);
+      Object.keys(DB.records||{}).forEach(sid => { if (DB.records[sid] && id in DB.records[sid]) delete DB.records[sid][id]; });
+      await saveDB(); switchMemberTab('list'); showToast('組員已永久刪除');
+    }, '二次確認：永久刪除');
   }, '永久刪除組員');
 }
 
@@ -1740,12 +1829,13 @@ async function importMembersSmart() {
   if (!text) { showToast('請輸入匯入名單內容'); return; }
   const parsed = parseImportedMembers(text);
   if (!parsed.length) { showToast('未解析到任何姓名'); return; }
-  const { newCount, bindCount, skipCount } = smartImportPipeline(parsed, courseType, role, hall);
-  if (newCount===0 && bindCount===0) { showToast('所有組員皆已在此名單類別中'); return; }
+  const { newCount, bindCount, skipCount, restoreCount } = smartImportPipeline(parsed, courseType, role, hall);
+  if (newCount===0 && bindCount===0 && restoreCount===0) { showToast('所有組員皆已在此名單類別中'); return; }
   await saveDB(); document.getElementById('import-text').value = ''; switchMemberTab('list');
   const msgs = [];
   if (newCount>0) msgs.push(`新增 ${newCount} 位新組員`);
   if (bindCount>0) msgs.push(`${bindCount} 位舊組員已綁定至「${courseType}」`);
+  if (restoreCount>0) msgs.push(`${restoreCount} 位已退出組員恢復在籍`);
   if (skipCount>0) msgs.push(`${skipCount} 位已略過（重複）`);
   showToast('✅ ' + msgs.join('，'));
 }
@@ -2026,7 +2116,7 @@ function loadAttendance() {
   area.style.display='block';
   const session=DB.sessions.find(s=>s.id===sid), sessionCourseType=session.courseType||'神鼓陣';
   const rec=DB.records[sid]||{}, list=document.getElementById('att-list');
-  const filteredMembers=getMembersByCourseType(sessionCourseType);
+  const filteredMembers=getMembersByCourseType(sessionCourseType,session.date);
   if (!filteredMembers.length) { list.innerHTML=`<div class="empty-state">「${esc(sessionCourseType)}」名單類別尚無組員</div>`; updateAttSummary(sid,filteredMembers); return; }
   const roleClass={'輔導':'role-badge role-badge-leader','窗口':'role-badge role-badge-window','組員':'role-badge role-badge-member'};
   list.innerHTML=filteredMembers.map((m,idx)=>{
@@ -2052,7 +2142,7 @@ function cycleAttStatus(sid, mid, btn) {
   DB.records[sid][mid]=next; btn.className=`att-cycle-btn ${next}`; btn.textContent=labels[next];
   setAttSavedState(false);
   const session=DB.sessions.find(s=>s.id===sid);
-  updateAttSummary(sid, getMembersByCourseType((session&&session.courseType)||'神鼓陣'));
+  updateAttSummary(sid, getMembersByCourseType((session&&session.courseType)||'神鼓陣', session&&session.date));
 }
 
 function setAttSavedState(saved) {
@@ -2079,7 +2169,7 @@ function markAllPresent() {
   const sid=document.getElementById('att-session-select').value; if(!sid)return;
   if(!DB.records[sid])DB.records[sid]={};
   const session=DB.sessions.find(s=>s.id===sid);
-  getMembersByCourseType((session&&session.courseType)||'神鼓陣').forEach(m=>{DB.records[sid][m.id]='absent';});
+  getMembersByCourseType((session&&session.courseType)||'神鼓陣', session&&session.date).forEach(m=>{DB.records[sid][m.id]='absent';});
   loadAttendance(); showToast('已將全員標記為出席');
 }
 async function saveAttendance() { await saveDB(); setAttSavedState(true); showToast('點名紀錄儲存成功'); }
@@ -2087,10 +2177,10 @@ async function saveAttendance() { await saveDB(); setAttSavedState(true); showTo
 /* ══ 抽籤分組 ══ */
 function renderLotteryPage() {
   const existingIds=new Set(lotteryMembers.map(x=>x.id));
-  DB.members.forEach(m=>{
+  DB.members.filter(m=>!isMemberLeft(m)).forEach(m=>{
     if(!existingIds.has(m.id)){const cts=getCourseTypesByMember(m.id);lotteryMembers.push({id:m.id,name:m.name,courseType:cts[0]||m.courseType||'神鼓陣',allCourseTypes:cts,active:true,isLeader:false});}
   });
-  lotteryMembers=lotteryMembers.filter(x=>DB.members.some(m=>m.id===x.id));
+  lotteryMembers=lotteryMembers.filter(x=>DB.members.some(m=>m.id===x.id&&!isMemberLeft(m)));
   lotteryMembers.forEach(x=>{const m=DB.members.find(m=>m.id===x.id);if(m){x.name=m.name;const cts=getCourseTypesByMember(m.id);x.allCourseTypes=cts;x.courseType=cts[0]||m.courseType||'神鼓陣';}});
   const types=DB.courseTypes; let opts=`<option value="ALL"${lotteryCourseFilter==='ALL'?' selected':''}>全部名單類別</option>`;
   types.forEach(t=>{const cnt=lotteryMembers.filter(x=>lotteryMemberHasCourse(x,t)).length;opts+=`<option value="${esc(t)}"${lotteryCourseFilter===t?' selected':''}>${esc(t)}${cnt>0?`（${cnt} 人）`:''}</option>`;});
@@ -2219,7 +2309,7 @@ function renderStats() {
   }
   const sortedSessions=[...sessions].sort((a,b)=>new Date(a.date)-new Date(b.date));
   const sessionMembers={};
-  sortedSessions.forEach(s=>{sessionMembers[s.id]=getMembersByCourseType(s.courseType||'神鼓陣');});
+  sortedSessions.forEach(s=>{sessionMembers[s.id]=getMembersByCourseType(s.courseType||'神鼓陣',s.date);});
   const sessionAttendCounts={},sessionHasRecord={};
   sortedSessions.forEach(s=>{
     const rec=DB.records[s.id]||{},hasRec=Object.keys(rec).length>0;
@@ -2227,18 +2317,23 @@ function renderStats() {
     sessionMembers[s.id].forEach(m=>{if(hasRec&&rec[m.id]!=='leave')cnt++;});
     sessionAttendCounts[s.id]=hasRec?cnt:null;
   });
-  const members=courseTypeFilter==='ALL'?DB.members:getMembersByCourseType(courseTypeFilter);
+  const membersAll=courseTypeFilter==='ALL'?DB.members:getMembersRawByCourseType(courseTypeFilter);
+  const members=membersAll.filter(m=>{
+    if(!(m.leaves&&m.leaves.length))return true;
+    const cts=getCourseTypesByMember(m.id);
+    return sortedSessions.some(s=>cts.includes(s.courseType||'神鼓陣')&&isMemberCountedOn(m,s.date));
+  });
   let rows=members.map((m,idx)=>{
     const memberCts=getCourseTypesByMember(m.id); let p=0,l=0; const sessionStatuses={};
     sortedSessions.forEach(s=>{
       const sessionCt=s.courseType||'神鼓陣';
-      if(!memberCts.includes(sessionCt)){sessionStatuses[s.id]='diff-type';return;}
+      if(!memberCts.includes(sessionCt)||!isMemberCountedOn(m,s.date)){sessionStatuses[s.id]='diff-type';return;}
       const rec=DB.records[s.id];
       if(rec&&m.id in rec){const v=rec[m.id];if(v==='absent'||v==='present'||v===undefined){p++;sessionStatuses[s.id]='present';}else if(v==='leave'){l++;sessionStatuses[s.id]='leave';}}
       else if(rec&&Object.keys(rec).length>0){p++;sessionStatuses[s.id]='present';}
       else{sessionStatuses[s.id]='nodata';}
     });
-    const denom=sortedSessions.filter(s=>{const sessionCt=s.courseType||'神鼓陣';return memberCts.includes(sessionCt)&&sessionHasRecord[s.id];}).length;
+    const denom=sortedSessions.filter(s=>{const sessionCt=s.courseType||'神鼓陣';return memberCts.includes(sessionCt)&&isMemberCountedOn(m,s.date)&&sessionHasRecord[s.id];}).length;
     const rate=denom>0?Math.round(p/denom*100):0;
     return {m,p,l,rate,denom,sequence:idx+1,sessionStatuses};
   });
@@ -2278,7 +2373,7 @@ function renderStats() {
     const rateClass=r.denom===0?'mid':r.rate>=100?'high':r.rate>=60?'mid':'low';
     const rateBgClass=r.denom===0?'':r.rate>=100?'rate-cell-high':r.rate>=60?'rate-cell-mid':'rate-cell-low';
     const sessionCells=sortedSessions.map(s=>{const status=r.sessionStatuses[s.id];if(status==='present')return`<td class="td-attend present-cell">✓</td>`;if(status==='leave')return`<td class="td-attend absent-cell">✕</td>`;if(status==='diff-type')return`<td class="td-attend nodata-cell" style="font-size:10px;color:var(--border);">╌</td>`;return`<td class="td-attend nodata-cell">—</td>`;}).join('');
-    return `<tr class="clickable-row" onclick="toggleRowHighlight(this)"><td class="col-stats-seq" style="text-align:center;"><span class="num-badge" style="margin:0 auto;">${r.sequence}</span></td><td class="col-stats-name stats-cell-center"><span class="stats-name-cell"><strong>${esc(r.m.name)}</strong><span class="gender-tag">(${esc(r.m.gender||'女')})</span></span></td><td class="col-stats-id stats-cell-center" style="color:var(--text3);font-size:13px;">${r.m.memberId?esc(r.m.memberId):'<span style="color:var(--border)">—</span>'}</td><td class="col-stats-hall stats-cell-center" style="color:var(--text3);font-size:13px;">${r.m.hall?esc(r.m.hall):'<span style="color:var(--border)">—</span>'}</td><td class="col-stats-course stats-cell-center"><span class="course-badge">${esc(r.m.courseType||'神鼓陣')}</span></td><td class="col-stats-role stats-cell-center"><span class="${roleClass[r.m.role]||'role-badge role-badge-member'}">${esc(r.m.role||'組員')}</span></td>${sessionCells}<td class="col-stats-rate ${rateBgClass}" style="text-align:center;padding:10px 5px !important;"><span class="rate-cell-val ${rateClass}">${r.denom>0?r.rate+'%':'—'}</span><span class="rate-cell-sub">${r.denom>0?`(${r.p}/${r.denom})`:''}</span></td></tr>`;
+    return `<tr class="clickable-row" onclick="toggleRowHighlight(this)"><td class="col-stats-seq" style="text-align:center;"><span class="num-badge" style="margin:0 auto;">${r.sequence}</span></td><td class="col-stats-name stats-cell-center"><span class="stats-name-cell"><strong>${esc(r.m.name)}</strong><span class="gender-tag">(${esc(r.m.gender||'女')})</span>${isMemberLeft(r.m)?'<span class="gender-tag" style="color:var(--red);">已退出</span>':''}</span></td><td class="col-stats-id stats-cell-center" style="color:var(--text3);font-size:13px;">${r.m.memberId?esc(r.m.memberId):'<span style="color:var(--border)">—</span>'}</td><td class="col-stats-hall stats-cell-center" style="color:var(--text3);font-size:13px;">${r.m.hall?esc(r.m.hall):'<span style="color:var(--border)">—</span>'}</td><td class="col-stats-course stats-cell-center"><span class="course-badge">${esc(r.m.courseType||'神鼓陣')}</span></td><td class="col-stats-role stats-cell-center"><span class="${roleClass[r.m.role]||'role-badge role-badge-member'}">${esc(r.m.role||'組員')}</span></td>${sessionCells}<td class="col-stats-rate ${rateBgClass}" style="text-align:center;padding:10px 5px !important;"><span class="rate-cell-val ${rateClass}">${r.denom>0?r.rate+'%':'—'}</span><span class="rate-cell-sub">${r.denom>0?`(${r.p}/${r.denom})`:''}</span></td></tr>`;
   }).join('');
 }
 
@@ -2483,7 +2578,7 @@ function copySessionResult(sessionId) {
   const shortDateLabel=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}(${weekDays[d.getDay()]})`;
   let notifyLines=[`▹ ${s.name}`,`▹ 日期：${shortDateLabel}`,`▹ 時間：${s.timeStart}～${s.timeEnd}`];
   if(s.helper)notifyLines.push(`▹ 值班小幫手：${s.helper}`);if(s.note)notifyLines.push(`▹ 備註：${s.note}`);
-  const rec=DB.records[sessionId]||{},hasRecord=Object.keys(rec).length>0,courseMembers=getMembersByCourseType(s.courseType||'神鼓陣');
+  const rec=DB.records[sessionId]||{},hasRecord=Object.keys(rec).length>0,courseMembers=getMembersByCourseType(s.courseType||'神鼓陣',s.date);
   const presentList=[],leaveList=[];
   courseMembers.forEach(m=>{if(hasRecord){if(rec[m.id]==='leave')leaveList.push(m.name);else presentList.push(m.name);}});
   const total=courseMembers.length,presentCount=presentList.length,leaveCount=leaveList.length,rate=total>0?Math.round(presentCount/total*100):0;
@@ -2517,7 +2612,7 @@ function toggleSessionDetail(sid) {
   if(activeDetailSid===sid){panel.style.display='none';activeDetailSid=null;return;}
   activeDetailSid=sid; chip.classList.add('active'); panel.style.display='block';
   const session=DB.sessions.find(s=>s.id===sid); if(!session){panel.innerHTML='<div style="padding:20px;color:var(--text3);">找不到活動資料</div>';return;}
-  const sessionCt=session.courseType||'神鼓陣', members=getMembersByCourseType(sessionCt);
+  const sessionCt=session.courseType||'神鼓陣', members=getMembersByCourseType(sessionCt,session.date);
   const rec=DB.records[sid]||{}, d=new Date(session.date);
   const dateStr=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
   const noRecord=!DB.records[sid]||Object.keys(DB.records[sid]).length===0;
@@ -2561,7 +2656,7 @@ function renderPickList() {
     DB.memberMappings.filter(mp => mp.courseType === targetCt).map(mp => mp.rowId)
   );
 
-  const members = DB.members.filter(m =>
+  const members = DB.members.filter(m => !isMemberLeft(m)).filter(m =>
     !q || m.name.toLowerCase().includes(q) || (m.memberId || '').includes(q)
   );
 
@@ -2611,7 +2706,7 @@ function pickSelectAll() {
   );
   const q = (document.getElementById('pick-search').value || '').trim().toLowerCase();
   DB.members
-    .filter(m => !alreadyBound.has(m.id) && (!q || m.name.toLowerCase().includes(q) || (m.memberId||'').includes(q)))
+    .filter(m => !isMemberLeft(m) && !alreadyBound.has(m.id) && (!q || m.name.toLowerCase().includes(q) || (m.memberId||'').includes(q)))
     .forEach(m => _pickSelected.add(m.id));
   renderPickList();
 }
@@ -2851,7 +2946,7 @@ onAuthStateChanged(auth, (user) => {
 <script>
 window.addEventListener('DOMContentLoaded', function(){
   const guard = function(fn, msg){ return function(...args){ if(!window.isAdminUser){ if(typeof showToast==='function') showToast(msg); else alert(msg); return; } return fn.apply(this, args); }; };
-  ['openSessionModal','editSession','duplicateSession','deleteSession','importMembersSmart','saveMember','deleteMember','addCourseType','deleteCourseType','saveAttendance'].forEach(name => {
+  ['openSessionModal','editSession','duplicateSession','deleteSession','importMembersSmart','saveMember','deleteMember','confirmLeaveMember','rejoinMember','purgeMember','addCourseType','deleteCourseType','saveAttendance'].forEach(name => {
     if(typeof window[name]==='function') window[name]=guard(window[name],'無權限');
   });
 });
