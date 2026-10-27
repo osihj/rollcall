@@ -1287,6 +1287,7 @@ function applyRemoteData(data) {
   if (!DB.courseTypes.length) DB.courseTypes = ['神鼓陣'];
   DB.courseTypes = DB.courseTypes.filter(t => t !== '常態班');
   if (!DB.courseTypes.includes('神鼓陣')) DB.courseTypes.unshift('神鼓陣');
+  DB.settings.archivedCourseTypes = (Array.isArray(DB.settings.archivedCourseTypes) ? DB.settings.archivedCourseTypes : []).filter(t => t !== '神鼓陣');
   DB.sessions.forEach(s => { if (!s.courseType) s.courseType = '神鼓陣'; });
 
   const allUsedTypes = new Set();
@@ -1296,6 +1297,7 @@ function applyRemoteData(data) {
   allUsedTypes.forEach(ct => {
     if (ct && ct !== '常態班' && !DB.courseTypes.includes(ct)) DB.courseTypes.push(ct);
   });
+  DB.settings.archivedCourseTypes = DB.settings.archivedCourseTypes.filter(t => DB.courseTypes.includes(t));
 
   if (DB.members.length > 0 && DB.memberMappings.length === 0) {
     DB.members.forEach(m => {
@@ -1343,6 +1345,13 @@ function getMembersRawByCourseType(courseType) {
 function getMembersByCourseType(courseType, asOfDate) {
   return getMembersRawByCourseType(courseType).filter(m => isMemberCountedOn(m, asOfDate));
 }
+/* ══ 名單類別封存輔助（封存清單存於 DB.settings.archivedCourseTypes） ══ */
+function getArchivedCourseTypes() {
+  return (DB.settings && Array.isArray(DB.settings.archivedCourseTypes)) ? DB.settings.archivedCourseTypes : [];
+}
+function isCourseTypeArchived(name) { return getArchivedCourseTypes().includes(name); }
+function getActiveCourseTypes() { return DB.courseTypes.filter(t => !isCourseTypeArchived(t)); }
+
 /* ══ 組員退出／在籍輔助（leaves: [{left:'YYYY-MM-DD', back:'YYYY-MM-DD'|null}]） ══ */
 function todayStr() {
   const d = new Date();
@@ -1512,7 +1521,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 /* ══ 名單類別 ══ */
 function updateCourseDropdowns() {
-  const types = DB.courseTypes;
+  const types = getActiveCourseTypes();
   ['import-course-type','m-add-binding-ct','s-course-type'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
@@ -1520,7 +1529,7 @@ function updateCourseDropdowns() {
   const statsEl = document.getElementById('stats-course-type');
   if (statsEl) {
     const prev = statsEl.value;
-    statsEl.innerHTML = '<option value="ALL">全部名單類別</option>' + types.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    statsEl.innerHTML = '<option value="ALL">全部名單類別</option>' + DB.courseTypes.map(t => `<option value="${esc(t)}">${esc(t)}${isCourseTypeArchived(t)?'（已封存）':''}</option>`).join('');
     if (prev && [...statsEl.options].some(o => o.value === prev)) statsEl.value = prev;
   }
   const lotteryEl = document.getElementById('lottery-course-select');
@@ -1538,19 +1547,31 @@ function updateCourseDropdowns() {
 function openCourseTypeModal() { renderCourseTypeList(); openModal('modal-coursetype'); }
 
 function renderCourseTypeList() {
-  document.getElementById('coursetype-list-container').innerHTML = DB.courseTypes.map((t,i) => {
+  const active = getActiveCourseTypes(), archived = DB.courseTypes.filter(isCourseTypeArchived);
+  let html = active.map((t,i) => {
     const cnt = getMemberCountByCourseType(t); const isDefault = t==='神鼓陣';
-    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; ${i<DB.courseTypes.length-1?'border-bottom:1px solid var(--border);':''} font-size:14px;">
+    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; ${(i<active.length-1||archived.length)?'border-bottom:1px solid var(--border);':''} font-size:14px;">
       <div><span style="font-weight:600;">${esc(t)}</span>${isDefault?'<span style="color:var(--text3);font-size:11px;margin-left:6px;">（預設）</span>':''}<span style="color:var(--text3);font-size:12px;margin-left:6px;">${cnt} 人</span></div>
-      ${!isDefault?`<button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;" onclick="deleteCourseType('${esc(t)}')">刪除</button>`:'<span style="font-size:12px;color:var(--text3);">不可刪除</span>'}
+      ${!isDefault?`<button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;" onclick="deleteCourseType('${esc(t)}')">封存</button>`:'<span style="font-size:12px;color:var(--text3);">不可封存</span>'}
     </div>`;
   }).join('');
+  if (archived.length) {
+    html += `<div style="padding:8px 14px;font-size:12px;color:var(--text3);background:var(--surface2);">已封存（歷史點名與統計仍保留）</div>`;
+    html += archived.map((t,i) => {
+      const cnt = getMemberCountByCourseType(t);
+      return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; ${i<archived.length-1?'border-bottom:1px solid var(--border);':''} font-size:14px;opacity:.75;">
+      <div><span style="font-weight:600;">${esc(t)}</span><span style="color:var(--text3);font-size:12px;margin-left:6px;">${cnt} 人</span></div>
+      <div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm" style="padding:4px 12px;font-size:12px;" onclick="restoreCourseType('${esc(t)}')">恢復</button><button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;" onclick="purgeCourseType('${esc(t)}')">永久刪除</button></div>
+    </div>`;
+    }).join('');
+  }
+  document.getElementById('coursetype-list-container').innerHTML = html;
 }
 
 async function addCourseType() {
   const input = document.getElementById('new-ct-name'); const name = input.value.trim();
   if (!name) { showToast('請輸入類別名稱'); return; }
-  if (DB.courseTypes.includes(name)) { showToast('此類別已存在'); return; }
+  if (DB.courseTypes.includes(name)) { showToast(isCourseTypeArchived(name)?'此類別已封存，請在下方恢復':'此類別已存在'); return; }
   DB.courseTypes.push(name);
   await saveDB(); input.value = '';
   renderCourseTypeList(); updateCourseDropdowns(); renderMembers();
@@ -1560,15 +1581,38 @@ async function addCourseType() {
 function deleteCourseType(name) {
   if (name==='神鼓陣') return;
   const cnt = getMemberCountByCourseType(name);
-  showConfirm(`確定要刪除「${name}」類別嗎？\n\n此類別共有 ${cnt} 位組員的綁定將被移除。`,
+  showConfirm(`確定要封存「${name}」類別嗎？\n\n封存後不會出現在新增活動、名單綁定等選項，但此類別 ${cnt} 位組員的綁定、過去活動與點名紀錄都會保留，統計仍可查看。`,
     async () => {
+      if (!Array.isArray(DB.settings.archivedCourseTypes)) DB.settings.archivedCourseTypes = [];
+      if (!DB.settings.archivedCourseTypes.includes(name)) DB.settings.archivedCourseTypes.push(name);
+      await saveDB(); renderCourseTypeList(); updateCourseDropdowns();
+      if (activeMemberFilter===name) activeMemberFilter='ALL';
+      renderMembers(); showToast(`「${name}」已封存`);
+    }, '封存名單類別');
+}
+
+async function restoreCourseType(name) {
+  DB.settings.archivedCourseTypes = getArchivedCourseTypes().filter(t => t !== name);
+  await saveDB(); renderCourseTypeList(); updateCourseDropdowns(); renderMembers();
+  showToast(`「${name}」已恢復`);
+}
+
+function purgeCourseType(name) {
+  if (name==='神鼓陣') return;
+  const sessCount = DB.sessions.filter(s => s.courseType===name).length;
+  showConfirm(`確定要永久刪除「${name}」類別嗎？\n\n此類別的名單綁定、${sessCount} 場活動及其點名紀錄都會一併刪除，且無法復原。`, () => {
+    showConfirm(`再次確認：永久刪除「${name}」後，其歷史點名與統計資料將完全消失，確定要刪除嗎？`, async () => {
+      DB.sessions.filter(s => s.courseType===name).forEach(s => { delete DB.records[s.id]; });
+      DB.sessions = DB.sessions.filter(s => s.courseType!==name);
       DB.memberMappings = DB.memberMappings.filter(mp => mp.courseType !== name);
       DB.members.forEach(m => { if (m.courseType===name) { const r = getCourseTypesByMember(m.id); m.courseType = r[0]||'神鼓陣'; } });
       DB.courseTypes = DB.courseTypes.filter(t => t !== name);
+      DB.settings.archivedCourseTypes = getArchivedCourseTypes().filter(t => t !== name);
       await saveDB(); renderCourseTypeList(); updateCourseDropdowns();
       if (activeMemberFilter===name) activeMemberFilter='ALL';
-      renderMembers(); showToast(`「${name}」已刪除`);
-    }, '刪除名單類別');
+      renderMembers(); if (typeof renderSessions==='function') renderSessions(); showToast(`「${name}」已永久刪除`);
+    }, '二次確認：永久刪除類別');
+  }, '永久刪除名單類別');
 }
 
 /* ══ 組員管理 ══ */
@@ -1598,7 +1642,7 @@ function updateSortChips() {
 
 function renderMembers() {
   const filterWrap = document.getElementById('member-course-filters');
-  const types = DB.courseTypes;
+  const types = getActiveCourseTypes();
   const leftTotal = DB.members.filter(isMemberLeft).length;
   let html = `<button class="filter-tab ${activeMemberFilter==='ALL'?'active':''}" onclick="setMemberFilter('ALL')">全部 (${DB.members.length-leftTotal})</button>`;
   types.forEach(t => { const cnt = getMembersRawByCourseType(t).filter(m => !isMemberLeft(m)).length; html += `<button class="filter-tab ${activeMemberFilter===t?'active':''}" onclick="setMemberFilter('${esc(t)}')">${esc(t)} (${cnt})</button>`; });
@@ -1676,7 +1720,7 @@ function openMemberModal() {
   document.getElementById('m-note').value = '';
   document.getElementById('m-bindings-list').innerHTML = '<div style="font-size:13px;color:var(--text3);padding:4px 0;">儲存後可在此新增名單綁定</div>';
   const sel = document.getElementById('m-add-binding-ct');
-  sel.innerHTML = DB.courseTypes.map(ct => `<option value="${esc(ct)}">${esc(ct)}</option>`).join('');
+  sel.innerHTML = getActiveCourseTypes().map(ct => `<option value="${esc(ct)}">${esc(ct)}</option>`).join('');
   document.getElementById('m-add-binding-role').value = '組員';
   openModal('modal-member');
 }
@@ -1716,7 +1760,7 @@ function renderMemberBindings(memberId) {
 
 function refreshAddBindingDropdown(memberId) {
   const bound   = new Set(DB.memberMappings.filter(mp => mp.rowId===memberId).map(mp => mp.courseType));
-  const unbound = DB.courseTypes.filter(ct => !bound.has(ct));
+  const unbound = getActiveCourseTypes().filter(ct => !bound.has(ct));
   const sel     = document.getElementById('m-add-binding-ct');
   sel.innerHTML = unbound.length ? unbound.map(ct => `<option value="${esc(ct)}">${esc(ct)}</option>`).join('') : '<option value="">（已綁定所有類別）</option>';
 }
@@ -2004,7 +2048,7 @@ function openSessionModal() {
   document.getElementById('edit-session-id').value=''; document.getElementById('modal-session-title').textContent='新增活動安排';
   document.getElementById('s-name').value=''; document.getElementById('s-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('s-time-start').value='19:00'; document.getElementById('s-time-end').value='21:00';
-  if (DB.courseTypes.length>0) document.getElementById('s-course-type').value=DB.courseTypes[0];
+  if (getActiveCourseTypes().length>0) document.getElementById('s-course-type').value=getActiveCourseTypes()[0];
   document.getElementById('s-color').value='#2c5234';
   document.querySelectorAll('.color-opt').forEach((el,i)=>el.classList.toggle('selected',i===0));
   document.getElementById('s-helper').value=''; document.getElementById('s-note').value='';
@@ -2017,7 +2061,9 @@ function editSession(id) {
   document.getElementById('edit-session-id').value=id; document.getElementById('modal-session-title').textContent='編輯活動安排';
   document.getElementById('s-name').value=s.name; document.getElementById('s-date').value=s.date;
   document.getElementById('s-time-start').value=s.timeStart; document.getElementById('s-time-end').value=s.timeEnd;
-  document.getElementById('s-course-type').value=s.courseType||'神鼓陣';
+  { const sel=document.getElementById('s-course-type'), ct=s.courseType||'神鼓陣';
+    if(![...sel.options].some(o=>o.value===ct)) sel.insertAdjacentHTML('beforeend',`<option value="${esc(ct)}">${esc(ct)}（已封存）</option>`);
+    sel.value=ct; }
   const savedColor=s.color||'#2c5234'; document.getElementById('s-color').value=savedColor;
   document.querySelectorAll('.color-opt').forEach(el=>el.classList.toggle('selected',el.dataset.color===savedColor));
   document.getElementById('s-helper').value=s.helper||''; document.getElementById('s-note').value=s.note||'';
@@ -2182,7 +2228,7 @@ function renderLotteryPage() {
   });
   lotteryMembers=lotteryMembers.filter(x=>DB.members.some(m=>m.id===x.id&&!isMemberLeft(m)));
   lotteryMembers.forEach(x=>{const m=DB.members.find(m=>m.id===x.id);if(m){x.name=m.name;const cts=getCourseTypesByMember(m.id);x.allCourseTypes=cts;x.courseType=cts[0]||m.courseType||'神鼓陣';}});
-  const types=DB.courseTypes; let opts=`<option value="ALL"${lotteryCourseFilter==='ALL'?' selected':''}>全部名單類別</option>`;
+  const types=getActiveCourseTypes(); let opts=`<option value="ALL"${lotteryCourseFilter==='ALL'?' selected':''}>全部名單類別</option>`;
   types.forEach(t=>{const cnt=lotteryMembers.filter(x=>lotteryMemberHasCourse(x,t)).length;opts+=`<option value="${esc(t)}"${lotteryCourseFilter===t?' selected':''}>${esc(t)}${cnt>0?`（${cnt} 人）`:''}</option>`;});
   document.getElementById('lottery-course-select').innerHTML=opts;
   renderLotteryGrid();
@@ -2634,7 +2680,7 @@ function switchMemberModalTab(tab) {
     _pickSelected.clear();
     // 填充目標名單類別下拉
     const sel = document.getElementById('pick-target-ct-select');
-    sel.innerHTML = DB.courseTypes.map(ct => `<option value="${esc(ct)}">${esc(ct)}</option>`).join('');
+    sel.innerHTML = getActiveCourseTypes().map(ct => `<option value="${esc(ct)}">${esc(ct)}</option>`).join('');
     document.getElementById('pick-search').value = '';
     renderPickList();
   }
@@ -2946,7 +2992,7 @@ onAuthStateChanged(auth, (user) => {
 <script>
 window.addEventListener('DOMContentLoaded', function(){
   const guard = function(fn, msg){ return function(...args){ if(!window.isAdminUser){ if(typeof showToast==='function') showToast(msg); else alert(msg); return; } return fn.apply(this, args); }; };
-  ['openSessionModal','editSession','duplicateSession','deleteSession','importMembersSmart','saveMember','deleteMember','confirmLeaveMember','rejoinMember','purgeMember','addCourseType','deleteCourseType','saveAttendance'].forEach(name => {
+  ['openSessionModal','editSession','duplicateSession','deleteSession','importMembersSmart','saveMember','deleteMember','confirmLeaveMember','rejoinMember','purgeMember','addCourseType','deleteCourseType','restoreCourseType','purgeCourseType','saveAttendance'].forEach(name => {
     if(typeof window[name]==='function') window[name]=guard(window[name],'無權限');
   });
 });
